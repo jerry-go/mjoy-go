@@ -18,7 +18,7 @@
 // @Date: 2018/05/08 18:02:08
 ////////////////////////////////////////////////////////////////////////////////
 
-package node
+package node_test
 
 import (
 	"fmt"
@@ -27,6 +27,7 @@ import (
 	"mjoy.io/communication/p2p"
 	"mjoy.io/communication/rpc"
 	"testing"
+	"mjoy.io/node"
 )
 
 // SampleService is a trivial network service that can be attached to a node for
@@ -44,9 +45,9 @@ func (s *SampleService) APIs() []rpc.API           { return nil }
 func (s *SampleService) Start(*p2p.Server) error   { fmt.Println("Service starting..."); return nil }
 func (s *SampleService) Stop() error               { fmt.Println("Service stopping..."); return nil }
 
-func ExampleService() {
+func TestExampleService(t *testing.T) {
 	// Create a network node to run protocols with the default values.
-	stack, err := New(&Config{})
+	stack, err := node.New(&node.Config{})
 	if err != nil {
 		log.Fatalf("Failed to create network node: %v", err)
 	}
@@ -54,7 +55,7 @@ func ExampleService() {
 	// of a node.ServiceConstructor that will instantiate a node.Service. The reason for
 	// the factory method approach is to support service restarts without relying on the
 	// individual implementations' support for such operations.
-	constructor := func(context *ServiceContext) (Service, error) {
+	constructor := func(context *node.ServiceContext) (node.Service, error) {
 		return new(SampleService), nil
 	}
 	if err := stack.Register(constructor); err != nil {
@@ -75,8 +76,4 @@ func ExampleService() {
 	// Service stopping...
 	// Service starting...
 	// Service stopping...
-}
-
-func TestXXX(t *testing.T){
-	ExampleService()
 }
