@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 ////////////////////////////////////////////////////////////////////////////////
 // Copyright (c) 2018 The mjoy-go Authors.
 //
@@ -17,6 +18,27 @@
 // @File: mjoyd.go
 // @Date: 2018/05/08 17:29:08
 ////////////////////////////////////////////////////////////////////////////////
+=======
+/*
+ * Copyright (c) 2018 The mjoy-go Authors.
+ *
+ * The mjoy-go is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * @File: mjoyd.go
+ * @Date: 2018/05/08 17:35:08
+ */
+>>>>>>> cf3ee6939dbc18da2c5ed35db60971c88b367110
 
 package main
 
@@ -31,6 +53,7 @@ import (
 	"mjoy.io/mjoyd/defaults"
 	"mjoy.io/mjoyd/limits"
 	"mjoy.io/mjoyd/utils"
+	"path/filepath"
 )
 
 var (
@@ -105,6 +128,25 @@ func init() {
 	}
 }
 
+// remove block database based boot parameter --resync-block
+func resyncBlockProc (ctx *cli.Context) error {
+	resyncBlock := ctx.GlobalBool(utils.ResyncBlockFlag.Name)
+	if resyncBlock {
+		//need remove block data
+		dataDir := ctx.GlobalString(utils.DataDirFlag.Name)
+		appName := fmt.Sprintf("%s_node", ctx.GlobalString(utils.NodeNameFlag.Name))
+		path := filepath.Join(dataDir,appName,"chaindata")
+		logger.Info("Now Remove the block database ", path)
+		err := os.RemoveAll(path)
+		if err != nil {
+			logger.Error("remove block database error  ", err)
+			return err
+		}
+		logger.Info("Remove block database completed !")
+	}
+	return nil
+}
+
 // mjoyd is the real main entry pointclear
 func mjoyd(ctx *cli.Context) error {
 	// log instance init
@@ -126,6 +168,10 @@ func mjoyd(ctx *cli.Context) error {
 	//}
 	//registerService(node)
 	//startNode(node)
+
+	if err := resyncBlockProc(ctx); err != nil{
+		return err
+	}
 
 	node := createMjoyNode(ctx)
 	if node == nil {
