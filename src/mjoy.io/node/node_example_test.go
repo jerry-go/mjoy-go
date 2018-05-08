@@ -1,5 +1,24 @@
+////////////////////////////////////////////////////////////////////////////////
+// Copyright (c) 2018 The mjoy-go Authors.
+//
+// The mjoy-go is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+//
+// @File: node_example_test.go
+// @Date: 2018/05/08 18:02:08
+////////////////////////////////////////////////////////////////////////////////
 
-package node
+package node_test
 
 import (
 	"fmt"
@@ -8,6 +27,7 @@ import (
 	"mjoy.io/communication/p2p"
 	"mjoy.io/communication/rpc"
 	"testing"
+	"mjoy.io/node"
 )
 
 // SampleService is a trivial network service that can be attached to a node for
@@ -25,9 +45,9 @@ func (s *SampleService) APIs() []rpc.API           { return nil }
 func (s *SampleService) Start(*p2p.Server) error   { fmt.Println("Service starting..."); return nil }
 func (s *SampleService) Stop() error               { fmt.Println("Service stopping..."); return nil }
 
-func ExampleService() {
+func TestExampleService(t *testing.T) {
 	// Create a network node to run protocols with the default values.
-	stack, err := New(&Config{})
+	stack, err := node.New(&node.Config{})
 	if err != nil {
 		log.Fatalf("Failed to create network node: %v", err)
 	}
@@ -35,7 +55,7 @@ func ExampleService() {
 	// of a node.ServiceConstructor that will instantiate a node.Service. The reason for
 	// the factory method approach is to support service restarts without relying on the
 	// individual implementations' support for such operations.
-	constructor := func(context *ServiceContext) (Service, error) {
+	constructor := func(context *node.ServiceContext) (node.Service, error) {
 		return new(SampleService), nil
 	}
 	if err := stack.Register(constructor); err != nil {
@@ -56,8 +76,4 @@ func ExampleService() {
 	// Service stopping...
 	// Service starting...
 	// Service stopping...
-}
-
-func TestXXX(t *testing.T){
-	ExampleService()
 }
