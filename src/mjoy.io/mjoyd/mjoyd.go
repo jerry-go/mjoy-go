@@ -32,6 +32,8 @@ var (
 		utils.HttpModulesFlag,
 		utils.StartBlockproducerFlag,
 		utils.MetricsEnabledFlag,
+		utils.WorkingNetFlag,
+		utils.ResyncBlockFlag,
 	}
 
 	logTag = "mjoyd.main"

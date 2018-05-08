@@ -8,21 +8,24 @@ import (
 )
 
 var (
-	AppName = getAppName()
+	AppName 					= getAppName()
 
-	DefaultDataDir        = getAppCurrentDir()
-	DefaultTOMLConfigPath = getAppCurrentDir() + "/" + AppName + ".conf"
-	DefaultLogPath        = getAppCurrentDir() + "/log/" + AppName + ".log"
-	DefaultLogLevel       = "info"
-	DefaultNodeName       = AppName
-	DefaultKeystore       = getAppCurrentDir() + "/" + "keystore"
-	DefaultNodePort       = 36180
+	DefaultDataDir        		= getAppCurrentDir()
+	DefaultTOMLConfigPath 		= getAppCurrentDir() + "/" + AppName + ".conf"
+	DefaultLogPath        		= getAppCurrentDir() + "/log/" + AppName + ".log"
+	DefaultLogLevel       		= "info"
+	DefaultNodeName       		= AppName
+	DefaultKeystore       		= getAppCurrentDir() + "/" + "keystore"
+	DefaultNodePort       		= 36180
 
 	//Rpc
-	DefaultHttpModules    = "mjoy,personal,txpool"
-	DefaultHttpHost       = "localhost"
-	DefaultHttpPort       = 8989
-	DefaultBlockproducerStart	  = false
+	DefaultHttpModules    		= "mjoy,personal,txpool"
+	DefaultHttpHost       		= "localhost"
+	DefaultHttpPort       		= 8989
+	//Miner
+	DefaultBlockproducerStart	= false
+	//Net
+	DefaultWorkingNet			="alpha"
 )
 
 func getAppName() string {
