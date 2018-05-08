@@ -26,7 +26,6 @@ import (
 
 	"mjoy.io/communication/p2p"
 	"mjoy.io/communication/rpc"
-	"testing"
 	"mjoy.io/node"
 )
 
@@ -45,7 +44,7 @@ func (s *SampleService) APIs() []rpc.API           { return nil }
 func (s *SampleService) Start(*p2p.Server) error   { fmt.Println("Service starting..."); return nil }
 func (s *SampleService) Stop() error               { fmt.Println("Service stopping..."); return nil }
 
-func TestExampleService(t *testing.T) {
+func ExampleService() {
 	// Create a network node to run protocols with the default values.
 	stack, err := node.New(&node.Config{})
 	if err != nil {
