@@ -363,7 +363,7 @@ func (srv *Server) Start() (err error) {
 	srv.removestatic = make(chan *discover.Node)
 	srv.peerOp = make(chan peerOpFunc)
 	srv.peerOpDone = make(chan struct{})
-	fmt.Printf(">>>>>Src.ListenAddr:%s\n" , srv.ListenAddr)
+	//fmt.Printf(">>>>>Src.ListenAddr:%s\n" , srv.ListenAddr)
 	for _,bootNode:=range srv.BootstrapNodes {
 		fmt.Printf(">>>>>BootNode:  UDP:%d TCP:%d\n" , bootNode.UDP , bootNode.TCP)
 	}

@@ -52,7 +52,7 @@ var (
 	muLoggerMap      sync.Mutex
 
 	// options
-	lvl  Level = LevelInfo
+	lvl  Level = LevelOff
 	opts BackendOption
 
 	//xxxlog = backendLog.Logger("xxx")
