@@ -203,7 +203,7 @@ func (api *PrivateAdminAPI) ImportChain(file string) (bool, error) {
 
 // StorageRangeResult is the result of a debug_storageRangeAt API call.
 type StorageRangeResult struct {
-	Storage storageMap   `json:"storage"`
+	Storage storageMap  `json:"storage"`
 	NextKey *types.Hash `json:"nextKey"` // nil if Storage includes the last key in the trie.
 }
 

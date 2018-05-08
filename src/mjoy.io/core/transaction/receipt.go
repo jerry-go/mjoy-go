@@ -27,10 +27,10 @@ const (
 // Receipt represents the results of a transaction.
 type Receipt struct {
 	// Consensus fields
-	PostState         []byte `json:"root"`
-	Status            uint   `json:"status"`
+	PostState         []byte       `json:"root"`
+	Status            uint         `json:"status"`
 	Bloom             types.Bloom  `json:"logsBloom"         gencodec:"required"`
-	Logs              []*Log `json:"logs"              gencodec:"required"`
+	Logs              []*Log       `json:"logs"              gencodec:"required"`
 
 	// Implementation fields (don't reorder!)
 	TxHash          types.Hash    `json:"transactionHash" gencodec:"required"`
@@ -95,10 +95,10 @@ func (r *Receipt) String() string {
 // ReceiptForStorage is a wrapper around a Receipt that flattens and parses the
 // entire content of a receipt, as opposed to only the consensus fields originally.
 type ReceiptForStorage struct {
-	PostState         []byte `json:"root"`
-	Status            uint   `json:"status"`
+	PostState         []byte       `json:"root"`
+	Status            uint         `json:"status"`
 	Bloom             types.Bloom  `json:"logsBloom"         gencodec:"required"`
-	Logs              []*Log `json:"logs"              gencodec:"required"`
+	Logs              []*Log       `json:"logs"              gencodec:"required"`
 
 	// Implementation fields (don't reorder!)
 	TxHash          types.Hash    `json:"transactionHash" gencodec:"required"`

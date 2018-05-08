@@ -663,9 +663,9 @@ func (self *ProtocolManager) txBroadcastLoop() {
 type NodeInfo struct {
 	Network    uint64              `json:"network"`    // mjoy network ID
 	Number     *big.Int            `json:"difficulty"`     // height of the host's blockchain
-	Genesis    types.Hash         `json:"genesis"`    // SHA3 hash of the host's genesis block
+	Genesis    types.Hash          `json:"genesis"`    // SHA3 hash of the host's genesis block
 	Config     *params.ChainConfig `json:"config"`     // Chain configuration for the fork rules
-	Head       types.Hash         `json:"head"`       // SHA3 hash of the host's best owned block
+	Head       types.Hash          `json:"head"`       // SHA3 hash of the host's best owned block
 }
 
 // NodeInfo retrieves some protocol metadata about the running host node.

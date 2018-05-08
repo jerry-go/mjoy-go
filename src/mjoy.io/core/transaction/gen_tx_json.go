@@ -14,13 +14,13 @@ import (
 
 func (t Txdata) MarshalJSON() ([]byte, error) {
 	type txdata struct {
-		AccountNonce hex.Uint64  `json:"nonce"    gencodec:"required"`
+		AccountNonce hex.Uint64     `json:"nonce"    gencodec:"required"`
 		Recipient    *types.Address `json:"to"       msgp:"nil"`
-		Amount       *hex.Big    `json:"value"    gencodec:"required"`
-		Payload      hex.Bytes   `json:"input"    gencodec:"required"`
-		V            *hex.Big    `json:"v" gencodec:"required"`
-		R            *hex.Big    `json:"r" gencodec:"required"`
-		S            *hex.Big    `json:"s" gencodec:"required"`
+		Amount       *hex.Big       `json:"value"    gencodec:"required"`
+		Payload      hex.Bytes      `json:"input"    gencodec:"required"`
+		V            *hex.Big       `json:"v" gencodec:"required"`
+		R            *hex.Big       `json:"r" gencodec:"required"`
+		S            *hex.Big       `json:"s" gencodec:"required"`
 		Hash         *types.Hash    `json:"hash" msgp:"-"`
 	}
 	var enc txdata
@@ -37,13 +37,13 @@ func (t Txdata) MarshalJSON() ([]byte, error) {
 
 func (t *Txdata) UnmarshalJSON(input []byte) error {
 	type txdata struct {
-		AccountNonce *hex.Uint64 `json:"nonce"    gencodec:"required"`
+		AccountNonce *hex.Uint64    `json:"nonce"    gencodec:"required"`
 		Recipient    *types.Address `json:"to"       msgp:"nil"`
-		Amount       *hex.Big    `json:"value"    gencodec:"required"`
-		Payload      *hex.Bytes  `json:"input"    gencodec:"required"`
-		V            *hex.Big    `json:"v" gencodec:"required"`
-		R            *hex.Big    `json:"r" gencodec:"required"`
-		S            *hex.Big    `json:"s" gencodec:"required"`
+		Amount       *hex.Big       `json:"value"    gencodec:"required"`
+		Payload      *hex.Bytes     `json:"input"    gencodec:"required"`
+		V            *hex.Big       `json:"v" gencodec:"required"`
+		R            *hex.Big       `json:"r" gencodec:"required"`
+		S            *hex.Big       `json:"s" gencodec:"required"`
 		Hash         *types.Hash    `json:"hash" msgp:"-"`
 	}
 	var dec txdata
