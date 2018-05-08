@@ -1,3 +1,18 @@
+////////////////////////////////////////////////////////////////////////////////
+// Copyright (c) 2018 The mjoy-go Authors.
+//
+// The mjoy-go is free software.
+//
+// @File: file_cache.go
+// @Date: 2018/05/08 17:09:08
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//  <http://www.apache.org/licenses/>
+//
+////////////////////////////////////////////////////////////////////////////////
 
 package keystore
 

@@ -1,3 +1,19 @@
+////////////////////////////////////////////////////////////////////////////////
+// Copyright (c) 2018 The mjoy-go Authors.
+//
+// The mjoy-go is free software.
+//
+// @File: keystore.go
+// @Date: 2018/05/08 17:10:08
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//  <http://www.apache.org/licenses/>
+//
+////////////////////////////////////////////////////////////////////////////////
+
 // Package keystore implements encrypted storage of secp256k1 private keys.
 //
 // Keys are stored as encrypted JSON files according to the Web3 Secret Storage specification.
