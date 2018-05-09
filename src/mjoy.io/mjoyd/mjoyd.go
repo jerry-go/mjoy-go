@@ -139,15 +139,6 @@ func mjoyd(ctx *cli.Context) error {
 	logger.Infof("Hi, %s is starting ...", defaults.AppName)
 	logger.Infof("===============================")
 
-	//// TODO:
-	//node := createNode(ctx)
-	//if node == nil {
-	//	logger.Critical("Create node failed.")
-	//	os.Exit(1)
-	//}
-	//registerService(node)
-	//startNode(node)
-
 	if err := resyncBlockProc(ctx); err != nil{
 		return err
 	}
