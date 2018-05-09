@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 ////////////////////////////////////////////////////////////////////////////////
 // Copyright (c) 2018 The mjoy-go Authors.
 //
@@ -18,27 +17,7 @@
 // @File: mjoyd.go
 // @Date: 2018/05/08 17:29:08
 ////////////////////////////////////////////////////////////////////////////////
-=======
-/*
- * Copyright (c) 2018 The mjoy-go Authors.
- *
- * The mjoy-go is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- *
- * @File: mjoyd.go
- * @Date: 2018/05/08 17:35:08
- */
->>>>>>> cf3ee6939dbc18da2c5ed35db60971c88b367110
+
 
 package main
 
@@ -159,15 +138,6 @@ func mjoyd(ctx *cli.Context) error {
 	logger.Infof("===============================")
 	logger.Infof("Hi, %s is starting ...", defaults.AppName)
 	logger.Infof("===============================")
-
-	//// TODO:
-	//node := createNode(ctx)
-	//if node == nil {
-	//	logger.Critical("Create node failed.")
-	//	os.Exit(1)
-	//}
-	//registerService(node)
-	//startNode(node)
 
 	if err := resyncBlockProc(ctx); err != nil{
 		return err

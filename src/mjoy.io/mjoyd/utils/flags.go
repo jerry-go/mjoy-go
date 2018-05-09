@@ -169,14 +169,12 @@ var (
 
 	WorkingNetFlag = cli.StringFlag{
 		Name:	"net",
-		Usage:	"A working net(main/beta/alpha) to run.This option is not used in current version",
+		Usage:	"A working net(main/beta/alpha) to run. This option is not used in current version",
 		Value:	defaults.DefaultWorkingNet,
 	}
 
 	ResyncBlockFlag = cli.BoolFlag{
 		Name: 	"resync-block",
-		Usage:	"Rebuild blockchain from genesis. This option is not used in current version",
+		Usage:	"Clear chain database and rebuild blockchain.",
 	}
-
-
 )

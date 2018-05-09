@@ -1,3 +1,23 @@
+////////////////////////////////////////////////////////////////////////////////
+// Copyright (c) 2018 The mjoy-go Authors.
+//
+// The mjoy-go is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+//
+// @File: server.go
+// @Date: 2018/05/08 15:18:08
+////////////////////////////////////////////////////////////////////////////////
+
 // Package p2p implements the Mjoy p2p network protocols.
 package p2p
 
@@ -363,7 +383,7 @@ func (srv *Server) Start() (err error) {
 	srv.removestatic = make(chan *discover.Node)
 	srv.peerOp = make(chan peerOpFunc)
 	srv.peerOpDone = make(chan struct{})
-	fmt.Printf(">>>>>Src.ListenAddr:%s\n" , srv.ListenAddr)
+	//fmt.Printf(">>>>>Src.ListenAddr:%s\n" , srv.ListenAddr)
 	for _,bootNode:=range srv.BootstrapNodes {
 		fmt.Printf(">>>>>BootNode:  UDP:%d TCP:%d\n" , bootNode.UDP , bootNode.TCP)
 	}
