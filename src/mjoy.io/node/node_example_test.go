@@ -46,7 +46,7 @@ func (s *SampleService) Stop() error               { fmt.Println("Service stoppi
 
 func ExampleService() {
 	// Create a network node to run protocols with the default values.
-	stack, err := node.New(&node.Config{})
+	stack, err := node.New()
 	if err != nil {
 		log.Fatalf("Failed to create network node: %v", err)
 	}
