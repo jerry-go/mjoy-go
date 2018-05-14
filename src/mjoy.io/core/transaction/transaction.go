@@ -90,12 +90,12 @@ type Txdata struct {
 	Payload      []byte         `json:"input"    gencodec:"required"`
 
 	// Signature values
-	V *types.BigInt `json:"v" gencodec:"required"`
-	R *types.BigInt `json:"r" gencodec:"required"`
-	S *types.BigInt `json:"s" gencodec:"required"`
+	V *types.BigInt             `json:"v"        gencodec:"required"`
+	R *types.BigInt             `json:"r"        gencodec:"required"`
+	S *types.BigInt             `json:"s"        gencodec:"required"`
 
 	// This is only used when marshaling to JSON.
-	Hash *types.Hash `json:"hash" msgp:"-"`
+	Hash *types.Hash            `json:"hash"     msgp:"-"`
 }
 
 
