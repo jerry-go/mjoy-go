@@ -48,6 +48,7 @@ import (
 	"mjoy.io/core/genesis"
 	"mjoy.io/blockproducer"
 	"mjoy.io/communication/rpc/mjoyapi"
+	"mjoy.io/mjoyd/config"
 )
 
 type LesServer interface {
@@ -110,7 +111,10 @@ type SetupGenesisResult struct {
 // New creates a new Mjoy object (including the
 // initialisation of the common Mjoy object)----Move to mjoy2.go
 /**/
-func New(ctx *node.ServiceContext, config *Config) (*Mjoy, error) {
+func New(ctx *node.ServiceContext) (*Mjoy, error) {
+	c := config.GetConfigInstance()
+	var config = &Config{}
+	c.Register("mjoy", config)
 	if config.SyncMode == downloader.LightSync {
 		return nil, errors.New("can't run mjoy.Mjoy in light sync mode, use les.LightMjoy")
 	}

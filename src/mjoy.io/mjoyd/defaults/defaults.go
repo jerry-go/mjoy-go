@@ -31,7 +31,7 @@ var (
 	AppName 					= getAppName()
 
 	DefaultDataDir        		= getAppCurrentDir()
-	DefaultTOMLConfigPath 		= getAppCurrentDir() + "/" + AppName + ".conf"
+	DefaultTOMLConfigPath 		= getAppCurrentDir() + "/"  + "config"
 	DefaultLogPath        		= getAppCurrentDir() + "/log/" + AppName + ".log"
 	DefaultLogLevel       		= "info"
 	DefaultNodeName       		= AppName

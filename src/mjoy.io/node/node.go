@@ -36,6 +36,7 @@ import (
 	"mjoy.io/communication/rpc"
 	"github.com/prometheus/prometheus/util/flock"
 	"mjoy.io/utils/database"
+	"mjoy.io/mjoyd/config"
 )
 
 // Node is a container on which services can be registered.
@@ -76,7 +77,12 @@ type Node struct {
 }
 
 // New creates a new P2P node, ready for protocol registration.
-func New(conf *Config) (*Node, error) {
+func New() (*Node, error) {
+
+	c := config.GetConfigInstance()
+	conf := &Config{}
+	c.Register("node", conf)
+
 	// Copy config and resolve the datadir so future changes to the current
 	// working directory don't affect the node.
 	confCopy := *conf
@@ -235,7 +241,7 @@ func (n *Node) openDataDir() error {
 		return nil // ephemeral
 	}
 
-	instdir := filepath.Join(n.config.DataDir, n.config.name())
+	instdir := filepath.Join(n.config.DataDir, n.config.NameValue())
 	if err := os.MkdirAll(instdir, 0700); err != nil {
 		return err
 	}
@@ -385,7 +391,6 @@ func (n *Node) startHTTP(endpoint string, apis []rpc.API, modules []string, cors
 	handler := rpc.NewServer()
 	for _, api := range apis {
 		if whitelist[api.Namespace] || (len(whitelist) == 0 && api.Public) {
-			fmt.Println(">>>>>>>>api.Namespace:" , api.Namespace)
 			if err := handler.RegisterName(api.Namespace, api.Service); err != nil {
 				return err
 			}

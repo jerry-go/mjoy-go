@@ -33,6 +33,8 @@ import (
 	"mjoy.io/mjoyd/limits"
 	"mjoy.io/mjoyd/utils"
 	"path/filepath"
+	"mjoy.io/mjoyd/config"
+	"mjoy.io/node"
 )
 
 var (
@@ -42,16 +44,9 @@ var (
 	app = utils.NewApp(gitCommit, "the "+ defaults.AppName + " command line interface")
 	// basic flags
 	basicFlags = []cli.Flag{
-		utils.DataDirFlag,
 		utils.ConfigFileFlag,
 		utils.LogFileFlag,
 		utils.LogLevelFlag,
-		utils.NodeNameFlag,
-		utils.ListenPortFlag,
-		utils.BootNodeUrlFlag,
-		utils.HttpPortFlag,
-		utils.HttpHostFlag,
-		utils.HttpModulesFlag,
 		utils.StartBlockproducerFlag,
 		utils.MetricsEnabledFlag,
 		utils.WorkingNetFlag,
@@ -111,9 +106,13 @@ func init() {
 func resyncBlockProc (ctx *cli.Context) error {
 	resyncBlock := ctx.GlobalBool(utils.ResyncBlockFlag.Name)
 	if resyncBlock {
+		c := config.GetConfigInstance()
+		conf := &node.Config{}
+		c.Register("node", conf)
+		defer c.Unregister("node")
 		//need remove block data
-		dataDir := ctx.GlobalString(utils.DataDirFlag.Name)
-		appName := fmt.Sprintf("%s_node", ctx.GlobalString(utils.NodeNameFlag.Name))
+		dataDir := conf.DataDir
+		appName := conf.NameValue()
 		path := filepath.Join(dataDir,appName,"chaindata")
 		logger.Info("Now Remove the block database ", path)
 		err := os.RemoveAll(path)

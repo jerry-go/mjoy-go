@@ -103,7 +103,7 @@ func (n BlockNonce) Uint64() uint64 {
 
 type Header struct {
 	ParentHash  types.Hash     		  `json:"parentHash" `
-	Coinbase   	types.Address  		  `json:"blockproducer" `
+	Coinbase   	types.Address  		  `json:"blockProducer" `
 	StateHash   types.Hash            `json:"stateRoot" `
 	TxHash      types.Hash            `json:"transactionsRoot" `
 	ReceiptHash types.Hash            `json:"receiptsRoot" `
@@ -128,7 +128,7 @@ type Block struct {
 
 	// These fields are used by package mjoy to track
 	// inter-peer block relay.
-	ReceivedAt   time.Time       `msg:"-"`
+	ReceivedAt   time.Time      `msg:"-"`
 	ReceivedFrom interface{}    `msg:"-"`
 }
 
