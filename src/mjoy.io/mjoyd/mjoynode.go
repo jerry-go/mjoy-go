@@ -37,6 +37,7 @@ import (
 	"strings"
 	"mjoy.io/communication/p2p/discover"
 	"mjoy.io/params"
+	"mjoy.io/mjoyd/config"
 )
 
 var (
@@ -116,16 +117,17 @@ func createMjoydCfg(ctx *cli.Context)*mjoy.MjoydConfig{
 }
 
 func createMjoyNode(ctx *cli.Context)(*node.Node){
-	mjoyMjoydConfig:=createMjoydCfg(ctx)
+	c := config.GetConfigInstance()
+	c.SetPath(ctx.GlobalString(utils.ConfigFileFlag.Name))
+	//mjoyMjoydConfig:=createMjoydCfg(ctx)
 
-	//Cfg.Node.KeyStoreDir = "E:\\myjoytest\\keystore"
-	stack , err := node.New(&mjoyMjoydConfig.Node)
+	stack , err := node.New()
 	if err != nil{
 		panic(fmt.Sprintf("node.New Wrong:%v", err))
 	}
 	stack.Register(func(ctx *node.ServiceContext)(node.Service , error){
 
-		fullNode , err := mjoy.New(ctx , &mjoyMjoydConfig.Mjoy)
+		fullNode , err := mjoy.New(ctx)
 		if err != nil{
 			panic(fmt.Sprintf("mjoy.New Full Node:%v" , err))
 

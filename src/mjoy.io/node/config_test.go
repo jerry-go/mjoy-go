@@ -33,6 +33,7 @@ import (
 
 // Tests that datadirs can be successfully created, be them manually configured
 // ones or automatically generated temporary ones.
+/*
 func TestDatadirCreation(t *testing.T) {
 	// Create a temporary data dir and check that it can be used by a node
 	dir, err := ioutil.TempDir("", "")
@@ -64,7 +65,7 @@ func TestDatadirCreation(t *testing.T) {
 		t.Fatalf("protocol stack created with an invalid datadir")
 	}
 }
-
+*/
 // Tests that IPC paths are correctly resolved to valid endpoints of different
 // platforms.
 func TestIPCPathResolution(t *testing.T) {

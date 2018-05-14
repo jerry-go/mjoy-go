@@ -36,6 +36,7 @@ import (
 	"mjoy.io/common"
 	"mjoy.io/utils/crypto"
 	"mjoy.io/communication/p2p/discover"
+	"mjoy.io/mjoyd/defaults"
 )
 
 const (
@@ -46,6 +47,7 @@ const (
 	datadirNodeDatabase    = "nodes"              // Path within the datadir to store the node infos
 )
 
+//go:generate gencodec -type Config  -formats toml -out gen_config.go
 // Config represents a small collection of configuration values to fine tune the
 // P2P network layer of a protocol stack. These values can be further extended by
 // all registered services.
@@ -143,6 +145,22 @@ type Config struct {
 
 }
 
+func (c *Config) SetDefaultConfig() (error){
+	c.Name = fmt.Sprintf("%s_node", defaults.AppName)
+	c.DataDir = defaults.DefaultDataDir
+	c.KeyStoreDir = defaults.DefaultKeystore
+	c.HTTPHost = defaults.DefaultHttpHost
+	c.HTTPPort = defaults.DefaultHttpPort
+	c.HTTPModules = append(c.HTTPModules,"mjoy","personal","txpool")
+
+	c.P2P.MaxPeers = 10
+	c.P2P.Name = defaults.DefaultNodeName
+	c.P2P.ListenAddr = fmt.Sprintf(":%d",defaults.DefaultNodePort)
+	c.P2P.DiscoveryV5 = true
+	c.P2P.DiscoveryV5Addr = fmt.Sprintf(":%d",defaults.DefaultNodePort + 1)
+
+	return nil
+}
 // IPCEndpoint resolves an IPC endpoint based on a configured value, taking into
 // account the set data folders as well as the designated platform we're currently
 // running on.
@@ -220,7 +238,7 @@ func DefaultWSEndpoint() string {
 
 // NodeName returns the devp2p node identifier.
 func (c *Config) NodeName() string {
-	name := c.name()
+	name := c.NameValue()
 	// Backwards compatibility: previous versions used title-cased "Mjoyd", keep that.
 	if name == "mjoyd" || name == "mjoyd-testnet" {
 		name = "Mjoyd"
@@ -236,13 +254,13 @@ func (c *Config) NodeName() string {
 	return name
 }
 
-func (c *Config) name() string {
+func (c *Config) NameValue() string {
 	if c.Name == "" {
 		progname := strings.TrimSuffix(filepath.Base(os.Args[0]), ".exe")
 		if progname == "" {
 			panic("empty executable name, set Config.Name")
 		}
-		return progname
+		return progname+"_node"
 	}
 	return c.Name
 }
@@ -266,7 +284,7 @@ func (c *Config) resolvePath(path string) string {
 	}
 	// Backwards-compatibility: ensure that data directory files created
 	// by mjoyd 1.4 are used if they exist.
-	if c.name() == "mjoyd" && isOldMjoydResource[path] {
+	if c.NameValue() == "mjoyd" && isOldMjoydResource[path] {
 		oldpath := ""
 		if c.Name == "mjoyd" {
 			oldpath = filepath.Join(c.DataDir, path)
@@ -283,7 +301,7 @@ func (c *Config) instanceDir() string {
 	if c.DataDir == "" {
 		return ""
 	}
-	return filepath.Join(c.DataDir, c.name())
+	return filepath.Join(c.DataDir, c.NameValue())
 }
 
 // NodeKey retrieves the currently configured private key of the node, checking
@@ -312,7 +330,7 @@ func (c *Config) NodeKey() *ecdsa.PrivateKey {
 	if err != nil {
 		logger.Error(fmt.Sprintf("Failed to generate node key: %v", err))
 	}
-	instanceDir := filepath.Join(c.DataDir, c.name())
+	instanceDir := filepath.Join(c.DataDir, c.NameValue())
 	if err := os.MkdirAll(instanceDir, 0700); err != nil {
 		logger.Error(fmt.Sprintf("Failed to persist node key: %v", err))
 		return key

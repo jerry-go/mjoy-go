@@ -31,6 +31,7 @@ import (
 	"mjoy.io/core/txprocessor"
 	"mjoy.io/core/genesis"
 	"mjoy.io/node"
+	"mjoy.io/params"
 )
 
 // DefaultConfig contains default settings for use on the Mjoy main net.
@@ -94,6 +95,13 @@ type Config struct {
 
 	//should we start blockproducer at first
 	StartBlockproducerAtStart bool
+}
+
+func (c *Config) SetDefaultConfig() error{
+	c.Genesis = genesis.DefaultGenesisBlock()
+	c.NetworkId = params.DefaultChainConfig.ChainId.Uint64()
+	c.TxPool = txprocessor.DefaultTxPoolConfig
+	return nil
 }
 
 type configMarshaling struct {
