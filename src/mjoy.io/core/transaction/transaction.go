@@ -98,6 +98,25 @@ type Txdata struct {
 	Hash *types.Hash            `json:"hash"     msgp:"-"`
 }
 
+type TxdataNew struct {
+	AccountNonce 	uint64         	`json:"nonce"    gencodec:"required"`
+	To    			*types.Address 	`json:"to"		 msgp:"nil"`
+	Priority		*types.BigInt	`json:"priority" msgp:"-"`
+	Codes     		[]Code         	`json:"codes"    gencodec:"required"`
+	// Signature values
+	V *types.BigInt             `json:"v"        gencodec:"required"`
+	R *types.BigInt             `json:"r"        gencodec:"required"`
+	S *types.BigInt             `json:"s"        gencodec:"required"`
+
+	// This is only used when marshaling to JSON.
+	Hash *types.Hash            `json:"hash"     msgp:"-"`
+}
+
+type Code struct{
+	Contract		*types.Address	`json:"contract"	gencodec:"required"`
+	Params []byte	`json:"params"	gencodec:"required"`
+}
+
 
 func NewTransaction(nonce uint64, to types.Address, amount *big.Int, no1 uint64, no2 *big.Int, data []byte) *Transaction {
 	return newTransaction(nonce, &to, amount, no1, no2, data)
