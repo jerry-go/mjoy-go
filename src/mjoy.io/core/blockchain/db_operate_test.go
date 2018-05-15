@@ -36,7 +36,7 @@ func TestHeaderStorage(t *testing.T) {
 	db, _ := database.OpenMemDB()
 
 	// Create a test header to move around the database and make sure it's really new
-	header := &block.Header{Number: types.NewBigInt(*big.NewInt(42)), Extra: []byte("test header")}
+	header := &block.Header{Number: types.NewBigInt(*big.NewInt(42)), ConsensusData: block.ConsensusData{"test", []byte("test header")}}
 	if entry := GetHeader(db, header.Hash(), header.Number.IntVal.Uint64()); entry != nil {
 		t.Fatalf("Non existent header returned: %v", entry)
 	}
@@ -119,9 +119,9 @@ func TestBlockStorage(t *testing.T) {
 
 	// Create a test block to move around the database and make sure it's really new
 	blk := block.NewBlockWithHeader(&block.Header{
-		Extra:       []byte("test block"),
-		TxHash:      block.EmptyRootHash,
-		ReceiptHash: block.EmptyRootHash,
+		ConsensusData:   block.ConsensusData{"test", []byte("test block")},
+		TxRootHash:      block.EmptyRootHash,
+		ReceiptRootHash: block.EmptyRootHash,
 	})
 	if entry := GetBlock(db, blk.Hash(), blk.NumberU64()); entry != nil {
 		t.Fatalf("Non existent block returned: %v", entry)
@@ -168,9 +168,9 @@ func TestBlockStorage(t *testing.T) {
 func TestPartialBlockStorage(t *testing.T) {
 	db, _ := database.OpenMemDB()
 	block := block.NewBlockWithHeader(&block.Header{
-		Extra:       []byte("test block"),
-		TxHash:      block.EmptyRootHash,
-		ReceiptHash: block.EmptyRootHash,
+		ConsensusData:   block.ConsensusData{"test", []byte("test block")},
+		TxRootHash:      block.EmptyRootHash,
+		ReceiptRootHash: block.EmptyRootHash,
 	})
 	// Store a header and check that it's not recognized as a block
 	if err := WriteHeader(db, block.Header()); err != nil {
@@ -234,9 +234,9 @@ func TestCanonicalMappingStorage(t *testing.T) {
 func TestHeadStorage(t *testing.T) {
 	db, _ := database.OpenMemDB()
 
-	blockHead := block.NewBlockWithHeader(&block.Header{Extra: []byte("test block header")})
-	blockFull := block.NewBlockWithHeader(&block.Header{Extra: []byte("test block full")})
-	blockFast := block.NewBlockWithHeader(&block.Header{Extra: []byte("test block fast")})
+	blockHead := block.NewBlockWithHeader(&block.Header{ConsensusData:   block.ConsensusData{"test", []byte("test block header")}})
+	blockFull := block.NewBlockWithHeader(&block.Header{ConsensusData:   block.ConsensusData{"test", []byte("test block full")}})
+	blockFast := block.NewBlockWithHeader(&block.Header{ConsensusData:   block.ConsensusData{"test", []byte("test block fast")}})
 
 	// Check that no head entries are in a pristine database
 	if entry := GetHeadHeaderHash(db); entry != (types.Hash{}) {

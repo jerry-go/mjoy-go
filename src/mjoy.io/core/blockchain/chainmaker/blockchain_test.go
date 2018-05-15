@@ -360,11 +360,11 @@ func makeBlockChainWithDiff(genesis *block.Block, n int, seed byte) []*block.Blo
 	var chain []*block.Block
 	for i:= 0 ;i <n; i++{
 		header := &block.Header{
-			Coinbase:    types.Address{seed},
-			Number:      types.NewBigInt(*big.NewInt(int64(i + 1))),
-			TxHash:      block.EmptyRootHash,
-			ReceiptHash: block.EmptyRootHash,
-			Time:        types.NewBigInt(*big.NewInt(int64(i) + 1)),
+			BlockProducer:		types.Address{seed},
+			Number:      		types.NewBigInt(*big.NewInt(int64(i + 1))),
+			TxRootHash:     	block.EmptyRootHash,
+			ReceiptRootHash: 	block.EmptyRootHash,
+			Time:        		types.NewBigInt(*big.NewInt(int64(i) + 1)),
 		}
 		if i == 0 {
 			header.ParentHash = genesis.Hash()

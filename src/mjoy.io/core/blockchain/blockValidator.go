@@ -65,8 +65,8 @@ func (v *BlockValidator) ValidateBody(blk *block.Block) error {
 	// Header validity is known at this point
 	header := blk.Header()
 
-	if hash := block.DeriveSha(blk.Transactions()); hash != header.TxHash {
-		return fmt.Errorf("transaction root hash mismatch: have %x, want %x", hash.String(), header.TxHash.String())
+	if hash := block.DeriveSha(blk.Transactions()); hash != header.TxRootHash {
+		return fmt.Errorf("transaction root hash mismatch: have %x, want %x", hash.String(), header.TxRootHash.String())
 	}
 	return nil
 }
@@ -86,13 +86,13 @@ func (v *BlockValidator) ValidateState(blk, parent *block.Block, statedb *state.
 	}
 	// Tre receipt Trie's root (R = (Tr [[H1, R1], ... [Hn, R1]]))
 	receiptSha := block.DeriveSha(receipts)
-	if receiptSha != header.ReceiptHash {
-		return fmt.Errorf("invalid receipt root hash (remote: %x local: %x)", header.ReceiptHash.String(), receiptSha.String())
+	if receiptSha != header.ReceiptRootHash {
+		return fmt.Errorf("invalid receipt root hash (remote: %x local: %x)", header.ReceiptRootHash.String(), receiptSha.String())
 	}
 	// Validate the state root against the received state root and throw
 	// an error if they don't match.
-	if root := statedb.IntermediateRoot(); header.StateHash != root {
-		return fmt.Errorf("invalid merkle root (remote: %x local: %x)", header.StateHash.String(), root.String())
+	if root := statedb.IntermediateRoot(); header.StateRootHash != root {
+		return fmt.Errorf("invalid merkle root (remote: %x local: %x)", header.StateRootHash.String(), root.String())
 	}
 	return nil
 }

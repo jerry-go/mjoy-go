@@ -161,14 +161,11 @@ func (g *Genesis) ToBlock() (*block.Block, *state.StateDB) {
 	}
 	root := statedb.IntermediateRoot()
 	head := &block.Header{
-		Number:     types.NewBigInt(*new(big.Int).SetUint64(g.Number)),
-		Nonce:      block.EncodeNonce(g.Nonce),
-		Time:       types.NewBigInt(*new(big.Int).SetUint64(g.Timestamp)),
-		ParentHash: g.ParentHash,
-		Extra:      g.ExtraData,
-		MixHash:    g.Mixhash,
-		Coinbase:   g.Coinbase,
-		StateHash:       root,
+		Number:     		types.NewBigInt(*new(big.Int).SetUint64(g.Number)),
+		Time:       		types.NewBigInt(*new(big.Int).SetUint64(g.Timestamp)),
+		ParentHash: 		g.ParentHash,
+		BlockProducer:   	g.Coinbase,
+		StateRootHash: 		root,
 	}
 
 	return block.NewBlock(head, nil, nil), statedb

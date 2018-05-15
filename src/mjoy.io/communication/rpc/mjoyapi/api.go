@@ -512,19 +512,22 @@ func (s *PublicBlockChainAPI) GetStorageAt(ctx context.Context, address types.Ad
 func (s *PublicBlockChainAPI) rpcOutputBlock(b *block.Block, inclTx bool, fullTx bool) (map[string]interface{}, error) {
 	head := b.Header() // copies the header once
 	fields := map[string]interface{}{
-		"number":           (*hex.Big)(&head.Number.IntVal),
-		"hash":             b.Hash(),
-		"parentHash":       head.ParentHash,
-		"nonce":            head.Nonce,
-		"mixHash":          head.MixHash,
-		"logsBloom":        head.Bloom,
-		"stateRoot":        head.StateHash,
-		"blockproducer":    head.Coinbase,
-		"extraData":        hex.Bytes(head.Extra),
-		"size":             hex.Uint64(uint64(b.Size())),
-		"timestamp":        (*hex.Big)(&head.Time.IntVal),
-		"transactionsRoot": head.TxHash,
-		"receiptsRoot":     head.ReceiptHash,
+		"number":           	(*hex.Big)(&head.Number.IntVal),
+		"hash":             	b.Hash(),
+		"parentHash":       	head.ParentHash,
+		"logsBloom":        	head.Bloom,
+		"stateRoot":        	head.StateRootHash,
+		"blockproducer":    	head.BlockProducer,
+		"consensusData.id":     head.ConsensusData.Id,
+		"consensusData.para":	head.ConsensusData.Para,
+		"size":             	hex.Uint64(uint64(b.Size())),
+		"timestamp":        	(*hex.Big)(&head.Time.IntVal),
+		"transactionsRoot": 	head.TxRootHash,
+		"receiptsRoot":     	head.ReceiptRootHash,
+		"R":                	(*hex.Big)(&head.R.IntVal),
+		"S":                	(*hex.Big)(&head.S.IntVal),
+		"V":                	(*hex.Big)(&head.V.IntVal),
+
 	}
 
 	if inclTx {

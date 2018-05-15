@@ -289,76 +289,6 @@ func (z *Block) Msgsize() (s int) {
 }
 
 // DecodeMsg implements msgp.Decodable
-func (z *BlockNonce) DecodeMsg(dc *msgp.Reader) (err error) {
-	{
-		var zb0001 interface{}
-		zb0001, err = dc.ReadIntf()
-		if err != nil {
-			return
-		}
-		(*z), err = fromBytes(zb0001)
-	}
-	if err != nil {
-		return
-	}
-	return
-}
-
-// EncodeMsg implements msgp.Encodable
-func (z BlockNonce) EncodeMsg(en *msgp.Writer) (err error) {
-	var zb0001 interface{}
-	zb0001, err = toBytes(z)
-	if err != nil {
-		return
-	}
-	err = en.WriteIntf(zb0001)
-	if err != nil {
-		return
-	}
-	return
-}
-
-// MarshalMsg implements msgp.Marshaler
-func (z BlockNonce) MarshalMsg(b []byte) (o []byte, err error) {
-	o = msgp.Require(b, z.Msgsize())
-	var zb0001 interface{}
-	zb0001, err = toBytes(z)
-	if err != nil {
-		return
-	}
-	o, err = msgp.AppendIntf(o, zb0001)
-	if err != nil {
-		return
-	}
-	return
-}
-
-// UnmarshalMsg implements msgp.Unmarshaler
-func (z *BlockNonce) UnmarshalMsg(bts []byte) (o []byte, err error) {
-	{
-		var zb0001 interface{}
-		zb0001, bts, err = msgp.ReadIntfBytes(bts)
-		if err != nil {
-			return
-		}
-		(*z), err = fromBytes(zb0001)
-		if err != nil {
-			return
-		}
-	}
-	o = bts
-	return
-}
-
-// Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
-func (z BlockNonce) Msgsize() (s int) {
-	var zb0001 interface{}
-	_ = z
-	s += msgp.GuessSize(zb0001)
-	return
-}
-
-// DecodeMsg implements msgp.Decodable
 func (z *Blocks) DecodeMsg(dc *msgp.Reader) (err error) {
 	var zb0003 uint32
 	zb0003, err = dc.ReadArrayHeader()
@@ -880,6 +810,122 @@ func (z *Body) Msgsize() (s int) {
 }
 
 // DecodeMsg implements msgp.Decodable
+func (z *ConsensusData) DecodeMsg(dc *msgp.Reader) (err error) {
+	var field []byte
+	_ = field
+	var zb0001 uint32
+	zb0001, err = dc.ReadMapHeader()
+	if err != nil {
+		return
+	}
+	for zb0001 > 0 {
+		zb0001--
+		field, err = dc.ReadMapKeyPtr()
+		if err != nil {
+			return
+		}
+		switch msgp.UnsafeString(field) {
+		case "Id":
+			z.Id, err = dc.ReadString()
+			if err != nil {
+				return
+			}
+		case "Para":
+			z.Para, err = dc.ReadBytes(z.Para)
+			if err != nil {
+				return
+			}
+		default:
+			err = dc.Skip()
+			if err != nil {
+				return
+			}
+		}
+	}
+	return
+}
+
+// EncodeMsg implements msgp.Encodable
+func (z *ConsensusData) EncodeMsg(en *msgp.Writer) (err error) {
+	// map header, size 2
+	// write "Id"
+	err = en.Append(0x82, 0xa2, 0x49, 0x64)
+	if err != nil {
+		return
+	}
+	err = en.WriteString(z.Id)
+	if err != nil {
+		return
+	}
+	// write "Para"
+	err = en.Append(0xa4, 0x50, 0x61, 0x72, 0x61)
+	if err != nil {
+		return
+	}
+	err = en.WriteBytes(z.Para)
+	if err != nil {
+		return
+	}
+	return
+}
+
+// MarshalMsg implements msgp.Marshaler
+func (z *ConsensusData) MarshalMsg(b []byte) (o []byte, err error) {
+	o = msgp.Require(b, z.Msgsize())
+	// map header, size 2
+	// string "Id"
+	o = append(o, 0x82, 0xa2, 0x49, 0x64)
+	o = msgp.AppendString(o, z.Id)
+	// string "Para"
+	o = append(o, 0xa4, 0x50, 0x61, 0x72, 0x61)
+	o = msgp.AppendBytes(o, z.Para)
+	return
+}
+
+// UnmarshalMsg implements msgp.Unmarshaler
+func (z *ConsensusData) UnmarshalMsg(bts []byte) (o []byte, err error) {
+	var field []byte
+	_ = field
+	var zb0001 uint32
+	zb0001, bts, err = msgp.ReadMapHeaderBytes(bts)
+	if err != nil {
+		return
+	}
+	for zb0001 > 0 {
+		zb0001--
+		field, bts, err = msgp.ReadMapKeyZC(bts)
+		if err != nil {
+			return
+		}
+		switch msgp.UnsafeString(field) {
+		case "Id":
+			z.Id, bts, err = msgp.ReadStringBytes(bts)
+			if err != nil {
+				return
+			}
+		case "Para":
+			z.Para, bts, err = msgp.ReadBytesBytes(bts, z.Para)
+			if err != nil {
+				return
+			}
+		default:
+			bts, err = msgp.Skip(bts)
+			if err != nil {
+				return
+			}
+		}
+	}
+	o = bts
+	return
+}
+
+// Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
+func (z *ConsensusData) Msgsize() (s int) {
+	s = 1 + 3 + msgp.StringPrefixSize + len(z.Id) + 5 + msgp.BytesPrefixSize + len(z.Para)
+	return
+}
+
+// DecodeMsg implements msgp.Decodable
 func (z *Header) DecodeMsg(dc *msgp.Reader) (err error) {
 	var field []byte
 	_ = field
@@ -900,23 +946,18 @@ func (z *Header) DecodeMsg(dc *msgp.Reader) (err error) {
 			if err != nil {
 				return
 			}
-		case "Coinbase":
-			err = z.Coinbase.DecodeMsg(dc)
+		case "StateRootHash":
+			err = z.StateRootHash.DecodeMsg(dc)
 			if err != nil {
 				return
 			}
-		case "StateHash":
-			err = z.StateHash.DecodeMsg(dc)
+		case "TxRootHash":
+			err = z.TxRootHash.DecodeMsg(dc)
 			if err != nil {
 				return
 			}
-		case "TxHash":
-			err = z.TxHash.DecodeMsg(dc)
-			if err != nil {
-				return
-			}
-		case "ReceiptHash":
-			err = z.ReceiptHash.DecodeMsg(dc)
+		case "ReceiptRootHash":
+			err = z.ReceiptRootHash.DecodeMsg(dc)
 			if err != nil {
 				return
 			}
@@ -957,27 +998,88 @@ func (z *Header) DecodeMsg(dc *msgp.Reader) (err error) {
 					return
 				}
 			}
-		case "Extra":
-			z.Extra, err = dc.ReadBytes(z.Extra)
+		case "BlockProducer":
+			err = z.BlockProducer.DecodeMsg(dc)
 			if err != nil {
 				return
 			}
-		case "MixHash":
-			err = z.MixHash.DecodeMsg(dc)
+		case "ConsensusData":
+			var zb0002 uint32
+			zb0002, err = dc.ReadMapHeader()
 			if err != nil {
 				return
 			}
-		case "Nonce":
-			{
-				var zb0002 interface{}
-				zb0002, err = dc.ReadIntf()
+			for zb0002 > 0 {
+				zb0002--
+				field, err = dc.ReadMapKeyPtr()
 				if err != nil {
 					return
 				}
-				z.Nonce, err = fromBytes(zb0002)
+				switch msgp.UnsafeString(field) {
+				case "Id":
+					z.ConsensusData.Id, err = dc.ReadString()
+					if err != nil {
+						return
+					}
+				case "Para":
+					z.ConsensusData.Para, err = dc.ReadBytes(z.ConsensusData.Para)
+					if err != nil {
+						return
+					}
+				default:
+					err = dc.Skip()
+					if err != nil {
+						return
+					}
+				}
 			}
-			if err != nil {
-				return
+		case "V":
+			if dc.IsNil() {
+				err = dc.ReadNil()
+				if err != nil {
+					return
+				}
+				z.V = nil
+			} else {
+				if z.V == nil {
+					z.V = new(types.BigInt)
+				}
+				err = z.V.DecodeMsg(dc)
+				if err != nil {
+					return
+				}
+			}
+		case "R":
+			if dc.IsNil() {
+				err = dc.ReadNil()
+				if err != nil {
+					return
+				}
+				z.R = nil
+			} else {
+				if z.R == nil {
+					z.R = new(types.BigInt)
+				}
+				err = z.R.DecodeMsg(dc)
+				if err != nil {
+					return
+				}
+			}
+		case "S":
+			if dc.IsNil() {
+				err = dc.ReadNil()
+				if err != nil {
+					return
+				}
+				z.S = nil
+			} else {
+				if z.S == nil {
+					z.S = new(types.BigInt)
+				}
+				err = z.S.DecodeMsg(dc)
+				if err != nil {
+					return
+				}
 			}
 		default:
 			err = dc.Skip()
@@ -991,9 +1093,9 @@ func (z *Header) DecodeMsg(dc *msgp.Reader) (err error) {
 
 // EncodeMsg implements msgp.Encodable
 func (z *Header) EncodeMsg(en *msgp.Writer) (err error) {
-	// map header, size 11
+	// map header, size 12
 	// write "ParentHash"
-	err = en.Append(0x8b, 0xaa, 0x50, 0x61, 0x72, 0x65, 0x6e, 0x74, 0x48, 0x61, 0x73, 0x68)
+	err = en.Append(0x8c, 0xaa, 0x50, 0x61, 0x72, 0x65, 0x6e, 0x74, 0x48, 0x61, 0x73, 0x68)
 	if err != nil {
 		return
 	}
@@ -1001,39 +1103,30 @@ func (z *Header) EncodeMsg(en *msgp.Writer) (err error) {
 	if err != nil {
 		return
 	}
-	// write "Coinbase"
-	err = en.Append(0xa8, 0x43, 0x6f, 0x69, 0x6e, 0x62, 0x61, 0x73, 0x65)
+	// write "StateRootHash"
+	err = en.Append(0xad, 0x53, 0x74, 0x61, 0x74, 0x65, 0x52, 0x6f, 0x6f, 0x74, 0x48, 0x61, 0x73, 0x68)
 	if err != nil {
 		return
 	}
-	err = z.Coinbase.EncodeMsg(en)
+	err = z.StateRootHash.EncodeMsg(en)
 	if err != nil {
 		return
 	}
-	// write "StateHash"
-	err = en.Append(0xa9, 0x53, 0x74, 0x61, 0x74, 0x65, 0x48, 0x61, 0x73, 0x68)
+	// write "TxRootHash"
+	err = en.Append(0xaa, 0x54, 0x78, 0x52, 0x6f, 0x6f, 0x74, 0x48, 0x61, 0x73, 0x68)
 	if err != nil {
 		return
 	}
-	err = z.StateHash.EncodeMsg(en)
+	err = z.TxRootHash.EncodeMsg(en)
 	if err != nil {
 		return
 	}
-	// write "TxHash"
-	err = en.Append(0xa6, 0x54, 0x78, 0x48, 0x61, 0x73, 0x68)
+	// write "ReceiptRootHash"
+	err = en.Append(0xaf, 0x52, 0x65, 0x63, 0x65, 0x69, 0x70, 0x74, 0x52, 0x6f, 0x6f, 0x74, 0x48, 0x61, 0x73, 0x68)
 	if err != nil {
 		return
 	}
-	err = z.TxHash.EncodeMsg(en)
-	if err != nil {
-		return
-	}
-	// write "ReceiptHash"
-	err = en.Append(0xab, 0x52, 0x65, 0x63, 0x65, 0x69, 0x70, 0x74, 0x48, 0x61, 0x73, 0x68)
-	if err != nil {
-		return
-	}
-	err = z.ReceiptHash.EncodeMsg(en)
+	err = z.ReceiptRootHash.EncodeMsg(en)
 	if err != nil {
 		return
 	}
@@ -1078,37 +1171,82 @@ func (z *Header) EncodeMsg(en *msgp.Writer) (err error) {
 			return
 		}
 	}
-	// write "Extra"
-	err = en.Append(0xa5, 0x45, 0x78, 0x74, 0x72, 0x61)
+	// write "BlockProducer"
+	err = en.Append(0xad, 0x42, 0x6c, 0x6f, 0x63, 0x6b, 0x50, 0x72, 0x6f, 0x64, 0x75, 0x63, 0x65, 0x72)
 	if err != nil {
 		return
 	}
-	err = en.WriteBytes(z.Extra)
+	err = z.BlockProducer.EncodeMsg(en)
 	if err != nil {
 		return
 	}
-	// write "MixHash"
-	err = en.Append(0xa7, 0x4d, 0x69, 0x78, 0x48, 0x61, 0x73, 0x68)
+	// write "ConsensusData"
+	// map header, size 2
+	// write "Id"
+	err = en.Append(0xad, 0x43, 0x6f, 0x6e, 0x73, 0x65, 0x6e, 0x73, 0x75, 0x73, 0x44, 0x61, 0x74, 0x61, 0x82, 0xa2, 0x49, 0x64)
 	if err != nil {
 		return
 	}
-	err = z.MixHash.EncodeMsg(en)
+	err = en.WriteString(z.ConsensusData.Id)
 	if err != nil {
 		return
 	}
-	// write "Nonce"
-	err = en.Append(0xa5, 0x4e, 0x6f, 0x6e, 0x63, 0x65)
+	// write "Para"
+	err = en.Append(0xa4, 0x50, 0x61, 0x72, 0x61)
 	if err != nil {
 		return
 	}
-	var zb0001 interface{}
-	zb0001, err = toBytes(z.Nonce)
+	err = en.WriteBytes(z.ConsensusData.Para)
 	if err != nil {
 		return
 	}
-	err = en.WriteIntf(zb0001)
+	// write "V"
+	err = en.Append(0xa1, 0x56)
 	if err != nil {
 		return
+	}
+	if z.V == nil {
+		err = en.WriteNil()
+		if err != nil {
+			return
+		}
+	} else {
+		err = z.V.EncodeMsg(en)
+		if err != nil {
+			return
+		}
+	}
+	// write "R"
+	err = en.Append(0xa1, 0x52)
+	if err != nil {
+		return
+	}
+	if z.R == nil {
+		err = en.WriteNil()
+		if err != nil {
+			return
+		}
+	} else {
+		err = z.R.EncodeMsg(en)
+		if err != nil {
+			return
+		}
+	}
+	// write "S"
+	err = en.Append(0xa1, 0x53)
+	if err != nil {
+		return
+	}
+	if z.S == nil {
+		err = en.WriteNil()
+		if err != nil {
+			return
+		}
+	} else {
+		err = z.S.EncodeMsg(en)
+		if err != nil {
+			return
+		}
 	}
 	return
 }
@@ -1116,34 +1254,28 @@ func (z *Header) EncodeMsg(en *msgp.Writer) (err error) {
 // MarshalMsg implements msgp.Marshaler
 func (z *Header) MarshalMsg(b []byte) (o []byte, err error) {
 	o = msgp.Require(b, z.Msgsize())
-	// map header, size 11
+	// map header, size 12
 	// string "ParentHash"
-	o = append(o, 0x8b, 0xaa, 0x50, 0x61, 0x72, 0x65, 0x6e, 0x74, 0x48, 0x61, 0x73, 0x68)
+	o = append(o, 0x8c, 0xaa, 0x50, 0x61, 0x72, 0x65, 0x6e, 0x74, 0x48, 0x61, 0x73, 0x68)
 	o, err = z.ParentHash.MarshalMsg(o)
 	if err != nil {
 		return
 	}
-	// string "Coinbase"
-	o = append(o, 0xa8, 0x43, 0x6f, 0x69, 0x6e, 0x62, 0x61, 0x73, 0x65)
-	o, err = z.Coinbase.MarshalMsg(o)
+	// string "StateRootHash"
+	o = append(o, 0xad, 0x53, 0x74, 0x61, 0x74, 0x65, 0x52, 0x6f, 0x6f, 0x74, 0x48, 0x61, 0x73, 0x68)
+	o, err = z.StateRootHash.MarshalMsg(o)
 	if err != nil {
 		return
 	}
-	// string "StateHash"
-	o = append(o, 0xa9, 0x53, 0x74, 0x61, 0x74, 0x65, 0x48, 0x61, 0x73, 0x68)
-	o, err = z.StateHash.MarshalMsg(o)
+	// string "TxRootHash"
+	o = append(o, 0xaa, 0x54, 0x78, 0x52, 0x6f, 0x6f, 0x74, 0x48, 0x61, 0x73, 0x68)
+	o, err = z.TxRootHash.MarshalMsg(o)
 	if err != nil {
 		return
 	}
-	// string "TxHash"
-	o = append(o, 0xa6, 0x54, 0x78, 0x48, 0x61, 0x73, 0x68)
-	o, err = z.TxHash.MarshalMsg(o)
-	if err != nil {
-		return
-	}
-	// string "ReceiptHash"
-	o = append(o, 0xab, 0x52, 0x65, 0x63, 0x65, 0x69, 0x70, 0x74, 0x48, 0x61, 0x73, 0x68)
-	o, err = z.ReceiptHash.MarshalMsg(o)
+	// string "ReceiptRootHash"
+	o = append(o, 0xaf, 0x52, 0x65, 0x63, 0x65, 0x69, 0x70, 0x74, 0x52, 0x6f, 0x6f, 0x74, 0x48, 0x61, 0x73, 0x68)
+	o, err = z.ReceiptRootHash.MarshalMsg(o)
 	if err != nil {
 		return
 	}
@@ -1173,25 +1305,49 @@ func (z *Header) MarshalMsg(b []byte) (o []byte, err error) {
 			return
 		}
 	}
-	// string "Extra"
-	o = append(o, 0xa5, 0x45, 0x78, 0x74, 0x72, 0x61)
-	o = msgp.AppendBytes(o, z.Extra)
-	// string "MixHash"
-	o = append(o, 0xa7, 0x4d, 0x69, 0x78, 0x48, 0x61, 0x73, 0x68)
-	o, err = z.MixHash.MarshalMsg(o)
+	// string "BlockProducer"
+	o = append(o, 0xad, 0x42, 0x6c, 0x6f, 0x63, 0x6b, 0x50, 0x72, 0x6f, 0x64, 0x75, 0x63, 0x65, 0x72)
+	o, err = z.BlockProducer.MarshalMsg(o)
 	if err != nil {
 		return
 	}
-	// string "Nonce"
-	o = append(o, 0xa5, 0x4e, 0x6f, 0x6e, 0x63, 0x65)
-	var zb0001 interface{}
-	zb0001, err = toBytes(z.Nonce)
-	if err != nil {
-		return
+	// string "ConsensusData"
+	// map header, size 2
+	// string "Id"
+	o = append(o, 0xad, 0x43, 0x6f, 0x6e, 0x73, 0x65, 0x6e, 0x73, 0x75, 0x73, 0x44, 0x61, 0x74, 0x61, 0x82, 0xa2, 0x49, 0x64)
+	o = msgp.AppendString(o, z.ConsensusData.Id)
+	// string "Para"
+	o = append(o, 0xa4, 0x50, 0x61, 0x72, 0x61)
+	o = msgp.AppendBytes(o, z.ConsensusData.Para)
+	// string "V"
+	o = append(o, 0xa1, 0x56)
+	if z.V == nil {
+		o = msgp.AppendNil(o)
+	} else {
+		o, err = z.V.MarshalMsg(o)
+		if err != nil {
+			return
+		}
 	}
-	o, err = msgp.AppendIntf(o, zb0001)
-	if err != nil {
-		return
+	// string "R"
+	o = append(o, 0xa1, 0x52)
+	if z.R == nil {
+		o = msgp.AppendNil(o)
+	} else {
+		o, err = z.R.MarshalMsg(o)
+		if err != nil {
+			return
+		}
+	}
+	// string "S"
+	o = append(o, 0xa1, 0x53)
+	if z.S == nil {
+		o = msgp.AppendNil(o)
+	} else {
+		o, err = z.S.MarshalMsg(o)
+		if err != nil {
+			return
+		}
 	}
 	return
 }
@@ -1217,23 +1373,18 @@ func (z *Header) UnmarshalMsg(bts []byte) (o []byte, err error) {
 			if err != nil {
 				return
 			}
-		case "Coinbase":
-			bts, err = z.Coinbase.UnmarshalMsg(bts)
+		case "StateRootHash":
+			bts, err = z.StateRootHash.UnmarshalMsg(bts)
 			if err != nil {
 				return
 			}
-		case "StateHash":
-			bts, err = z.StateHash.UnmarshalMsg(bts)
+		case "TxRootHash":
+			bts, err = z.TxRootHash.UnmarshalMsg(bts)
 			if err != nil {
 				return
 			}
-		case "TxHash":
-			bts, err = z.TxHash.UnmarshalMsg(bts)
-			if err != nil {
-				return
-			}
-		case "ReceiptHash":
-			bts, err = z.ReceiptHash.UnmarshalMsg(bts)
+		case "ReceiptRootHash":
+			bts, err = z.ReceiptRootHash.UnmarshalMsg(bts)
 			if err != nil {
 				return
 			}
@@ -1274,24 +1425,85 @@ func (z *Header) UnmarshalMsg(bts []byte) (o []byte, err error) {
 					return
 				}
 			}
-		case "Extra":
-			z.Extra, bts, err = msgp.ReadBytesBytes(bts, z.Extra)
+		case "BlockProducer":
+			bts, err = z.BlockProducer.UnmarshalMsg(bts)
 			if err != nil {
 				return
 			}
-		case "MixHash":
-			bts, err = z.MixHash.UnmarshalMsg(bts)
+		case "ConsensusData":
+			var zb0002 uint32
+			zb0002, bts, err = msgp.ReadMapHeaderBytes(bts)
 			if err != nil {
 				return
 			}
-		case "Nonce":
-			{
-				var zb0002 interface{}
-				zb0002, bts, err = msgp.ReadIntfBytes(bts)
+			for zb0002 > 0 {
+				zb0002--
+				field, bts, err = msgp.ReadMapKeyZC(bts)
 				if err != nil {
 					return
 				}
-				z.Nonce, err = fromBytes(zb0002)
+				switch msgp.UnsafeString(field) {
+				case "Id":
+					z.ConsensusData.Id, bts, err = msgp.ReadStringBytes(bts)
+					if err != nil {
+						return
+					}
+				case "Para":
+					z.ConsensusData.Para, bts, err = msgp.ReadBytesBytes(bts, z.ConsensusData.Para)
+					if err != nil {
+						return
+					}
+				default:
+					bts, err = msgp.Skip(bts)
+					if err != nil {
+						return
+					}
+				}
+			}
+		case "V":
+			if msgp.IsNil(bts) {
+				bts, err = msgp.ReadNilBytes(bts)
+				if err != nil {
+					return
+				}
+				z.V = nil
+			} else {
+				if z.V == nil {
+					z.V = new(types.BigInt)
+				}
+				bts, err = z.V.UnmarshalMsg(bts)
+				if err != nil {
+					return
+				}
+			}
+		case "R":
+			if msgp.IsNil(bts) {
+				bts, err = msgp.ReadNilBytes(bts)
+				if err != nil {
+					return
+				}
+				z.R = nil
+			} else {
+				if z.R == nil {
+					z.R = new(types.BigInt)
+				}
+				bts, err = z.R.UnmarshalMsg(bts)
+				if err != nil {
+					return
+				}
+			}
+		case "S":
+			if msgp.IsNil(bts) {
+				bts, err = msgp.ReadNilBytes(bts)
+				if err != nil {
+					return
+				}
+				z.S = nil
+			} else {
+				if z.S == nil {
+					z.S = new(types.BigInt)
+				}
+				bts, err = z.S.UnmarshalMsg(bts)
 				if err != nil {
 					return
 				}
@@ -1309,7 +1521,7 @@ func (z *Header) UnmarshalMsg(bts []byte) (o []byte, err error) {
 
 // Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
 func (z *Header) Msgsize() (s int) {
-	s = 1 + 11 + z.ParentHash.Msgsize() + 9 + z.Coinbase.Msgsize() + 10 + z.StateHash.Msgsize() + 7 + z.TxHash.Msgsize() + 12 + z.ReceiptHash.Msgsize() + 6 + z.Bloom.Msgsize() + 7
+	s = 1 + 11 + z.ParentHash.Msgsize() + 14 + z.StateRootHash.Msgsize() + 11 + z.TxRootHash.Msgsize() + 16 + z.ReceiptRootHash.Msgsize() + 6 + z.Bloom.Msgsize() + 7
 	if z.Number == nil {
 		s += msgp.NilSize
 	} else {
@@ -1321,15 +1533,29 @@ func (z *Header) Msgsize() (s int) {
 	} else {
 		s += z.Time.Msgsize()
 	}
-	s += 6 + msgp.BytesPrefixSize + len(z.Extra) + 8 + z.MixHash.Msgsize() + 6
-	var zb0001 interface{}
-	_ = z.Nonce
-	s += msgp.GuessSize(zb0001)
+	s += 14 + z.BlockProducer.Msgsize() + 14 + 1 + 3 + msgp.StringPrefixSize + len(z.ConsensusData.Id) + 5 + msgp.BytesPrefixSize + len(z.ConsensusData.Para) + 2
+	if z.V == nil {
+		s += msgp.NilSize
+	} else {
+		s += z.V.Msgsize()
+	}
+	s += 2
+	if z.R == nil {
+		s += msgp.NilSize
+	} else {
+		s += z.R.Msgsize()
+	}
+	s += 2
+	if z.S == nil {
+		s += msgp.NilSize
+	} else {
+		s += z.S.Msgsize()
+	}
 	return
 }
 
 // DecodeMsg implements msgp.Decodable
-func (z *HeaderNoNonce) DecodeMsg(dc *msgp.Reader) (err error) {
+func (z *HeaderNoSig) DecodeMsg(dc *msgp.Reader) (err error) {
 	var field []byte
 	_ = field
 	var zb0001 uint32
@@ -1349,23 +1575,18 @@ func (z *HeaderNoNonce) DecodeMsg(dc *msgp.Reader) (err error) {
 			if err != nil {
 				return
 			}
-		case "Coinbase":
-			err = z.Coinbase.DecodeMsg(dc)
+		case "StateRootHash":
+			err = z.StateRootHash.DecodeMsg(dc)
 			if err != nil {
 				return
 			}
-		case "StateHash":
-			err = z.StateHash.DecodeMsg(dc)
+		case "TxRootHash":
+			err = z.TxRootHash.DecodeMsg(dc)
 			if err != nil {
 				return
 			}
-		case "TxHash":
-			err = z.TxHash.DecodeMsg(dc)
-			if err != nil {
-				return
-			}
-		case "ReceiptHash":
-			err = z.ReceiptHash.DecodeMsg(dc)
+		case "ReceiptRootHash":
+			err = z.ReceiptRootHash.DecodeMsg(dc)
 			if err != nil {
 				return
 			}
@@ -1406,10 +1627,40 @@ func (z *HeaderNoNonce) DecodeMsg(dc *msgp.Reader) (err error) {
 					return
 				}
 			}
-		case "Extra":
-			z.Extra, err = dc.ReadBytes(z.Extra)
+		case "BlockProducer":
+			err = z.BlockProducer.DecodeMsg(dc)
 			if err != nil {
 				return
+			}
+		case "ConsensusData":
+			var zb0002 uint32
+			zb0002, err = dc.ReadMapHeader()
+			if err != nil {
+				return
+			}
+			for zb0002 > 0 {
+				zb0002--
+				field, err = dc.ReadMapKeyPtr()
+				if err != nil {
+					return
+				}
+				switch msgp.UnsafeString(field) {
+				case "Id":
+					z.ConsensusData.Id, err = dc.ReadString()
+					if err != nil {
+						return
+					}
+				case "Para":
+					z.ConsensusData.Para, err = dc.ReadBytes(z.ConsensusData.Para)
+					if err != nil {
+						return
+					}
+				default:
+					err = dc.Skip()
+					if err != nil {
+						return
+					}
+				}
 			}
 		default:
 			err = dc.Skip()
@@ -1422,7 +1673,7 @@ func (z *HeaderNoNonce) DecodeMsg(dc *msgp.Reader) (err error) {
 }
 
 // EncodeMsg implements msgp.Encodable
-func (z *HeaderNoNonce) EncodeMsg(en *msgp.Writer) (err error) {
+func (z *HeaderNoSig) EncodeMsg(en *msgp.Writer) (err error) {
 	// map header, size 9
 	// write "ParentHash"
 	err = en.Append(0x89, 0xaa, 0x50, 0x61, 0x72, 0x65, 0x6e, 0x74, 0x48, 0x61, 0x73, 0x68)
@@ -1433,39 +1684,30 @@ func (z *HeaderNoNonce) EncodeMsg(en *msgp.Writer) (err error) {
 	if err != nil {
 		return
 	}
-	// write "Coinbase"
-	err = en.Append(0xa8, 0x43, 0x6f, 0x69, 0x6e, 0x62, 0x61, 0x73, 0x65)
+	// write "StateRootHash"
+	err = en.Append(0xad, 0x53, 0x74, 0x61, 0x74, 0x65, 0x52, 0x6f, 0x6f, 0x74, 0x48, 0x61, 0x73, 0x68)
 	if err != nil {
 		return
 	}
-	err = z.Coinbase.EncodeMsg(en)
+	err = z.StateRootHash.EncodeMsg(en)
 	if err != nil {
 		return
 	}
-	// write "StateHash"
-	err = en.Append(0xa9, 0x53, 0x74, 0x61, 0x74, 0x65, 0x48, 0x61, 0x73, 0x68)
+	// write "TxRootHash"
+	err = en.Append(0xaa, 0x54, 0x78, 0x52, 0x6f, 0x6f, 0x74, 0x48, 0x61, 0x73, 0x68)
 	if err != nil {
 		return
 	}
-	err = z.StateHash.EncodeMsg(en)
+	err = z.TxRootHash.EncodeMsg(en)
 	if err != nil {
 		return
 	}
-	// write "TxHash"
-	err = en.Append(0xa6, 0x54, 0x78, 0x48, 0x61, 0x73, 0x68)
+	// write "ReceiptRootHash"
+	err = en.Append(0xaf, 0x52, 0x65, 0x63, 0x65, 0x69, 0x70, 0x74, 0x52, 0x6f, 0x6f, 0x74, 0x48, 0x61, 0x73, 0x68)
 	if err != nil {
 		return
 	}
-	err = z.TxHash.EncodeMsg(en)
-	if err != nil {
-		return
-	}
-	// write "ReceiptHash"
-	err = en.Append(0xab, 0x52, 0x65, 0x63, 0x65, 0x69, 0x70, 0x74, 0x48, 0x61, 0x73, 0x68)
-	if err != nil {
-		return
-	}
-	err = z.ReceiptHash.EncodeMsg(en)
+	err = z.ReceiptRootHash.EncodeMsg(en)
 	if err != nil {
 		return
 	}
@@ -1510,12 +1752,32 @@ func (z *HeaderNoNonce) EncodeMsg(en *msgp.Writer) (err error) {
 			return
 		}
 	}
-	// write "Extra"
-	err = en.Append(0xa5, 0x45, 0x78, 0x74, 0x72, 0x61)
+	// write "BlockProducer"
+	err = en.Append(0xad, 0x42, 0x6c, 0x6f, 0x63, 0x6b, 0x50, 0x72, 0x6f, 0x64, 0x75, 0x63, 0x65, 0x72)
 	if err != nil {
 		return
 	}
-	err = en.WriteBytes(z.Extra)
+	err = z.BlockProducer.EncodeMsg(en)
+	if err != nil {
+		return
+	}
+	// write "ConsensusData"
+	// map header, size 2
+	// write "Id"
+	err = en.Append(0xad, 0x43, 0x6f, 0x6e, 0x73, 0x65, 0x6e, 0x73, 0x75, 0x73, 0x44, 0x61, 0x74, 0x61, 0x82, 0xa2, 0x49, 0x64)
+	if err != nil {
+		return
+	}
+	err = en.WriteString(z.ConsensusData.Id)
+	if err != nil {
+		return
+	}
+	// write "Para"
+	err = en.Append(0xa4, 0x50, 0x61, 0x72, 0x61)
+	if err != nil {
+		return
+	}
+	err = en.WriteBytes(z.ConsensusData.Para)
 	if err != nil {
 		return
 	}
@@ -1523,7 +1785,7 @@ func (z *HeaderNoNonce) EncodeMsg(en *msgp.Writer) (err error) {
 }
 
 // MarshalMsg implements msgp.Marshaler
-func (z *HeaderNoNonce) MarshalMsg(b []byte) (o []byte, err error) {
+func (z *HeaderNoSig) MarshalMsg(b []byte) (o []byte, err error) {
 	o = msgp.Require(b, z.Msgsize())
 	// map header, size 9
 	// string "ParentHash"
@@ -1532,27 +1794,21 @@ func (z *HeaderNoNonce) MarshalMsg(b []byte) (o []byte, err error) {
 	if err != nil {
 		return
 	}
-	// string "Coinbase"
-	o = append(o, 0xa8, 0x43, 0x6f, 0x69, 0x6e, 0x62, 0x61, 0x73, 0x65)
-	o, err = z.Coinbase.MarshalMsg(o)
+	// string "StateRootHash"
+	o = append(o, 0xad, 0x53, 0x74, 0x61, 0x74, 0x65, 0x52, 0x6f, 0x6f, 0x74, 0x48, 0x61, 0x73, 0x68)
+	o, err = z.StateRootHash.MarshalMsg(o)
 	if err != nil {
 		return
 	}
-	// string "StateHash"
-	o = append(o, 0xa9, 0x53, 0x74, 0x61, 0x74, 0x65, 0x48, 0x61, 0x73, 0x68)
-	o, err = z.StateHash.MarshalMsg(o)
+	// string "TxRootHash"
+	o = append(o, 0xaa, 0x54, 0x78, 0x52, 0x6f, 0x6f, 0x74, 0x48, 0x61, 0x73, 0x68)
+	o, err = z.TxRootHash.MarshalMsg(o)
 	if err != nil {
 		return
 	}
-	// string "TxHash"
-	o = append(o, 0xa6, 0x54, 0x78, 0x48, 0x61, 0x73, 0x68)
-	o, err = z.TxHash.MarshalMsg(o)
-	if err != nil {
-		return
-	}
-	// string "ReceiptHash"
-	o = append(o, 0xab, 0x52, 0x65, 0x63, 0x65, 0x69, 0x70, 0x74, 0x48, 0x61, 0x73, 0x68)
-	o, err = z.ReceiptHash.MarshalMsg(o)
+	// string "ReceiptRootHash"
+	o = append(o, 0xaf, 0x52, 0x65, 0x63, 0x65, 0x69, 0x70, 0x74, 0x52, 0x6f, 0x6f, 0x74, 0x48, 0x61, 0x73, 0x68)
+	o, err = z.ReceiptRootHash.MarshalMsg(o)
 	if err != nil {
 		return
 	}
@@ -1582,14 +1838,25 @@ func (z *HeaderNoNonce) MarshalMsg(b []byte) (o []byte, err error) {
 			return
 		}
 	}
-	// string "Extra"
-	o = append(o, 0xa5, 0x45, 0x78, 0x74, 0x72, 0x61)
-	o = msgp.AppendBytes(o, z.Extra)
+	// string "BlockProducer"
+	o = append(o, 0xad, 0x42, 0x6c, 0x6f, 0x63, 0x6b, 0x50, 0x72, 0x6f, 0x64, 0x75, 0x63, 0x65, 0x72)
+	o, err = z.BlockProducer.MarshalMsg(o)
+	if err != nil {
+		return
+	}
+	// string "ConsensusData"
+	// map header, size 2
+	// string "Id"
+	o = append(o, 0xad, 0x43, 0x6f, 0x6e, 0x73, 0x65, 0x6e, 0x73, 0x75, 0x73, 0x44, 0x61, 0x74, 0x61, 0x82, 0xa2, 0x49, 0x64)
+	o = msgp.AppendString(o, z.ConsensusData.Id)
+	// string "Para"
+	o = append(o, 0xa4, 0x50, 0x61, 0x72, 0x61)
+	o = msgp.AppendBytes(o, z.ConsensusData.Para)
 	return
 }
 
 // UnmarshalMsg implements msgp.Unmarshaler
-func (z *HeaderNoNonce) UnmarshalMsg(bts []byte) (o []byte, err error) {
+func (z *HeaderNoSig) UnmarshalMsg(bts []byte) (o []byte, err error) {
 	var field []byte
 	_ = field
 	var zb0001 uint32
@@ -1609,23 +1876,18 @@ func (z *HeaderNoNonce) UnmarshalMsg(bts []byte) (o []byte, err error) {
 			if err != nil {
 				return
 			}
-		case "Coinbase":
-			bts, err = z.Coinbase.UnmarshalMsg(bts)
+		case "StateRootHash":
+			bts, err = z.StateRootHash.UnmarshalMsg(bts)
 			if err != nil {
 				return
 			}
-		case "StateHash":
-			bts, err = z.StateHash.UnmarshalMsg(bts)
+		case "TxRootHash":
+			bts, err = z.TxRootHash.UnmarshalMsg(bts)
 			if err != nil {
 				return
 			}
-		case "TxHash":
-			bts, err = z.TxHash.UnmarshalMsg(bts)
-			if err != nil {
-				return
-			}
-		case "ReceiptHash":
-			bts, err = z.ReceiptHash.UnmarshalMsg(bts)
+		case "ReceiptRootHash":
+			bts, err = z.ReceiptRootHash.UnmarshalMsg(bts)
 			if err != nil {
 				return
 			}
@@ -1666,10 +1928,40 @@ func (z *HeaderNoNonce) UnmarshalMsg(bts []byte) (o []byte, err error) {
 					return
 				}
 			}
-		case "Extra":
-			z.Extra, bts, err = msgp.ReadBytesBytes(bts, z.Extra)
+		case "BlockProducer":
+			bts, err = z.BlockProducer.UnmarshalMsg(bts)
 			if err != nil {
 				return
+			}
+		case "ConsensusData":
+			var zb0002 uint32
+			zb0002, bts, err = msgp.ReadMapHeaderBytes(bts)
+			if err != nil {
+				return
+			}
+			for zb0002 > 0 {
+				zb0002--
+				field, bts, err = msgp.ReadMapKeyZC(bts)
+				if err != nil {
+					return
+				}
+				switch msgp.UnsafeString(field) {
+				case "Id":
+					z.ConsensusData.Id, bts, err = msgp.ReadStringBytes(bts)
+					if err != nil {
+						return
+					}
+				case "Para":
+					z.ConsensusData.Para, bts, err = msgp.ReadBytesBytes(bts, z.ConsensusData.Para)
+					if err != nil {
+						return
+					}
+				default:
+					bts, err = msgp.Skip(bts)
+					if err != nil {
+						return
+					}
+				}
 			}
 		default:
 			bts, err = msgp.Skip(bts)
@@ -1683,8 +1975,8 @@ func (z *HeaderNoNonce) UnmarshalMsg(bts []byte) (o []byte, err error) {
 }
 
 // Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
-func (z *HeaderNoNonce) Msgsize() (s int) {
-	s = 1 + 11 + z.ParentHash.Msgsize() + 9 + z.Coinbase.Msgsize() + 10 + z.StateHash.Msgsize() + 7 + z.TxHash.Msgsize() + 12 + z.ReceiptHash.Msgsize() + 6 + z.Bloom.Msgsize() + 7
+func (z *HeaderNoSig) Msgsize() (s int) {
+	s = 1 + 11 + z.ParentHash.Msgsize() + 14 + z.StateRootHash.Msgsize() + 11 + z.TxRootHash.Msgsize() + 16 + z.ReceiptRootHash.Msgsize() + 6 + z.Bloom.Msgsize() + 7
 	if z.Number == nil {
 		s += msgp.NilSize
 	} else {
@@ -1696,7 +1988,7 @@ func (z *HeaderNoNonce) Msgsize() (s int) {
 	} else {
 		s += z.Time.Msgsize()
 	}
-	s += 6 + msgp.BytesPrefixSize + len(z.Extra)
+	s += 14 + z.BlockProducer.Msgsize() + 14 + 1 + 3 + msgp.StringPrefixSize + len(z.ConsensusData.Id) + 5 + msgp.BytesPrefixSize + len(z.ConsensusData.Para)
 	return
 }
 

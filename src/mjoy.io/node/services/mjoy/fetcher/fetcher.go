@@ -460,7 +460,7 @@ func (f *Fetcher) loop() {
 						announce.time = task.time
 
 						// If the block is empty (header only), short circuit into the final import queue
-						if header.TxHash == block.DeriveSha(transaction.Transactions{}) {
+						if header.TxRootHash == block.DeriveSha(transaction.Transactions{}) {
 							logger.Trace("Block empty, skipping body retrieval", "peer", announce.origin, "number", header.Number.IntVal.String(), "hash", header.Hash().String())
 
 							block := block.NewBlockWithHeader(header)
@@ -524,7 +524,7 @@ func (f *Fetcher) loop() {
 					if f.queued[hash] == nil {
 						txnHash := block.DeriveSha(transaction.Transactions(task.transactions[i]))
 
-						if txnHash == announce.header.TxHash  && announce.origin == task.peer {
+						if txnHash == announce.header.TxRootHash  && announce.origin == task.peer {
 							// Mark the body matched, reassemble if still unknown
 							matched = true
 

@@ -32,7 +32,7 @@ import (
 	"mjoy.io/core/blockchain"
 )
 
-var defaultGenesisHexHash = "52c98064aaa0bc6fe8ccc14db0ded6325223fda3ab376fb8ac2d3b08d4f4303c"
+var defaultGenesisHexHash = "1e183eaed0be6847448b1525160c181d0319536f30551c93de4e7073b533f247"
 
 func TestDefaultGenesisBlock(t *testing.T) {
 	block, _ := DefaultGenesisBlock().ToBlock()
@@ -45,7 +45,7 @@ func TestDefaultGenesisBlock(t *testing.T) {
 
 func TestSetupGenesis(t *testing.T) {
 	var (
-		customghash = types.HexToHash("0x5f054f020b4d217853fbfdbbcdc4af9bd4b31fb25661c03fe6c4b32c281470ea")
+		customghash = types.HexToHash("0xd00c97941afb24364b592bd11f1ec34ac0b8b0d2be9a1c7295be7f8855bf933a")
 		customg     = Genesis{
 			Config:  &params.ChainConfig{big.NewInt(500)},
 			Alloc: GenesisAlloc{
@@ -54,7 +54,7 @@ func TestSetupGenesis(t *testing.T) {
 		}
 		oldcustomg = customg
 
-		customghash2 = types.HexToHash("0x4b94a6ffcf0b1611cc12405315dd4815126460a911b8ccfa535ff9bb3d226e85")
+		customghash2 = types.HexToHash("0x37325bc26dc6eba934385f5c1fde2f7afc8ba959f36f18dfe0fe0f7785d85456")
 		customg2     = Genesis{
 			Config:  &params.ChainConfig{big.NewInt(700)},
 			Alloc: GenesisAlloc{
