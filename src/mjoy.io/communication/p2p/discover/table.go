@@ -198,7 +198,7 @@ func (tab *Table) SetFallbackNodes(nodes []*Node) error {
 		cpy := *n
 		// Recompute cpy.sha because the node might not have been
 		// created by NewNode or ParseNode.
-		cpy.sha = crypto.Keccak256Hash(n.ID[:])
+		cpy.Sha = crypto.Keccak256Hash(n.ID[:])
 		tab.nursery = append(tab.nursery, &cpy)
 	}
 	tab.mutex.Unlock()
@@ -554,7 +554,7 @@ func (tab *Table) ping(id NodeID, addr *net.UDPAddr) error {
 //
 // The caller must not hold tab.mutex.
 func (tab *Table) add(new *Node) {
-	b := tab.buckets[logdist(tab.self.sha, new.sha)]
+	b := tab.buckets[logdist(tab.self.Sha, new.Sha)]
 	tab.mutex.Lock()
 	defer tab.mutex.Unlock()
 	if b.bump(new) {
@@ -563,18 +563,18 @@ func (tab *Table) add(new *Node) {
 	var oldest *Node
 	if len(b.entries) == bucketSize {
 		oldest = b.entries[bucketSize-1]
-		if oldest.contested {
+		if oldest.Contested {
 			// The node is already being replaced, don't attempt
 			// to replace it.
 			return
 		}
-		oldest.contested = true
+		oldest.Contested = true
 		// Let go of the mutex so other goroutines can access
 		// the table while we ping the least recently active node.
 		tab.mutex.Unlock()
 		err := tab.ping(oldest.ID, oldest.addr())
 		tab.mutex.Lock()
-		oldest.contested = false
+		oldest.Contested = false
 		if err == nil {
 			// The node responded, don't replace it.
 			return
@@ -594,7 +594,7 @@ outer:
 		if n.ID == tab.self.ID {
 			continue // don't add self
 		}
-		bucket := tab.buckets[logdist(tab.self.sha, n.sha)]
+		bucket := tab.buckets[logdist(tab.self.Sha, n.Sha)]
 		for i := range bucket.entries {
 			if bucket.entries[i].ID == n.ID {
 				continue outer // already in bucket
@@ -614,7 +614,7 @@ outer:
 func (tab *Table) delete(node *Node) {
 	tab.mutex.Lock()
 	defer tab.mutex.Unlock()
-	bucket := tab.buckets[logdist(tab.self.sha, node.sha)]
+	bucket := tab.buckets[logdist(tab.self.Sha, node.Sha)]
 	for i := range bucket.entries {
 		if bucket.entries[i].ID == node.ID {
 			bucket.entries = append(bucket.entries[:i], bucket.entries[i+1:]...)
@@ -666,7 +666,7 @@ type nodesByDistance struct {
 // push adds the given node to the list, keeping the total size below maxElems.
 func (h *nodesByDistance) push(n *Node, maxElems int) {
 	ix := sort.Search(len(h.entries), func(i int) bool {
-		return distcmp(h.target, h.entries[i].sha, n.sha) > 0
+		return distcmp(h.target, h.entries[i].Sha, n.Sha) > 0
 	})
 	if len(h.entries) < maxElems {
 		h.entries = append(h.entries, n)

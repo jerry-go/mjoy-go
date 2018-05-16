@@ -65,15 +65,18 @@ func (*IP) ExtensionType() int8 {
 }
 
 // We'll always use 16 bytes to encode the data
-func (*IP) Len() int {
-	return net.IPv6len
+func (ip *IP) Len() int {
+	return len(ip.Ip)
 }
 
 // MarshalBinaryTo simply copies the value
 // of the bytes into 'b'
 func (ip *IP) MarshalBinaryTo(b []byte) error {
-	copy(b, ip.Ip)
-	return nil
+	if len(ip.Ip) <= net.IPv6len {
+		copy(b, ip.Ip)
+		return nil
+	}
+	return ErrBytesTooLong
 }
 
 // UnmarshalBinary copies the value of 'b'
@@ -82,7 +85,12 @@ func (ip *IP) MarshalBinaryTo(b []byte) error {
 func (ip *IP) UnmarshalBinary(b []byte) error {
 	// TODO: check b, only hex, len <= HashLength
 	if len(b) <= net.IPv6len {
-		copy(ip.Ip, b)
+		if ipv4 := ip.Ip.To4(); ipv4 != nil {
+			ip.Ip = ipv4
+		} else {
+			ip.Ip = make(net.IP, len(b))
+			copy(ip.Ip, b)
+		}
 		return nil
 	}
 

@@ -190,7 +190,7 @@ func (db *nodeDB) node(id NodeID) *Node {
 		return nil
 	}
 
-	node.sha = crypto.Keccak256Hash(node.ID[:])
+	node.Sha = crypto.Keccak256Hash(node.ID[:])
 	return node
 }
 

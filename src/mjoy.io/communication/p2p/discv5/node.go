@@ -55,9 +55,9 @@ func init() {
 // Node represents a host on the network.
 // The public fields of Node may not be modified.
 type Node struct {
-	IP       types.IP `msgp:",extension"` // len 4 for IPv4 or 16 for IPv6
+	IP       types.IP `msg:",extension"` // len 4 for IPv4 or 16 for IPv6
 	UDP, TCP uint16   // port numbers
-	ID       NodeID   `msgp:",extension"` // the node's public key
+	ID       NodeID   `msg:",extension"` // the node's public key
 
 	// Network-related fields are contained in nodeNetGuts.
 	// These fields are not supposed to be used off the

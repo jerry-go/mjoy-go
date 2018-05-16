@@ -140,7 +140,7 @@ func TestBucket_bumpNoDuplicates(t *testing.T) {
 func fillBucket(tab *Table, ld int) (last *Node) {
 	b := tab.buckets[ld]
 	for len(b.entries) < bucketSize {
-		b.entries = append(b.entries, nodeAtDistance(tab.self.sha, ld))
+		b.entries = append(b.entries, nodeAtDistance(tab.self.Sha, ld))
 	}
 	return b.entries[bucketSize-1]
 }
@@ -149,9 +149,9 @@ func fillBucket(tab *Table, ld int) (last *Node) {
 // The node's ID does not correspond to n.sha.
 func nodeAtDistance(base types.Hash, ld int) (n *Node) {
 	n = new(Node)
-	n.sha = hashAtDistance(base, ld)
+	n.Sha = hashAtDistance(base, ld)
 	n.IP = *types.NewIP(net.IP{10, 0, 2, byte(ld)})
-	copy(n.ID[:], n.sha[:]) // ensure the node still has a unique ID
+	copy(n.ID[:], n.Sha[:]) // ensure the node still has a unique ID
 	return n
 }
 
@@ -215,8 +215,8 @@ func TestTable_closest(t *testing.T) {
 				if contains(result, n.ID) {
 					continue // don't run the check below for nodes in result
 				}
-				farthestResult := result[len(result)-1].sha
-				if distcmp(test.Target, n.sha, farthestResult) < 0 {
+				farthestResult := result[len(result)-1].Sha
+				if distcmp(test.Target, n.Sha, farthestResult) < 0 {
 					t.Errorf("table contains node that is closer to target but it's not in result")
 					t.Logf("  Target:          %v", test.Target)
 					t.Logf("  Farthest Result: %v", farthestResult)
@@ -245,7 +245,7 @@ func TestTable_ReadRandomNodesGetAll(t *testing.T) {
 		defer tab.Close()
 		for i := 0; i < len(buf); i++ {
 			ld := cfg.Rand.Intn(len(tab.buckets))
-			tab.stuff([]*Node{nodeAtDistance(tab.self.sha, ld)})
+			tab.stuff([]*Node{nodeAtDistance(tab.self.Sha, ld)})
 		}
 		gotN := tab.ReadRandomNodes(buf)
 		if gotN != tab.len() {
@@ -298,7 +298,7 @@ func TestTable_Lookup(t *testing.T) {
 	results := tab.Lookup(lookupTestnet.target)
 	t.Logf("results:")
 	for _, e := range results {
-		t.Logf("  ld=%d, %x", logdist(lookupTestnet.targetSha, e.sha), e.sha[:])
+		t.Logf("  ld=%d, %x", logdist(lookupTestnet.targetSha, e.Sha), e.Sha[:])
 	}
 	if len(results) != bucketSize {
 		t.Errorf("wrong number of results: got %d, want %d", len(results), bucketSize)
@@ -583,10 +583,10 @@ func hasDuplicates(slice []*Node) bool {
 func sortedByDistanceTo(distbase types.Hash, slice []*Node) bool {
 	var last types.Hash
 	for i, e := range slice {
-		if i > 0 && distcmp(distbase, e.sha, last) < 0 {
+		if i > 0 && distcmp(distbase, e.Sha, last) < 0 {
 			return false
 		}
-		last = e.sha
+		last = e.Sha
 	}
 	return true
 }
