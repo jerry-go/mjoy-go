@@ -26,7 +26,6 @@ import (
 	"sync/atomic"
 
 	"mjoy.io/utils/crypto"
-	"mjoy.io/common/types/util"
 	"mjoy.io/common"
 	"fmt"
 	"mjoy.io/utils/crypto/sha3"
@@ -48,6 +47,17 @@ func deriveSigner(V *big.Int) Signer {
 	return NewMSigner(deriveChainId(V))
 }
 
+
+/*
+TxBasicInfo is a  unmarshal result for other module,ex. txpool add
+*/
+
+type TxBasicInfo struct {
+	Amount	*big.Int
+	Fee		*big.Int
+}
+
+
 type Transaction struct {
 	Data Txdata
 	// caches
@@ -57,7 +67,7 @@ type Transaction struct {
 }
 
 func (this * Transaction)PrintDataInfo(){
-	logger.Debug("Txdata.Amount Value:",this.Data.Amount)
+	//logger.Debug("Txdata.Amount Value:",this.Data.Amount)
 	//fmt.Println("txData.Amount Value:",this.Data.Amount)
 }
 
@@ -82,27 +92,11 @@ func (this *Transaction)msgpHash()(h types.Hash){
 	}
 }
 
-
 type Txdata struct {
-	AccountNonce uint64         `json:"nonce"    gencodec:"required"`
-	Recipient    *types.Address `json:"to"       msgp:"nil"` // nil means contract creation
-	Amount       *types.BigInt  `json:"value"    gencodec:"required"`
-	Payload      []byte         `json:"input"    gencodec:"required"`
-
-	// Signature values
-	V *types.BigInt             `json:"v"        gencodec:"required"`
-	R *types.BigInt             `json:"r"        gencodec:"required"`
-	S *types.BigInt             `json:"s"        gencodec:"required"`
-
-	// This is only used when marshaling to JSON.
-	Hash *types.Hash            `json:"hash"     msgp:"-"`
-}
-
-type TxdataNew struct {
 	AccountNonce 	uint64         	`json:"nonce"    gencodec:"required"`
 	To    			*types.Address 	`json:"to"		 msgp:"nil"`
-	Priority		*types.BigInt	`json:"priority" msgp:"-"`
-	Codes     		[]Code         	`json:"codes"    gencodec:"required"`
+	Priority		*big.Int	`json:"priority" msgp:"-"`
+	Actions     	[]Action         `json:"actions"    gencodec:"required"`
 	// Signature values
 	V *types.BigInt             `json:"v"        gencodec:"required"`
 	R *types.BigInt             `json:"r"        gencodec:"required"`
@@ -112,36 +106,33 @@ type TxdataNew struct {
 	Hash *types.Hash            `json:"hash"     msgp:"-"`
 }
 
-type Code struct{
-	Contract		*types.Address	`json:"contract"	gencodec:"required"`
-	Params []byte	`json:"params"	gencodec:"required"`
+type Action struct{
+	Address		*types.Address	`json:"address"	gencodec:"required"`
+	Params 		[]byte			`json:"params"	gencodec:"required"`
 }
 
-
-func NewTransaction(nonce uint64, to types.Address, amount *big.Int, no1 uint64, no2 *big.Int, data []byte) *Transaction {
-	return newTransaction(nonce, &to, amount, no1, no2, data)
+//All actions is made by interpreter
+func NewTransaction(nonce uint64, to types.Address, actions []Action) *Transaction {
+	return newTransaction(nonce, &to, actions)
 }
-
-func NewContractCreation(nonce uint64, amount *big.Int, no1 uint64, no2 *big.Int, data []byte) *Transaction {
-	return newTransaction(nonce, nil, amount, no1, no2, data)
+//All acions is made by interpreter
+func NewContractCreation(nonce uint64,actions []Action) *Transaction {
+	return newTransaction(nonce, nil, actions)
 }
-
-func newTransaction(nonce uint64, to *types.Address, amount *big.Int, no1 uint64, no2 *big.Int, data []byte) *Transaction {
-	if len(data) > 0 {
-		data = util.CopyBytes(data)
+//the actions is right or not ,should be judged by interpreter,we have no right to do this
+func newTransaction(nonce uint64, to *types.Address, actions []Action) *Transaction {
+	if len(actions) < 0 {
+		return nil
 	}
 	d := Txdata{
 		AccountNonce: nonce,
-		Recipient:    to,
-		Payload:      data,
-		Amount:       new(types.BigInt),
+		To:    to,
+		Actions:	actions,
 		V:            new(types.BigInt),
 		R:            new(types.BigInt),
 		S:            new(types.BigInt),
 	}
-	if amount != nil {
-		d.Amount.IntVal = *amount
-	}
+	//here should add some judgement for checking a transaction structure is valiable
 
 	return &Transaction{Data: d}
 }
@@ -195,23 +186,18 @@ func (tx *Transaction) UnmarshalJSON(input []byte) error {
 	return nil
 }
 
-func (tx *Transaction) DataPayload() []byte       { return util.CopyBytes(tx.Data.Payload) }
-func (tx *Transaction) Value() *big.Int    {
-	if tx.Data.Amount == nil{
-		return nil
-	}
-	return new(big.Int).Set(&tx.Data.Amount.IntVal)
-}
+
 func (tx *Transaction) Nonce() uint64      { return tx.Data.AccountNonce }
 func (tx *Transaction) CheckNonce() bool   { return true }
+
 
 // To returns the recipient address of the transaction.
 // It returns nil if the transaction is a contract creation.
 func (tx *Transaction) To() *types.Address {
-	if tx.Data.Recipient == nil {
+	if tx.Data.To == nil {
 		return nil
 	}
-	to := *tx.Data.Recipient
+	to := *tx.Data.To
 	return &to
 }
 
@@ -256,24 +242,21 @@ func (tx *Transaction) Size() common.StorageSize {
 	return common.StorageSize(c)
 }
 
-// AsMessage returns the transaction as a core.Message.
-//
-// AsMessage requires a signer to derive the sender.
-//
-// XXX Rename message to something less arbitrary?
-func (tx *Transaction) AsMessage(s Signer) (Message, error) {
-	msg := Message{
-		nonce:      tx.Data.AccountNonce,
-		to:         tx.Data.Recipient,
-		amount:     &tx.Data.Amount.IntVal,
-		data:       tx.Data.Payload,
-		checkNonce: true,
-	}
+//In Mjoy, all details of transaction dealing should not visiable for others except vm(interpreter)
 
-	var err error
-	msg.from, err = Sender(s, tx)
-	return msg, err
-}
+//func (tx *Transaction) AsMessage(s Signer) (Message, error) {
+//	msg := Message{
+//		nonce:      tx.Data.AccountNonce,
+//		to:         tx.Data.Recipient,
+//		amount:     &tx.Data.Amount.IntVal,
+//		data:       tx.Data.Payload,
+//		checkNonce: true,
+//	}
+//
+//	var err error
+//	msg.from, err = Sender(s, tx)
+//	return msg, err
+//}
 
 // WithSignature returns a new transaction with the given signature.
 // This signature needs to be formatted as described in the yellow paper (v+27).
@@ -287,65 +270,23 @@ func (tx *Transaction) WithSignature(signer Signer, sig []byte) (*Transaction, e
 	return cpy, nil
 }
 
-
+//In Mjoy, all details of transaction dealing should not visiable for others except vm(interpreter)
 // Cost returns amount.
-func (tx *Transaction) Cost() *big.Int {
-	total := big.NewInt(0)
-	total.Add(total, &tx.Data.Amount.IntVal)
-	return total
+//func (tx *Transaction) Cost() *big.Int {
+//	total := big.NewInt(0)
+//	total.Add(total, &tx.Data.Amount.IntVal)
+//	return total
+//}
+func (tx *Transaction)Priority()*big.Int{
+	return big.NewInt(tx.Data.Priority.Int64())
 }
-
 func (tx *Transaction) RawSignatureValues() (*big.Int, *big.Int, *big.Int) {
 	return &tx.Data.V.IntVal, &tx.Data.R.IntVal, &tx.Data.S.IntVal
 }
 
+//String just print Nonce and to,simple is best
 func (tx *Transaction) String() string {
-	var from, to string
-	if tx.Data.V != nil {
-		// make a best guess about the signer and use that to derive
-		// the sender.
-		signer := deriveSigner(&tx.Data.V.IntVal)
-		if f, err := Sender(signer, tx); err != nil { // derive but don't cache
-			from = "[invalid sender: invalid sig]"
-		} else {
-			from = fmt.Sprintf("%x", f[:])
-		}
-	} else {
-		from = "[invalid sender: nil V field]"
-	}
-
-	if tx.Data.Recipient == nil {
-		to = "[contract creation]"
-	} else {
-		to = fmt.Sprintf("%x", tx.Data.Recipient[:])
-	}
-	var buf bytes.Buffer
-	msgp.Encode(&buf, tx)
-	return fmt.Sprintf(`
-	TX(%x)
-	Contract: %v
-	From:     %s
-	To:       %s
-	Nonce:    %v
-	Value:    %#x
-	Data:     0x%x
-	V:        %#x
-	R:        %#x
-	S:        %#x
-	Hex:      %x
-`,
-		tx.Hash(),
-		tx.Data.Recipient == nil,
-		from,
-		to,
-		tx.Data.AccountNonce,
-		tx.Data.Amount,
-		tx.Data.Payload,
-		tx.Data.V,
-		tx.Data.R,
-		tx.Data.S,
-		buf.Bytes(),
-	)
+	return fmt.Sprintf("Nonce:%d , to:0x%x" , tx.Nonce() , tx.To())
 }
 
 // Transactions is a Transaction slice type for basic sorting.

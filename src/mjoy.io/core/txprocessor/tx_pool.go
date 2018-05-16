@@ -36,6 +36,7 @@ import (
 	"mjoy.io/utils/metrics"
 	"gopkg.in/karalabe/cookiejar.v2/collections/prque"
 	"mjoy.io/core/transaction"
+	"math/big"
 )
 
 const (
@@ -57,6 +58,12 @@ var (
 	//ErrWrongTransactionAmount is returned if a transaction's amount is nil
 	ErrWrongTransactionAmount = errors.New("transaction's Amount is wrong")
 
+	//ErrUnderpriority is returned if a transaction's priority is below the minimum
+	//configured for the transaction pool
+	ErrUnderPriority = errors.New("transaction underpriority")
+
+
+	ErrReplaceUnderpriority = errors.New("replacement transaction underpriority")
 
 	// ErrInsufficientFunds is returned if the total cost of executing a transaction
 	// is higher than the balance of the user's account.
@@ -177,6 +184,9 @@ type TxPool struct {
 	currentState  *state.StateDB      // Current state in the blockchain head
 	pendingState  *state.ManagedState // Pending state tracking virtual nonces
 
+	priority 	*big.Int
+	inter		Interpreter
+
 	locals  *accountSet // Set of local transaction to exempt from eviction rules
 	journal *txJournal  // Journal of local transaction to back up to disk
 
@@ -184,7 +194,7 @@ type TxPool struct {
 	queue   map[types.Address]*txList         // Queued but non-processable transactions
 	beats   map[types.Address]time.Time       // Last heartbeat from each known account
 	all     map[types.Hash]*transaction.Transaction // All transactions to allow lookups
-
+	priorited	*txPriorityList
 
 	wg sync.WaitGroup // for shutdown sync
 
@@ -209,6 +219,7 @@ func NewTxPool(config TxPoolConfig, chainconfig *params.ChainConfig, chain block
 		chainHeadCh: make(chan core.ChainHeadEvent, chainHeadChanSize),
 	}
 	pool.locals = newAccountSet(pool.signer)
+	pool.priorited = newTxPriorityList(&pool.all)
 	pool.reset(nil, chain.CurrentBlock().Header())
 
 	// If local transactions and journaling is enabled, load from disk
@@ -273,10 +284,11 @@ func (pool *TxPool) loop() {
 		case <-report.C:
 			pool.mu.RLock()
 			pending, queued := pool.stats()
+			stales := pool.priorited.stales
 			pool.mu.RUnlock()
 
 			if pending != prevPending || queued != prevQueued  {
-				logger.Debug("Transaction pool status report", "executable", pending, "queued", queued)
+				logger.Debug("Transaction pool status report", "executable", pending, "queued", queued,"  stales:" , stales)
 				prevPending, prevQueued = pending, queued
 			}
 
@@ -422,6 +434,29 @@ func (pool *TxPool) SubscribeTxPreEvent(ch chan<- core.TxPreEvent) event.Subscri
 	return pool.scope.Track(pool.txFeed.Subscribe(ch))
 }
 
+//setPriority updates the minimum priority required by the transaction pool for a new transaction,
+//and drops all transactions below this threshold
+func (pool *TxPool)Priority()*big.Int{
+	pool.mu.RLock()
+	defer pool.mu.RUnlock()
+
+	return new(big.Int).Set(pool.priority)
+}
+
+
+func (pool *TxPool)SetPriority(priority *big.Int){
+	pool.mu.Lock()
+	defer pool.mu.Unlock()
+
+	pool.priority = priority
+
+	for _ , tx := range pool.priorited.Cap(priority , pool.locals){
+		pool.removeTx(tx.Hash())
+	}
+	logger.Info("Transaction pool priority threshold updated" , "priority:" , priority.Int64())
+}
+
+
 
 
 // State returns the virtual managed state of the transaction pool.
@@ -502,40 +537,8 @@ func (pool *TxPool) local() map[types.Address]transaction.Transactions {
 	return txs
 }
 
-// validateTx checks whether a transaction is valid according to the consensus
-// rules and adheres to some heuristic limits of the local node .
+//validateTx return nil,we should check the tx validation at interpreter
 func (pool *TxPool) validateTx(tx *transaction.Transaction, local bool) error {
-	// Heuristic limit, reject transactions over 32KB to prevent DOS attacks
-	if tx.Size() > 32*1024 {
-		return ErrOversizedData
-	}
-	// Transactions can't be negative. This may never happen using MSGP decoded
-	// transactions but may occur if you create a transaction using the RPC.
-	if tx.Value() == nil {
-		logger.Errorf("!!!!!!!!!Tx.Amount == nil")
-		return ErrWrongTransactionAmount
-	}
-	if tx.Value().Sign() < 0 {
-		return ErrNegativeValue
-	}
-	// Make sure the transaction is signed properly
-	from, err := transaction.Sender(pool.signer, tx)
-	if err != nil {
-		logger.Error("Why invalidSender :",err)
-		return ErrInvalidSender
-	}
-
-	// Ensure the transaction adheres to nonce ordering
-	if pool.currentState.GetNonce(from) > tx.Nonce() {
-		logger.Errorf("Account :%x , stateNonce:%d   tx.Nonce:%d" , from , pool.currentState.GetNonce(from) , tx.Nonce())
-		return ErrNonceTooLow
-	}
-	// Transactor should have enough funds to cover the costs
-	if pool.currentState.GetBalance(from).Cmp(tx.Cost()) < 0 {
-		logger.Error("[validateTx] insufficient funds Cost")
-		return ErrInsufficientFunds
-	}
-
 	return nil
 }
 
@@ -554,14 +557,31 @@ func (pool *TxPool) add(tx *transaction.Transaction, local bool) (bool, error) {
 		return false, fmt.Errorf("known transaction: 0x%x", hash)
 	}
 	// If the transaction fails basic validation, discard it
-	if err := pool.validateTx(tx, local); err != nil {
-		logger.Trace("Discarding invalid transaction hash:0x%x , err:%s",  hash, err.Error())
-		invalidTxCounter.Inc(1)
-		return false, err
+
+	//here we do not check validation by pool
+	//if err := pool.validateTx(tx, local); err != nil {
+	//	logger.Trace("Discarding invalid transaction hash:0x%x , err:%s",  hash, err.Error())
+	//	invalidTxCounter.Inc(1)
+	//	return false, err
+	//}
+	//use interpreter to check tx valitation
+	if err := pool.inter.CheckTxLegal(tx);err != nil{
+		return false , err
 	}
 
 	if uint64(len(pool.all)) >= pool.config.GlobalSlots+pool.config.GlobalQueue {
 		//do not add more transactions
+		if pool.priorited.Underpriority(tx , pool.locals){
+			return false , ErrUnderPriority
+		}
+
+		//New transaction is better than our worse ones , make room for it
+		drop := pool.priorited.Discard(len(pool.all) - int(pool.config.GlobalSlots + pool.config.GlobalQueue -1) , pool.locals)
+		for _ , tx := range drop {
+			pool.removeTx(tx.Hash())
+		}
+
+
 		return false,fmt.Errorf("pool.all > config.GlobalQueue")
 	}
 	// If the transaction is replacing an already pending one, do directly

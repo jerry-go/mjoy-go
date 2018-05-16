@@ -180,13 +180,12 @@ func (s MSigner) Hash(tx *Transaction) types.Hash {
 
 	itfcs:=make([]interface{},0)
 	itfcs = append(itfcs,tx.Data.AccountNonce)
-	if nil == tx.Data.Recipient {
+	if nil == tx.Data.To {
 		itfcs = append(itfcs,&types.Address{})
 	}else{
-		itfcs = append(itfcs,tx.Data.Recipient)
+		itfcs = append(itfcs,tx.Data.To)
 	}
-	itfcs = append(itfcs,tx.Data.Amount)
-	itfcs = append(itfcs,tx.Data.Payload)
+	itfcs = append(itfcs,tx.Data.Actions)
 	itfcs = append(itfcs,types.BigInt{*s.chainId}, uint(0), uint(0))
 
 
