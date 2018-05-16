@@ -503,7 +503,7 @@ func (pm *ProtocolManager) handleMsg(p *peer) error {
 			// Retrieve the requested block's receipts, skipping if unknown to us
 			results := blockchain.GetBlockReceipts(pm.chaindb, *hash, blockchain.GetBlockNumber(pm.chaindb, *hash))
 			if results == nil {
-				if header := pm.blockchain.GetHeaderByHash(*hash); header == nil || header.ReceiptHash != block.EmptyRootHash {
+				if header := pm.blockchain.GetHeaderByHash(*hash); header == nil || header.ReceiptRootHash != block.EmptyRootHash {
 					continue
 				}
 			}

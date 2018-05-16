@@ -33,7 +33,7 @@ type Engine_empty struct {
 
 
 func (empty *Engine_empty) Author(header *block.Header) (types.Address, error) {
-	return header.Coinbase, nil
+	return header.BlockProducer, nil
 }
 
 func (empty *Engine_empty) VerifyHeader(chain ChainReader, header *block.Header, seal bool) error {
@@ -58,8 +58,8 @@ func (empty *Engine_empty) Prepare(chain ChainReader, header *block.Header) erro
 
 func (empty *Engine_empty) Finalize(chain ChainReader, header *block.Header, state *state.StateDB, txs []*transaction.Transaction, receipts []*transaction.Receipt) (*block.Block, error) {
 	reward := big.NewInt(5e+18)
-	state.AddBalance(header.Coinbase, reward)
-	header.StateHash = state.IntermediateRoot()
+	state.AddBalance(header.BlockProducer, reward)
+	header.StateRootHash = state.IntermediateRoot()
 	return block.NewBlock(header, txs, receipts), nil
 }
 

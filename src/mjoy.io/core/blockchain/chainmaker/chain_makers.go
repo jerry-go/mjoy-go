@@ -62,12 +62,12 @@ type BlockGen struct {
 // SetCoinbase sets the coinbase of the generated block.
 // It can be called at most once.
 func (b *BlockGen) SetCoinbase(addr types.Address) {
-	b.header.Coinbase = addr
+	b.header.BlockProducer = addr
 }
 
 // SetExtra sets the extra data field of the generated block.
-func (b *BlockGen) SetExtra(data []byte) {
-	b.header.Extra = data
+func (b *BlockGen) SetConsensusData(data []byte) {
+	b.header.ConsensusData.Para = data
 }
 
 // AddTx adds a transaction to the generated block. If no coinbase has
@@ -81,7 +81,7 @@ func (b *BlockGen) SetExtra(data []byte) {
 func (b *BlockGen) AddTx(tx *transaction.Transaction) {
 
 	b.statedb.Prepare(tx.Hash(), types.Hash{}, len(b.txs))
-	receipt, err := stateprocessor.ApplyTransaction(b.config,  &b.header.Coinbase,  b.statedb, b.header, tx)
+	receipt, err := stateprocessor.ApplyTransaction(b.config,  &b.header.BlockProducer,  b.statedb, b.header, tx)
 	if err != nil {
 		panic(err)
 	}
@@ -205,11 +205,11 @@ func makeHeader(chain consensus.ChainReader, parent *block.Block, state *state.S
 	}
 
 	return &block.Header{
-		StateHash:       state.IntermediateRoot(),
-		ParentHash: parent.Hash(),
-		Coinbase:   parent.Coinbase(),
-		Number:   types.NewBigInt(*new(big.Int).Add(parent.Number(), common.Big1)),
-		Time:     types.NewBigInt(*time),
+		StateRootHash:       	state.IntermediateRoot(),
+		ParentHash:			 	parent.Hash(),
+		BlockProducer: 			parent.Coinbase(),
+		Number:   				types.NewBigInt(*new(big.Int).Add(parent.Number(), common.Big1)),
+		Time:     				types.NewBigInt(*time),
 	}
 }
 

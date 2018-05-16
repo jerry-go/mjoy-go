@@ -114,7 +114,7 @@ type producer struct {
 	chainDb database.IDatabase
 
 	coinbase types.Address
-	extra    []byte
+	//extra    []byte
 
 	currentMu sync.Mutex
 	current   *Work
@@ -165,7 +165,6 @@ func (self *producer) setCoinbase(addr types.Address) {
 func (self *producer) setExtra(extra []byte) {
 	self.mu.Lock()
 	defer self.mu.Unlock()
-	self.extra = extra
 }
 
 func (self *producer) pending() (*block.Block, *state.StateDB) {
@@ -403,12 +402,11 @@ func (self *producer) commitNewWork() {
 	header := &block.Header{
 		ParentHash: parent.Hash(),
 		Number:     &types.BigInt{*num.Add(num, common.Big1)},
-		Extra:      self.extra,
 		Time:       &types.BigInt{*big.NewInt(tstamp)},
 	}
 	// Only set the coinbase if we are producing (avoid spurious block rewards)
 	if atomic.LoadInt32(&self.producing) == 1 {
-		header.Coinbase = self.coinbase
+		header.BlockProducer = self.coinbase
 	}
 
 	if err := self.engine.Prepare(self.chain, header); err != nil {

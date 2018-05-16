@@ -101,7 +101,7 @@ func ApplyTransaction(config *params.ChainConfig, author *types.Address, statedb
 	
 	// Apply the transaction to the current state (included in the env)
 	if author == nil {
-		author = &header.Coinbase
+		author = &header.BlockProducer
 	}
 	_, failed, err := ApplyMessage(statedb, msg, *author)
 	if err != nil {

@@ -1371,7 +1371,7 @@ func (d *Downloader) importBlockResults(results []*fetchResult) error {
 func (d *Downloader) processFastSyncContent(latest *block.Header) error {
 	// Start syncing state of the reported head block.
 	// This should get us most of the state of the pivot block.
-	stateSync := d.syncState(latest.StateHash)
+	stateSync := d.syncState(latest.StateRootHash)
 	defer stateSync.Cancel()
 	go func() {
 		if err := stateSync.Wait(); err != nil {

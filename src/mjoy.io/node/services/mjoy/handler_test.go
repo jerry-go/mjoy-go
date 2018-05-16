@@ -332,13 +332,8 @@ func testGetNodeData(t *testing.T, protocol int) {
 		case 2:
 			// Block 3 is empty but was produced by account #2.
 			block.SetCoinbase(acc2Addr)
-			block.SetExtra([]byte("yeehaw"))
-		case 3:
-			b2 := block.PrevBlock(1).Header()
-			b2.Extra = []byte("foo")
+			block.SetConsensusData([]byte("yeehaw"))
 
-			b3 := block.PrevBlock(2).Header()
-			b3.Extra = []byte("foo")
 
 		}
 	}
@@ -425,13 +420,7 @@ func testGetReceipt(t *testing.T, protocol int) {
 		case 2:
 			// Block 3 is empty but was produced by account #2.
 			block.SetCoinbase(acc2Addr)
-			block.SetExtra([]byte("yeehaw"))
-		case 3:
-			b2 := block.PrevBlock(1).Header()
-			b2.Extra = []byte("foo")
-
-			b3 := block.PrevBlock(2).Header()
-			b3.Extra = []byte("foo")
+			block.SetConsensusData([]byte("yeehaw"))
 
 		}
 	}

@@ -81,7 +81,7 @@ func (b *MjoyApiBackend) StateAndHeaderByNumber(ctx context.Context, blockNr rpc
 	if header == nil || err != nil {
 		return nil, nil, err
 	}
-	stateDb, err := b.mjoy.BlockChain().StateAt(header.StateHash)
+	stateDb, err := b.mjoy.BlockChain().StateAt(header.StateRootHash)
 	return stateDb, header, err
 }
 
