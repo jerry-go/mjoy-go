@@ -521,13 +521,13 @@ func (pool *TxPool) validateTx(tx *transaction.Transaction, local bool) error {
 	// Make sure the transaction is signed properly
 	from, err := transaction.Sender(pool.signer, tx)
 	if err != nil {
-		logger.Error("Why invalidSender :",err)
+		logger.Error("Why invalidSender :", err)
 		return ErrInvalidSender
 	}
 
 	// Ensure the transaction adheres to nonce ordering
 	if pool.currentState.GetNonce(from) > tx.Nonce() {
-		logger.Errorf("Account :%x , stateNonce:%d   tx.Nonce:%d" , from , pool.currentState.GetNonce(from) , tx.Nonce())
+		logger.Errorf("Account:%x, stateNonce:%d, tx.Nonce:%d", from, pool.currentState.GetNonce(from), tx.Nonce())
 		return ErrNonceTooLow
 	}
 	// Transactor should have enough funds to cover the costs
