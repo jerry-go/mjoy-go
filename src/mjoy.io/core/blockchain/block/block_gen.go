@@ -290,15 +290,15 @@ func (z *Block) Msgsize() (s int) {
 
 // DecodeMsg implements msgp.Decodable
 func (z *Blocks) DecodeMsg(dc *msgp.Reader) (err error) {
-	var zb0003 uint32
-	zb0003, err = dc.ReadArrayHeader()
+	var zb0002 uint32
+	zb0002, err = dc.ReadArrayHeader()
 	if err != nil {
 		return
 	}
-	if cap((*z)) >= int(zb0003) {
-		(*z) = (*z)[:zb0003]
+	if cap((*z)) >= int(zb0002) {
+		(*z) = (*z)[:zb0002]
 	} else {
-		(*z) = make(Blocks, zb0003)
+		(*z) = make(Blocks, zb0002)
 	}
 	for zb0001 := range *z {
 		if dc.IsNil() {
@@ -311,90 +311,9 @@ func (z *Blocks) DecodeMsg(dc *msgp.Reader) (err error) {
 			if (*z)[zb0001] == nil {
 				(*z)[zb0001] = new(Block)
 			}
-			var field []byte
-			_ = field
-			var zb0004 uint32
-			zb0004, err = dc.ReadMapHeader()
+			err = (*z)[zb0001].DecodeMsg(dc)
 			if err != nil {
 				return
-			}
-			for zb0004 > 0 {
-				zb0004--
-				field, err = dc.ReadMapKeyPtr()
-				if err != nil {
-					return
-				}
-				switch msgp.UnsafeString(field) {
-				case "B_header":
-					if dc.IsNil() {
-						err = dc.ReadNil()
-						if err != nil {
-							return
-						}
-						(*z)[zb0001].B_header = nil
-					} else {
-						if (*z)[zb0001].B_header == nil {
-							(*z)[zb0001].B_header = new(Header)
-						}
-						err = (*z)[zb0001].B_header.DecodeMsg(dc)
-						if err != nil {
-							return
-						}
-					}
-				case "B_body":
-					var zb0005 uint32
-					zb0005, err = dc.ReadMapHeader()
-					if err != nil {
-						return
-					}
-					for zb0005 > 0 {
-						zb0005--
-						field, err = dc.ReadMapKeyPtr()
-						if err != nil {
-							return
-						}
-						switch msgp.UnsafeString(field) {
-						case "Transactions":
-							var zb0006 uint32
-							zb0006, err = dc.ReadArrayHeader()
-							if err != nil {
-								return
-							}
-							if cap((*z)[zb0001].B_body.Transactions) >= int(zb0006) {
-								(*z)[zb0001].B_body.Transactions = ((*z)[zb0001].B_body.Transactions)[:zb0006]
-							} else {
-								(*z)[zb0001].B_body.Transactions = make([]*transaction.Transaction, zb0006)
-							}
-							for zb0002 := range (*z)[zb0001].B_body.Transactions {
-								if dc.IsNil() {
-									err = dc.ReadNil()
-									if err != nil {
-										return
-									}
-									(*z)[zb0001].B_body.Transactions[zb0002] = nil
-								} else {
-									if (*z)[zb0001].B_body.Transactions[zb0002] == nil {
-										(*z)[zb0001].B_body.Transactions[zb0002] = new(transaction.Transaction)
-									}
-									err = (*z)[zb0001].B_body.Transactions[zb0002].DecodeMsg(dc)
-									if err != nil {
-										return
-									}
-								}
-							}
-						default:
-							err = dc.Skip()
-							if err != nil {
-								return
-							}
-						}
-					}
-				default:
-					err = dc.Skip()
-					if err != nil {
-						return
-					}
-				}
 			}
 		}
 	}
@@ -407,53 +326,16 @@ func (z Blocks) EncodeMsg(en *msgp.Writer) (err error) {
 	if err != nil {
 		return
 	}
-	for zb0007 := range z {
-		if z[zb0007] == nil {
+	for zb0003 := range z {
+		if z[zb0003] == nil {
 			err = en.WriteNil()
 			if err != nil {
 				return
 			}
 		} else {
-			// map header, size 2
-			// write "B_header"
-			err = en.Append(0x82, 0xa8, 0x42, 0x5f, 0x68, 0x65, 0x61, 0x64, 0x65, 0x72)
+			err = z[zb0003].EncodeMsg(en)
 			if err != nil {
 				return
-			}
-			if z[zb0007].B_header == nil {
-				err = en.WriteNil()
-				if err != nil {
-					return
-				}
-			} else {
-				err = z[zb0007].B_header.EncodeMsg(en)
-				if err != nil {
-					return
-				}
-			}
-			// write "B_body"
-			// map header, size 1
-			// write "Transactions"
-			err = en.Append(0xa6, 0x42, 0x5f, 0x62, 0x6f, 0x64, 0x79, 0x81, 0xac, 0x54, 0x72, 0x61, 0x6e, 0x73, 0x61, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x73)
-			if err != nil {
-				return
-			}
-			err = en.WriteArrayHeader(uint32(len(z[zb0007].B_body.Transactions)))
-			if err != nil {
-				return
-			}
-			for zb0008 := range z[zb0007].B_body.Transactions {
-				if z[zb0007].B_body.Transactions[zb0008] == nil {
-					err = en.WriteNil()
-					if err != nil {
-						return
-					}
-				} else {
-					err = z[zb0007].B_body.Transactions[zb0008].EncodeMsg(en)
-					if err != nil {
-						return
-					}
-				}
 			}
 		}
 	}
@@ -464,35 +346,13 @@ func (z Blocks) EncodeMsg(en *msgp.Writer) (err error) {
 func (z Blocks) MarshalMsg(b []byte) (o []byte, err error) {
 	o = msgp.Require(b, z.Msgsize())
 	o = msgp.AppendArrayHeader(o, uint32(len(z)))
-	for zb0007 := range z {
-		if z[zb0007] == nil {
+	for zb0003 := range z {
+		if z[zb0003] == nil {
 			o = msgp.AppendNil(o)
 		} else {
-			// map header, size 2
-			// string "B_header"
-			o = append(o, 0x82, 0xa8, 0x42, 0x5f, 0x68, 0x65, 0x61, 0x64, 0x65, 0x72)
-			if z[zb0007].B_header == nil {
-				o = msgp.AppendNil(o)
-			} else {
-				o, err = z[zb0007].B_header.MarshalMsg(o)
-				if err != nil {
-					return
-				}
-			}
-			// string "B_body"
-			// map header, size 1
-			// string "Transactions"
-			o = append(o, 0xa6, 0x42, 0x5f, 0x62, 0x6f, 0x64, 0x79, 0x81, 0xac, 0x54, 0x72, 0x61, 0x6e, 0x73, 0x61, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x73)
-			o = msgp.AppendArrayHeader(o, uint32(len(z[zb0007].B_body.Transactions)))
-			for zb0008 := range z[zb0007].B_body.Transactions {
-				if z[zb0007].B_body.Transactions[zb0008] == nil {
-					o = msgp.AppendNil(o)
-				} else {
-					o, err = z[zb0007].B_body.Transactions[zb0008].MarshalMsg(o)
-					if err != nil {
-						return
-					}
-				}
+			o, err = z[zb0003].MarshalMsg(o)
+			if err != nil {
+				return
 			}
 		}
 	}
@@ -501,15 +361,15 @@ func (z Blocks) MarshalMsg(b []byte) (o []byte, err error) {
 
 // UnmarshalMsg implements msgp.Unmarshaler
 func (z *Blocks) UnmarshalMsg(bts []byte) (o []byte, err error) {
-	var zb0003 uint32
-	zb0003, bts, err = msgp.ReadArrayHeaderBytes(bts)
+	var zb0002 uint32
+	zb0002, bts, err = msgp.ReadArrayHeaderBytes(bts)
 	if err != nil {
 		return
 	}
-	if cap((*z)) >= int(zb0003) {
-		(*z) = (*z)[:zb0003]
+	if cap((*z)) >= int(zb0002) {
+		(*z) = (*z)[:zb0002]
 	} else {
-		(*z) = make(Blocks, zb0003)
+		(*z) = make(Blocks, zb0002)
 	}
 	for zb0001 := range *z {
 		if msgp.IsNil(bts) {
@@ -522,90 +382,9 @@ func (z *Blocks) UnmarshalMsg(bts []byte) (o []byte, err error) {
 			if (*z)[zb0001] == nil {
 				(*z)[zb0001] = new(Block)
 			}
-			var field []byte
-			_ = field
-			var zb0004 uint32
-			zb0004, bts, err = msgp.ReadMapHeaderBytes(bts)
+			bts, err = (*z)[zb0001].UnmarshalMsg(bts)
 			if err != nil {
 				return
-			}
-			for zb0004 > 0 {
-				zb0004--
-				field, bts, err = msgp.ReadMapKeyZC(bts)
-				if err != nil {
-					return
-				}
-				switch msgp.UnsafeString(field) {
-				case "B_header":
-					if msgp.IsNil(bts) {
-						bts, err = msgp.ReadNilBytes(bts)
-						if err != nil {
-							return
-						}
-						(*z)[zb0001].B_header = nil
-					} else {
-						if (*z)[zb0001].B_header == nil {
-							(*z)[zb0001].B_header = new(Header)
-						}
-						bts, err = (*z)[zb0001].B_header.UnmarshalMsg(bts)
-						if err != nil {
-							return
-						}
-					}
-				case "B_body":
-					var zb0005 uint32
-					zb0005, bts, err = msgp.ReadMapHeaderBytes(bts)
-					if err != nil {
-						return
-					}
-					for zb0005 > 0 {
-						zb0005--
-						field, bts, err = msgp.ReadMapKeyZC(bts)
-						if err != nil {
-							return
-						}
-						switch msgp.UnsafeString(field) {
-						case "Transactions":
-							var zb0006 uint32
-							zb0006, bts, err = msgp.ReadArrayHeaderBytes(bts)
-							if err != nil {
-								return
-							}
-							if cap((*z)[zb0001].B_body.Transactions) >= int(zb0006) {
-								(*z)[zb0001].B_body.Transactions = ((*z)[zb0001].B_body.Transactions)[:zb0006]
-							} else {
-								(*z)[zb0001].B_body.Transactions = make([]*transaction.Transaction, zb0006)
-							}
-							for zb0002 := range (*z)[zb0001].B_body.Transactions {
-								if msgp.IsNil(bts) {
-									bts, err = msgp.ReadNilBytes(bts)
-									if err != nil {
-										return
-									}
-									(*z)[zb0001].B_body.Transactions[zb0002] = nil
-								} else {
-									if (*z)[zb0001].B_body.Transactions[zb0002] == nil {
-										(*z)[zb0001].B_body.Transactions[zb0002] = new(transaction.Transaction)
-									}
-									bts, err = (*z)[zb0001].B_body.Transactions[zb0002].UnmarshalMsg(bts)
-									if err != nil {
-										return
-									}
-								}
-							}
-						default:
-							bts, err = msgp.Skip(bts)
-							if err != nil {
-								return
-							}
-						}
-					}
-				default:
-					bts, err = msgp.Skip(bts)
-					if err != nil {
-						return
-					}
-				}
 			}
 		}
 	}
@@ -616,24 +395,11 @@ func (z *Blocks) UnmarshalMsg(bts []byte) (o []byte, err error) {
 // Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
 func (z Blocks) Msgsize() (s int) {
 	s = msgp.ArrayHeaderSize
-	for zb0007 := range z {
-		if z[zb0007] == nil {
+	for zb0003 := range z {
+		if z[zb0003] == nil {
 			s += msgp.NilSize
 		} else {
-			s += 1 + 9
-			if z[zb0007].B_header == nil {
-				s += msgp.NilSize
-			} else {
-				s += z[zb0007].B_header.Msgsize()
-			}
-			s += 7 + 1 + 13 + msgp.ArrayHeaderSize
-			for zb0008 := range z[zb0007].B_body.Transactions {
-				if z[zb0007].B_body.Transactions[zb0008] == nil {
-					s += msgp.NilSize
-				} else {
-					s += z[zb0007].B_body.Transactions[zb0008].Msgsize()
-				}
-			}
+			s += z[zb0003].Msgsize()
 		}
 	}
 	return
@@ -998,11 +764,6 @@ func (z *Header) DecodeMsg(dc *msgp.Reader) (err error) {
 					return
 				}
 			}
-		case "BlockProducer":
-			err = z.BlockProducer.DecodeMsg(dc)
-			if err != nil {
-				return
-			}
 		case "ConsensusData":
 			var zb0002 uint32
 			zb0002, err = dc.ReadMapHeader()
@@ -1093,9 +854,9 @@ func (z *Header) DecodeMsg(dc *msgp.Reader) (err error) {
 
 // EncodeMsg implements msgp.Encodable
 func (z *Header) EncodeMsg(en *msgp.Writer) (err error) {
-	// map header, size 12
+	// map header, size 11
 	// write "ParentHash"
-	err = en.Append(0x8c, 0xaa, 0x50, 0x61, 0x72, 0x65, 0x6e, 0x74, 0x48, 0x61, 0x73, 0x68)
+	err = en.Append(0x8b, 0xaa, 0x50, 0x61, 0x72, 0x65, 0x6e, 0x74, 0x48, 0x61, 0x73, 0x68)
 	if err != nil {
 		return
 	}
@@ -1171,15 +932,6 @@ func (z *Header) EncodeMsg(en *msgp.Writer) (err error) {
 			return
 		}
 	}
-	// write "BlockProducer"
-	err = en.Append(0xad, 0x42, 0x6c, 0x6f, 0x63, 0x6b, 0x50, 0x72, 0x6f, 0x64, 0x75, 0x63, 0x65, 0x72)
-	if err != nil {
-		return
-	}
-	err = z.BlockProducer.EncodeMsg(en)
-	if err != nil {
-		return
-	}
 	// write "ConsensusData"
 	// map header, size 2
 	// write "Id"
@@ -1254,9 +1006,9 @@ func (z *Header) EncodeMsg(en *msgp.Writer) (err error) {
 // MarshalMsg implements msgp.Marshaler
 func (z *Header) MarshalMsg(b []byte) (o []byte, err error) {
 	o = msgp.Require(b, z.Msgsize())
-	// map header, size 12
+	// map header, size 11
 	// string "ParentHash"
-	o = append(o, 0x8c, 0xaa, 0x50, 0x61, 0x72, 0x65, 0x6e, 0x74, 0x48, 0x61, 0x73, 0x68)
+	o = append(o, 0x8b, 0xaa, 0x50, 0x61, 0x72, 0x65, 0x6e, 0x74, 0x48, 0x61, 0x73, 0x68)
 	o, err = z.ParentHash.MarshalMsg(o)
 	if err != nil {
 		return
@@ -1304,12 +1056,6 @@ func (z *Header) MarshalMsg(b []byte) (o []byte, err error) {
 		if err != nil {
 			return
 		}
-	}
-	// string "BlockProducer"
-	o = append(o, 0xad, 0x42, 0x6c, 0x6f, 0x63, 0x6b, 0x50, 0x72, 0x6f, 0x64, 0x75, 0x63, 0x65, 0x72)
-	o, err = z.BlockProducer.MarshalMsg(o)
-	if err != nil {
-		return
 	}
 	// string "ConsensusData"
 	// map header, size 2
@@ -1425,11 +1171,6 @@ func (z *Header) UnmarshalMsg(bts []byte) (o []byte, err error) {
 					return
 				}
 			}
-		case "BlockProducer":
-			bts, err = z.BlockProducer.UnmarshalMsg(bts)
-			if err != nil {
-				return
-			}
 		case "ConsensusData":
 			var zb0002 uint32
 			zb0002, bts, err = msgp.ReadMapHeaderBytes(bts)
@@ -1533,7 +1274,7 @@ func (z *Header) Msgsize() (s int) {
 	} else {
 		s += z.Time.Msgsize()
 	}
-	s += 14 + z.BlockProducer.Msgsize() + 14 + 1 + 3 + msgp.StringPrefixSize + len(z.ConsensusData.Id) + 5 + msgp.BytesPrefixSize + len(z.ConsensusData.Para) + 2
+	s += 14 + 1 + 3 + msgp.StringPrefixSize + len(z.ConsensusData.Id) + 5 + msgp.BytesPrefixSize + len(z.ConsensusData.Para) + 2
 	if z.V == nil {
 		s += msgp.NilSize
 	} else {
@@ -1627,11 +1368,6 @@ func (z *HeaderNoSig) DecodeMsg(dc *msgp.Reader) (err error) {
 					return
 				}
 			}
-		case "BlockProducer":
-			err = z.BlockProducer.DecodeMsg(dc)
-			if err != nil {
-				return
-			}
 		case "ConsensusData":
 			var zb0002 uint32
 			zb0002, err = dc.ReadMapHeader()
@@ -1674,9 +1410,9 @@ func (z *HeaderNoSig) DecodeMsg(dc *msgp.Reader) (err error) {
 
 // EncodeMsg implements msgp.Encodable
 func (z *HeaderNoSig) EncodeMsg(en *msgp.Writer) (err error) {
-	// map header, size 9
+	// map header, size 8
 	// write "ParentHash"
-	err = en.Append(0x89, 0xaa, 0x50, 0x61, 0x72, 0x65, 0x6e, 0x74, 0x48, 0x61, 0x73, 0x68)
+	err = en.Append(0x88, 0xaa, 0x50, 0x61, 0x72, 0x65, 0x6e, 0x74, 0x48, 0x61, 0x73, 0x68)
 	if err != nil {
 		return
 	}
@@ -1752,15 +1488,6 @@ func (z *HeaderNoSig) EncodeMsg(en *msgp.Writer) (err error) {
 			return
 		}
 	}
-	// write "BlockProducer"
-	err = en.Append(0xad, 0x42, 0x6c, 0x6f, 0x63, 0x6b, 0x50, 0x72, 0x6f, 0x64, 0x75, 0x63, 0x65, 0x72)
-	if err != nil {
-		return
-	}
-	err = z.BlockProducer.EncodeMsg(en)
-	if err != nil {
-		return
-	}
 	// write "ConsensusData"
 	// map header, size 2
 	// write "Id"
@@ -1787,9 +1514,9 @@ func (z *HeaderNoSig) EncodeMsg(en *msgp.Writer) (err error) {
 // MarshalMsg implements msgp.Marshaler
 func (z *HeaderNoSig) MarshalMsg(b []byte) (o []byte, err error) {
 	o = msgp.Require(b, z.Msgsize())
-	// map header, size 9
+	// map header, size 8
 	// string "ParentHash"
-	o = append(o, 0x89, 0xaa, 0x50, 0x61, 0x72, 0x65, 0x6e, 0x74, 0x48, 0x61, 0x73, 0x68)
+	o = append(o, 0x88, 0xaa, 0x50, 0x61, 0x72, 0x65, 0x6e, 0x74, 0x48, 0x61, 0x73, 0x68)
 	o, err = z.ParentHash.MarshalMsg(o)
 	if err != nil {
 		return
@@ -1837,12 +1564,6 @@ func (z *HeaderNoSig) MarshalMsg(b []byte) (o []byte, err error) {
 		if err != nil {
 			return
 		}
-	}
-	// string "BlockProducer"
-	o = append(o, 0xad, 0x42, 0x6c, 0x6f, 0x63, 0x6b, 0x50, 0x72, 0x6f, 0x64, 0x75, 0x63, 0x65, 0x72)
-	o, err = z.BlockProducer.MarshalMsg(o)
-	if err != nil {
-		return
 	}
 	// string "ConsensusData"
 	// map header, size 2
@@ -1928,11 +1649,6 @@ func (z *HeaderNoSig) UnmarshalMsg(bts []byte) (o []byte, err error) {
 					return
 				}
 			}
-		case "BlockProducer":
-			bts, err = z.BlockProducer.UnmarshalMsg(bts)
-			if err != nil {
-				return
-			}
 		case "ConsensusData":
 			var zb0002 uint32
 			zb0002, bts, err = msgp.ReadMapHeaderBytes(bts)
@@ -1988,7 +1704,7 @@ func (z *HeaderNoSig) Msgsize() (s int) {
 	} else {
 		s += z.Time.Msgsize()
 	}
-	s += 14 + z.BlockProducer.Msgsize() + 14 + 1 + 3 + msgp.StringPrefixSize + len(z.ConsensusData.Id) + 5 + msgp.BytesPrefixSize + len(z.ConsensusData.Para)
+	s += 14 + 1 + 3 + msgp.StringPrefixSize + len(z.ConsensusData.Id) + 5 + msgp.BytesPrefixSize + len(z.ConsensusData.Para)
 	return
 }
 
