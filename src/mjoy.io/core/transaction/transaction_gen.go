@@ -168,6 +168,200 @@ func (z *Action) Msgsize() (s int) {
 }
 
 // DecodeMsg implements msgp.Decodable
+func (z *ActionSlice) DecodeMsg(dc *msgp.Reader) (err error) {
+	var zb0002 uint32
+	zb0002, err = dc.ReadArrayHeader()
+	if err != nil {
+		return
+	}
+	if cap((*z)) >= int(zb0002) {
+		(*z) = (*z)[:zb0002]
+	} else {
+		(*z) = make(ActionSlice, zb0002)
+	}
+	for zb0001 := range *z {
+		var field []byte
+		_ = field
+		var zb0003 uint32
+		zb0003, err = dc.ReadMapHeader()
+		if err != nil {
+			return
+		}
+		for zb0003 > 0 {
+			zb0003--
+			field, err = dc.ReadMapKeyPtr()
+			if err != nil {
+				return
+			}
+			switch msgp.UnsafeString(field) {
+			case "Address":
+				if dc.IsNil() {
+					err = dc.ReadNil()
+					if err != nil {
+						return
+					}
+					(*z)[zb0001].Address = nil
+				} else {
+					if (*z)[zb0001].Address == nil {
+						(*z)[zb0001].Address = new(types.Address)
+					}
+					err = (*z)[zb0001].Address.DecodeMsg(dc)
+					if err != nil {
+						return
+					}
+				}
+			case "Params":
+				(*z)[zb0001].Params, err = dc.ReadBytes((*z)[zb0001].Params)
+				if err != nil {
+					return
+				}
+			default:
+				err = dc.Skip()
+				if err != nil {
+					return
+				}
+			}
+		}
+	}
+	return
+}
+
+// EncodeMsg implements msgp.Encodable
+func (z ActionSlice) EncodeMsg(en *msgp.Writer) (err error) {
+	err = en.WriteArrayHeader(uint32(len(z)))
+	if err != nil {
+		return
+	}
+	for zb0004 := range z {
+		// map header, size 2
+		// write "Address"
+		err = en.Append(0x82, 0xa7, 0x41, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73)
+		if err != nil {
+			return
+		}
+		if z[zb0004].Address == nil {
+			err = en.WriteNil()
+			if err != nil {
+				return
+			}
+		} else {
+			err = z[zb0004].Address.EncodeMsg(en)
+			if err != nil {
+				return
+			}
+		}
+		// write "Params"
+		err = en.Append(0xa6, 0x50, 0x61, 0x72, 0x61, 0x6d, 0x73)
+		if err != nil {
+			return
+		}
+		err = en.WriteBytes(z[zb0004].Params)
+		if err != nil {
+			return
+		}
+	}
+	return
+}
+
+// MarshalMsg implements msgp.Marshaler
+func (z ActionSlice) MarshalMsg(b []byte) (o []byte, err error) {
+	o = msgp.Require(b, z.Msgsize())
+	o = msgp.AppendArrayHeader(o, uint32(len(z)))
+	for zb0004 := range z {
+		// map header, size 2
+		// string "Address"
+		o = append(o, 0x82, 0xa7, 0x41, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73)
+		if z[zb0004].Address == nil {
+			o = msgp.AppendNil(o)
+		} else {
+			o, err = z[zb0004].Address.MarshalMsg(o)
+			if err != nil {
+				return
+			}
+		}
+		// string "Params"
+		o = append(o, 0xa6, 0x50, 0x61, 0x72, 0x61, 0x6d, 0x73)
+		o = msgp.AppendBytes(o, z[zb0004].Params)
+	}
+	return
+}
+
+// UnmarshalMsg implements msgp.Unmarshaler
+func (z *ActionSlice) UnmarshalMsg(bts []byte) (o []byte, err error) {
+	var zb0002 uint32
+	zb0002, bts, err = msgp.ReadArrayHeaderBytes(bts)
+	if err != nil {
+		return
+	}
+	if cap((*z)) >= int(zb0002) {
+		(*z) = (*z)[:zb0002]
+	} else {
+		(*z) = make(ActionSlice, zb0002)
+	}
+	for zb0001 := range *z {
+		var field []byte
+		_ = field
+		var zb0003 uint32
+		zb0003, bts, err = msgp.ReadMapHeaderBytes(bts)
+		if err != nil {
+			return
+		}
+		for zb0003 > 0 {
+			zb0003--
+			field, bts, err = msgp.ReadMapKeyZC(bts)
+			if err != nil {
+				return
+			}
+			switch msgp.UnsafeString(field) {
+			case "Address":
+				if msgp.IsNil(bts) {
+					bts, err = msgp.ReadNilBytes(bts)
+					if err != nil {
+						return
+					}
+					(*z)[zb0001].Address = nil
+				} else {
+					if (*z)[zb0001].Address == nil {
+						(*z)[zb0001].Address = new(types.Address)
+					}
+					bts, err = (*z)[zb0001].Address.UnmarshalMsg(bts)
+					if err != nil {
+						return
+					}
+				}
+			case "Params":
+				(*z)[zb0001].Params, bts, err = msgp.ReadBytesBytes(bts, (*z)[zb0001].Params)
+				if err != nil {
+					return
+				}
+			default:
+				bts, err = msgp.Skip(bts)
+				if err != nil {
+					return
+				}
+			}
+		}
+	}
+	o = bts
+	return
+}
+
+// Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
+func (z ActionSlice) Msgsize() (s int) {
+	s = msgp.ArrayHeaderSize
+	for zb0004 := range z {
+		s += 1 + 8
+		if z[zb0004].Address == nil {
+			s += msgp.NilSize
+		} else {
+			s += z[zb0004].Address.Msgsize()
+		}
+		s += 7 + msgp.BytesPrefixSize + len(z[zb0004].Params)
+	}
+	return
+}
+
+// DecodeMsg implements msgp.Decodable
 func (z *Transaction) DecodeMsg(dc *msgp.Reader) (err error) {
 	var field []byte
 	_ = field
@@ -974,7 +1168,7 @@ func (z *Txdata) DecodeMsg(dc *msgp.Reader) (err error) {
 			if cap(z.Actions) >= int(zb0002) {
 				z.Actions = (z.Actions)[:zb0002]
 			} else {
-				z.Actions = make([]Action, zb0002)
+				z.Actions = make(ActionSlice, zb0002)
 			}
 			for za0001 := range z.Actions {
 				var zb0003 uint32
@@ -1307,7 +1501,7 @@ func (z *Txdata) UnmarshalMsg(bts []byte) (o []byte, err error) {
 			if cap(z.Actions) >= int(zb0002) {
 				z.Actions = (z.Actions)[:zb0002]
 			} else {
-				z.Actions = make([]Action, zb0002)
+				z.Actions = make(ActionSlice, zb0002)
 			}
 			for za0001 := range z.Actions {
 				var zb0003 uint32

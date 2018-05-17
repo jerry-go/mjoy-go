@@ -529,7 +529,10 @@ func TestTransactionDroppng(t *testing.T){
 	pool.enqueueTx(tx10.Hash() , tx10)
 	pool.enqueueTx(tx11.Hash() , tx11)
 	pool.enqueueTx(tx12.Hash() , tx12)
-
+	fmt.Println("Do something 1")
+	fmt.Println("Do something 2")
+	fmt.Println("Do something 3")
+	fmt.Println("Do something 4")
 	if pool.pending[account].Len() != 3{
 		t.Errorf("pending transaction mismatch:have %d ,want %d" , pool.pending[account].Len(), 3)
 	}
