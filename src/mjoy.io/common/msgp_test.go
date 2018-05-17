@@ -28,7 +28,7 @@ import (
 )
 
 type testst struct {
-	b string
+	a string
 }
 
 // type vectest []testst
@@ -40,6 +40,7 @@ func TestMsgpHash(t *testing.T) {
 		uint(0),
 		types.NewBigInt(*big.NewInt(123)),
 		[]testst{{"abc"}, {"111"}},
+
 	})
 
 	if err != nil {
