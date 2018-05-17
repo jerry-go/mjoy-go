@@ -30,7 +30,6 @@ import (
 	"crypto/ecdsa"
 )
 
-
 var (
 	ErrInvalidSig = errors.New("invalid block v, r, s values")
 	ErrInvalidChainId = errors.New("invalid chain id for block signer")
@@ -82,8 +81,6 @@ func (s BlockSigner) Equal(signer Signer) bool {
 	bSigner, ok := signer.(BlockSigner)
 	return ok && bSigner.chainId.Cmp(s.chainId) == 0
 }
-
-
 
 func (s BlockSigner) Sender(h *Header) (types.Address, error) {
 	if deriveChainId(&h.V.IntVal).Cmp(s.chainId) != 0 {
@@ -146,8 +143,6 @@ func (s BlockSigner) VerifySignature(h *Header) (bool,error){
 
 	return ret, nil
 }
-
-
 
 // SignatureValues returns a header's R S V based given signature. This signature
 // needs to be in the [R || S || V] format where V is 0 or 1.
