@@ -32,7 +32,7 @@ func msgpHash(x interface{}) (h types.Hash, err error) {
 	defer func() {
 		panic := recover()
 		if panic != nil {
-			err = fmt.Errorf("%s", panic)
+			err = fmt.Errorf("%v", panic)
 		}
 	}()
 

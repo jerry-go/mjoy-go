@@ -94,7 +94,7 @@ type Block struct {
 	// These fields are used by package mjoy to track
 	// inter-peer block relay.
 	ReceivedAt   time.Time      `msg:"-"`
-	ReceivedFrom interface{}   `msg:"-"`
+	ReceivedFrom interface{}    `msg:"-"`
 }
 
 func (h *Header) Hash() (out types.Hash) {
