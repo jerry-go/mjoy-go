@@ -84,10 +84,16 @@ func (this *Transaction)msgpHash()(h types.Hash){
 	}
 }
 
+type Action struct{
+	Address		*types.Address	`json:"address" gencodec:"required"`
+	Params 		[]byte			`json:"params"  gencodec:"required"`
+}
+
 type Txdata struct {
+
 	AccountNonce 	uint64         	`json:"nonce"   gencodec:"required"`
 	To    			*types.Address 	`json:"to"  msgp:"nil"`
-	Actions     	[]*Action         `json:"actions"    gencodec:"required"`
+	Actions     	[]Action         `json:"actions"    gencodec:"required"`
 	// Signature values
 	V *types.BigInt             `json:"v"       gencodec:"required"`
 	R *types.BigInt             `json:"r"       gencodec:"required"`
@@ -97,28 +103,28 @@ type Txdata struct {
 	Hash *types.Hash            `json:"hash"        msg:"-"`
 }
 
-type Action struct{
-	Address		*types.Address	`json:"address" gencodec:"required"`
-	Params 		[]byte			`json:"params"  gencodec:"required"`
-}
+
 
 //All actions is made by interpreter
-func NewTransaction(nonce uint64, to types.Address, actions []*Action) *Transaction {
+func NewTransaction(nonce uint64, to types.Address, actions []Action) *Transaction {
 	return newTransaction(nonce, &to, actions)
 }
 //All acions is made by interpreter
-func NewContractCreation(nonce uint64,actions []*Action) *Transaction {
+func NewContractCreation(nonce uint64,actions []Action) *Transaction {
 	return newTransaction(nonce, nil, actions)
 }
 //the actions is right or not ,should be judged by interpreter,we have no right to do this
-func newTransaction(nonce uint64, to *types.Address, actions []*Action) *Transaction {
+func newTransaction(nonce uint64, to *types.Address, actions []Action) *Transaction {
 	if len(actions) < 0 {
 		return nil
 	}
+	newActions := make([]Action , len(actions))
+	newActions = newActions[:0]
+	copy(newActions , actions)
 	d := Txdata{
 		AccountNonce: nonce,
 		To:    to,
-		Actions:	actions,
+		Actions:	newActions,
 		V:            new(types.BigInt),
 		R:            new(types.BigInt),
 		S:            new(types.BigInt),

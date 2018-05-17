@@ -974,57 +974,46 @@ func (z *Txdata) DecodeMsg(dc *msgp.Reader) (err error) {
 			if cap(z.Actions) >= int(zb0002) {
 				z.Actions = (z.Actions)[:zb0002]
 			} else {
-				z.Actions = make([]*Action, zb0002)
+				z.Actions = make([]Action, zb0002)
 			}
 			for za0001 := range z.Actions {
-				if dc.IsNil() {
-					err = dc.ReadNil()
+				var zb0003 uint32
+				zb0003, err = dc.ReadMapHeader()
+				if err != nil {
+					return
+				}
+				for zb0003 > 0 {
+					zb0003--
+					field, err = dc.ReadMapKeyPtr()
 					if err != nil {
 						return
 					}
-					z.Actions[za0001] = nil
-				} else {
-					if z.Actions[za0001] == nil {
-						z.Actions[za0001] = new(Action)
-					}
-					var zb0003 uint32
-					zb0003, err = dc.ReadMapHeader()
-					if err != nil {
-						return
-					}
-					for zb0003 > 0 {
-						zb0003--
-						field, err = dc.ReadMapKeyPtr()
+					switch msgp.UnsafeString(field) {
+					case "Address":
+						if dc.IsNil() {
+							err = dc.ReadNil()
+							if err != nil {
+								return
+							}
+							z.Actions[za0001].Address = nil
+						} else {
+							if z.Actions[za0001].Address == nil {
+								z.Actions[za0001].Address = new(types.Address)
+							}
+							err = z.Actions[za0001].Address.DecodeMsg(dc)
+							if err != nil {
+								return
+							}
+						}
+					case "Params":
+						z.Actions[za0001].Params, err = dc.ReadBytes(z.Actions[za0001].Params)
 						if err != nil {
 							return
 						}
-						switch msgp.UnsafeString(field) {
-						case "Address":
-							if dc.IsNil() {
-								err = dc.ReadNil()
-								if err != nil {
-									return
-								}
-								z.Actions[za0001].Address = nil
-							} else {
-								if z.Actions[za0001].Address == nil {
-									z.Actions[za0001].Address = new(types.Address)
-								}
-								err = z.Actions[za0001].Address.DecodeMsg(dc)
-								if err != nil {
-									return
-								}
-							}
-						case "Params":
-							z.Actions[za0001].Params, err = dc.ReadBytes(z.Actions[za0001].Params)
-							if err != nil {
-								return
-							}
-						default:
-							err = dc.Skip()
-							if err != nil {
-								return
-							}
+					default:
+						err = dc.Skip()
+						if err != nil {
+							return
 						}
 					}
 				}
@@ -1125,38 +1114,31 @@ func (z *Txdata) EncodeMsg(en *msgp.Writer) (err error) {
 		return
 	}
 	for za0001 := range z.Actions {
-		if z.Actions[za0001] == nil {
+		// map header, size 2
+		// write "Address"
+		err = en.Append(0x82, 0xa7, 0x41, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73)
+		if err != nil {
+			return
+		}
+		if z.Actions[za0001].Address == nil {
 			err = en.WriteNil()
 			if err != nil {
 				return
 			}
 		} else {
-			// map header, size 2
-			// write "Address"
-			err = en.Append(0x82, 0xa7, 0x41, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73)
+			err = z.Actions[za0001].Address.EncodeMsg(en)
 			if err != nil {
 				return
 			}
-			if z.Actions[za0001].Address == nil {
-				err = en.WriteNil()
-				if err != nil {
-					return
-				}
-			} else {
-				err = z.Actions[za0001].Address.EncodeMsg(en)
-				if err != nil {
-					return
-				}
-			}
-			// write "Params"
-			err = en.Append(0xa6, 0x50, 0x61, 0x72, 0x61, 0x6d, 0x73)
-			if err != nil {
-				return
-			}
-			err = en.WriteBytes(z.Actions[za0001].Params)
-			if err != nil {
-				return
-			}
+		}
+		// write "Params"
+		err = en.Append(0xa6, 0x50, 0x61, 0x72, 0x61, 0x6d, 0x73)
+		if err != nil {
+			return
+		}
+		err = en.WriteBytes(z.Actions[za0001].Params)
+		if err != nil {
+			return
 		}
 	}
 	// write "V"
@@ -1231,24 +1213,20 @@ func (z *Txdata) MarshalMsg(b []byte) (o []byte, err error) {
 	o = append(o, 0xa7, 0x41, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x73)
 	o = msgp.AppendArrayHeader(o, uint32(len(z.Actions)))
 	for za0001 := range z.Actions {
-		if z.Actions[za0001] == nil {
+		// map header, size 2
+		// string "Address"
+		o = append(o, 0x82, 0xa7, 0x41, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73)
+		if z.Actions[za0001].Address == nil {
 			o = msgp.AppendNil(o)
 		} else {
-			// map header, size 2
-			// string "Address"
-			o = append(o, 0x82, 0xa7, 0x41, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73)
-			if z.Actions[za0001].Address == nil {
-				o = msgp.AppendNil(o)
-			} else {
-				o, err = z.Actions[za0001].Address.MarshalMsg(o)
-				if err != nil {
-					return
-				}
+			o, err = z.Actions[za0001].Address.MarshalMsg(o)
+			if err != nil {
+				return
 			}
-			// string "Params"
-			o = append(o, 0xa6, 0x50, 0x61, 0x72, 0x61, 0x6d, 0x73)
-			o = msgp.AppendBytes(o, z.Actions[za0001].Params)
 		}
+		// string "Params"
+		o = append(o, 0xa6, 0x50, 0x61, 0x72, 0x61, 0x6d, 0x73)
+		o = msgp.AppendBytes(o, z.Actions[za0001].Params)
 	}
 	// string "V"
 	o = append(o, 0xa1, 0x56)
@@ -1329,57 +1307,46 @@ func (z *Txdata) UnmarshalMsg(bts []byte) (o []byte, err error) {
 			if cap(z.Actions) >= int(zb0002) {
 				z.Actions = (z.Actions)[:zb0002]
 			} else {
-				z.Actions = make([]*Action, zb0002)
+				z.Actions = make([]Action, zb0002)
 			}
 			for za0001 := range z.Actions {
-				if msgp.IsNil(bts) {
-					bts, err = msgp.ReadNilBytes(bts)
+				var zb0003 uint32
+				zb0003, bts, err = msgp.ReadMapHeaderBytes(bts)
+				if err != nil {
+					return
+				}
+				for zb0003 > 0 {
+					zb0003--
+					field, bts, err = msgp.ReadMapKeyZC(bts)
 					if err != nil {
 						return
 					}
-					z.Actions[za0001] = nil
-				} else {
-					if z.Actions[za0001] == nil {
-						z.Actions[za0001] = new(Action)
-					}
-					var zb0003 uint32
-					zb0003, bts, err = msgp.ReadMapHeaderBytes(bts)
-					if err != nil {
-						return
-					}
-					for zb0003 > 0 {
-						zb0003--
-						field, bts, err = msgp.ReadMapKeyZC(bts)
+					switch msgp.UnsafeString(field) {
+					case "Address":
+						if msgp.IsNil(bts) {
+							bts, err = msgp.ReadNilBytes(bts)
+							if err != nil {
+								return
+							}
+							z.Actions[za0001].Address = nil
+						} else {
+							if z.Actions[za0001].Address == nil {
+								z.Actions[za0001].Address = new(types.Address)
+							}
+							bts, err = z.Actions[za0001].Address.UnmarshalMsg(bts)
+							if err != nil {
+								return
+							}
+						}
+					case "Params":
+						z.Actions[za0001].Params, bts, err = msgp.ReadBytesBytes(bts, z.Actions[za0001].Params)
 						if err != nil {
 							return
 						}
-						switch msgp.UnsafeString(field) {
-						case "Address":
-							if msgp.IsNil(bts) {
-								bts, err = msgp.ReadNilBytes(bts)
-								if err != nil {
-									return
-								}
-								z.Actions[za0001].Address = nil
-							} else {
-								if z.Actions[za0001].Address == nil {
-									z.Actions[za0001].Address = new(types.Address)
-								}
-								bts, err = z.Actions[za0001].Address.UnmarshalMsg(bts)
-								if err != nil {
-									return
-								}
-							}
-						case "Params":
-							z.Actions[za0001].Params, bts, err = msgp.ReadBytesBytes(bts, z.Actions[za0001].Params)
-							if err != nil {
-								return
-							}
-						default:
-							bts, err = msgp.Skip(bts)
-							if err != nil {
-								return
-							}
+					default:
+						bts, err = msgp.Skip(bts)
+						if err != nil {
+							return
 						}
 					}
 				}
@@ -1453,17 +1420,13 @@ func (z *Txdata) Msgsize() (s int) {
 	}
 	s += 8 + msgp.ArrayHeaderSize
 	for za0001 := range z.Actions {
-		if z.Actions[za0001] == nil {
+		s += 1 + 8
+		if z.Actions[za0001].Address == nil {
 			s += msgp.NilSize
 		} else {
-			s += 1 + 8
-			if z.Actions[za0001].Address == nil {
-				s += msgp.NilSize
-			} else {
-				s += z.Actions[za0001].Address.Msgsize()
-			}
-			s += 7 + msgp.BytesPrefixSize + len(z.Actions[za0001].Params)
+			s += z.Actions[za0001].Address.Msgsize()
 		}
+		s += 7 + msgp.BytesPrefixSize + len(z.Actions[za0001].Params)
 	}
 	s += 2
 	if z.V == nil {
