@@ -27,32 +27,13 @@ import (
 	"reflect"
 )
 
-//go:generate msgp
-
-type Testst struct {
-	A string
-}
-
-type Vectestst []Testst
-
 type testst2 struct {
 	b string
 }
 
 func TestMsgpHash(t *testing.T) {
-	_, err := msgpHash([]interface{}{
-		uint64(1),
-		uint(0),
-		types.NewBigInt(*big.NewInt(123)),
-		Vectestst{{"abc"}, {"111"}},
-	})
-
-	if err != nil {
-		t.Errorf("error: %v", err)
-	}
-
 	want := "msgp: type \"common.testst2\" not supported"
-	_, err = msgpHash([]interface{}{
+	_, err := msgpHash([]interface{}{
 		uint64(1),
 		uint(0),
 		types.NewBigInt(*big.NewInt(123)),
