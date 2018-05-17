@@ -90,17 +90,16 @@ type Action struct{
 }
 
 type Txdata struct {
-
 	AccountNonce 	uint64         	`json:"nonce"   gencodec:"required"`
 	To    			*types.Address 	`json:"to"  msgp:"nil"`
 	Actions     	[]Action         `json:"actions"    gencodec:"required"`
 	// Signature values
-	V *types.BigInt             `json:"v"       gencodec:"required"`
-	R *types.BigInt             `json:"r"       gencodec:"required"`
-	S *types.BigInt             `json:"s"       gencodec:"required"`
+	V *types.BigInt                 `json:"v"       gencodec:"required"`
+	R *types.BigInt                 `json:"r"       gencodec:"required"`
+	S *types.BigInt                 `json:"s"       gencodec:"required"`
 
 	// This is only used when marshaling to JSON.
-	Hash *types.Hash            `json:"hash"        msg:"-"`
+	Hash *types.Hash                `json:"hash"    msg:"-"`
 }
 
 

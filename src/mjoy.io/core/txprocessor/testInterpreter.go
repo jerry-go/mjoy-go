@@ -16,8 +16,6 @@ func (this *testInterpreter)GetPriorityFromTransaction(tx *transaction.Transacti
 	return big.NewInt(int64(rand.Intn(1000)))
 }
 
-
-
 func (this *testInterpreter)SetPriorityForTransaction(tx *transaction.Transaction){
 	tx.Priority = big.NewInt(int64(rand.Intn(1000)))
 }
