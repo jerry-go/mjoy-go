@@ -124,8 +124,8 @@ func BenchmarkDecodeReceipt(b *testing.B) {
 	}
 }
 
-func TestMarshalUnmarshalReceiptForStorage(t *testing.T) {
-	v := ReceiptForStorage{}
+func TestMarshalUnmarshalReceiptProtocol(t *testing.T) {
+	v := ReceiptProtocol{}
 	bts, err := v.MarshalMsg(nil)
 	if err != nil {
 		t.Fatal(err)
@@ -147,8 +147,8 @@ func TestMarshalUnmarshalReceiptForStorage(t *testing.T) {
 	}
 }
 
-func BenchmarkMarshalMsgReceiptForStorage(b *testing.B) {
-	v := ReceiptForStorage{}
+func BenchmarkMarshalMsgReceiptProtocol(b *testing.B) {
+	v := ReceiptProtocol{}
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -156,8 +156,8 @@ func BenchmarkMarshalMsgReceiptForStorage(b *testing.B) {
 	}
 }
 
-func BenchmarkAppendMsgReceiptForStorage(b *testing.B) {
-	v := ReceiptForStorage{}
+func BenchmarkAppendMsgReceiptProtocol(b *testing.B) {
+	v := ReceiptProtocol{}
 	bts := make([]byte, 0, v.Msgsize())
 	bts, _ = v.MarshalMsg(bts[0:0])
 	b.SetBytes(int64(len(bts)))
@@ -168,8 +168,8 @@ func BenchmarkAppendMsgReceiptForStorage(b *testing.B) {
 	}
 }
 
-func BenchmarkUnmarshalReceiptForStorage(b *testing.B) {
-	v := ReceiptForStorage{}
+func BenchmarkUnmarshalReceiptProtocol(b *testing.B) {
+	v := ReceiptProtocol{}
 	bts, _ := v.MarshalMsg(nil)
 	b.ReportAllocs()
 	b.SetBytes(int64(len(bts)))
@@ -182,8 +182,8 @@ func BenchmarkUnmarshalReceiptForStorage(b *testing.B) {
 	}
 }
 
-func TestEncodeDecodeReceiptForStorage(t *testing.T) {
-	v := ReceiptForStorage{}
+func TestEncodeDecodeReceiptProtocol(t *testing.T) {
+	v := ReceiptProtocol{}
 	var buf bytes.Buffer
 	msgp.Encode(&buf, &v)
 
@@ -192,7 +192,7 @@ func TestEncodeDecodeReceiptForStorage(t *testing.T) {
 		t.Logf("WARNING: Msgsize() for %v is inaccurate", v)
 	}
 
-	vn := ReceiptForStorage{}
+	vn := ReceiptProtocol{}
 	err := msgp.Decode(&buf, &vn)
 	if err != nil {
 		t.Error(err)
@@ -206,8 +206,8 @@ func TestEncodeDecodeReceiptForStorage(t *testing.T) {
 	}
 }
 
-func BenchmarkEncodeReceiptForStorage(b *testing.B) {
-	v := ReceiptForStorage{}
+func BenchmarkEncodeReceiptProtocol(b *testing.B) {
+	v := ReceiptProtocol{}
 	var buf bytes.Buffer
 	msgp.Encode(&buf, &v)
 	b.SetBytes(int64(buf.Len()))
@@ -220,8 +220,8 @@ func BenchmarkEncodeReceiptForStorage(b *testing.B) {
 	en.Flush()
 }
 
-func BenchmarkDecodeReceiptForStorage(b *testing.B) {
-	v := ReceiptForStorage{}
+func BenchmarkDecodeReceiptProtocol(b *testing.B) {
+	v := ReceiptProtocol{}
 	var buf bytes.Buffer
 	msgp.Encode(&buf, &v)
 	b.SetBytes(int64(buf.Len()))
@@ -237,8 +237,8 @@ func BenchmarkDecodeReceiptForStorage(b *testing.B) {
 	}
 }
 
-func TestMarshalUnmarshalReceiptMsgp(t *testing.T) {
-	v := ReceiptMsgp{}
+func TestMarshalUnmarshalReceiptProtocols(t *testing.T) {
+	v := ReceiptProtocols{}
 	bts, err := v.MarshalMsg(nil)
 	if err != nil {
 		t.Fatal(err)
@@ -260,8 +260,8 @@ func TestMarshalUnmarshalReceiptMsgp(t *testing.T) {
 	}
 }
 
-func BenchmarkMarshalMsgReceiptMsgp(b *testing.B) {
-	v := ReceiptMsgp{}
+func BenchmarkMarshalMsgReceiptProtocols(b *testing.B) {
+	v := ReceiptProtocols{}
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -269,8 +269,8 @@ func BenchmarkMarshalMsgReceiptMsgp(b *testing.B) {
 	}
 }
 
-func BenchmarkAppendMsgReceiptMsgp(b *testing.B) {
-	v := ReceiptMsgp{}
+func BenchmarkAppendMsgReceiptProtocols(b *testing.B) {
+	v := ReceiptProtocols{}
 	bts := make([]byte, 0, v.Msgsize())
 	bts, _ = v.MarshalMsg(bts[0:0])
 	b.SetBytes(int64(len(bts)))
@@ -281,8 +281,8 @@ func BenchmarkAppendMsgReceiptMsgp(b *testing.B) {
 	}
 }
 
-func BenchmarkUnmarshalReceiptMsgp(b *testing.B) {
-	v := ReceiptMsgp{}
+func BenchmarkUnmarshalReceiptProtocols(b *testing.B) {
+	v := ReceiptProtocols{}
 	bts, _ := v.MarshalMsg(nil)
 	b.ReportAllocs()
 	b.SetBytes(int64(len(bts)))
@@ -295,8 +295,8 @@ func BenchmarkUnmarshalReceiptMsgp(b *testing.B) {
 	}
 }
 
-func TestEncodeDecodeReceiptMsgp(t *testing.T) {
-	v := ReceiptMsgp{}
+func TestEncodeDecodeReceiptProtocols(t *testing.T) {
+	v := ReceiptProtocols{}
 	var buf bytes.Buffer
 	msgp.Encode(&buf, &v)
 
@@ -305,7 +305,7 @@ func TestEncodeDecodeReceiptMsgp(t *testing.T) {
 		t.Logf("WARNING: Msgsize() for %v is inaccurate", v)
 	}
 
-	vn := ReceiptMsgp{}
+	vn := ReceiptProtocols{}
 	err := msgp.Decode(&buf, &vn)
 	if err != nil {
 		t.Error(err)
@@ -319,8 +319,8 @@ func TestEncodeDecodeReceiptMsgp(t *testing.T) {
 	}
 }
 
-func BenchmarkEncodeReceiptMsgp(b *testing.B) {
-	v := ReceiptMsgp{}
+func BenchmarkEncodeReceiptProtocols(b *testing.B) {
+	v := ReceiptProtocols{}
 	var buf bytes.Buffer
 	msgp.Encode(&buf, &v)
 	b.SetBytes(int64(buf.Len()))
@@ -333,8 +333,8 @@ func BenchmarkEncodeReceiptMsgp(b *testing.B) {
 	en.Flush()
 }
 
-func BenchmarkDecodeReceiptMsgp(b *testing.B) {
-	v := ReceiptMsgp{}
+func BenchmarkDecodeReceiptProtocols(b *testing.B) {
+	v := ReceiptProtocols{}
 	var buf bytes.Buffer
 	msgp.Encode(&buf, &v)
 	b.SetBytes(int64(buf.Len()))

@@ -24,17 +24,11 @@ import (
 	"bytes"
 	"fmt"
 	"mjoy.io/common/types"
-	"mjoy.io/common/types/util"
 	"mjoy.io/utils/bloom"
 	"github.com/tinylib/msgp/msgp"
 )
 
 //go:generate msgp
-
-var (
-	receiptStatusFailedMsgp     = []byte{}
-	receiptStatusSuccessfulMsgp = []byte{0x01}
-)
 
 const (
 	// ReceiptStatusFailed is the status code of a transaction if execution failed.
@@ -47,7 +41,6 @@ const (
 // Receipt represents the results of a transaction.
 type Receipt struct {
 	// Consensus fields
-	PostState         []byte      `json:"root"`
 	Status            uint        `json:"status"`
 	Bloom             types.Bloom `json:"logsBloom"         gencodec:"required"`
 	Logs              []*Log      `json:"logs"              gencodec:"required"`
@@ -57,19 +50,17 @@ type Receipt struct {
 	ContractAddress types.Address `json:"contractAddress"`
 }
 
-
-
-
-type ReceiptMsgp struct {
-	PostStateOrStatus []byte
+//ReceiptProtocol is the consensus encoding of a receipt
+type ReceiptProtocol struct {
+	Status            uint
 	Bloom             types.Bloom
-	Logs              []*Log
+	Logs              []*LogProtocol
 }
 
 
 // NewReceipt creates a barebone transaction receipt, copying the init fields.
-func NewReceipt(root []byte, failed bool) *Receipt {
-	r := &Receipt{PostState: util.CopyBytes(root)}
+func NewReceipt(failed bool) *Receipt {
+	r := &Receipt{}
 	if failed {
 		r.Status = ReceiptStatusFailed
 	} else {
@@ -78,54 +69,10 @@ func NewReceipt(root []byte, failed bool) *Receipt {
 	return r
 }
 
-
-//when decoding,use it to set Status depend on postStateOrStatus
-func (r *Receipt) SetStatus(postStateOrStatus []byte) error {
-	switch {
-	case bytes.Equal(postStateOrStatus, receiptStatusSuccessfulMsgp):
-		r.Status = ReceiptStatusSuccessful
-	case bytes.Equal(postStateOrStatus, receiptStatusFailedMsgp):
-		r.Status = ReceiptStatusFailed
-	case len(postStateOrStatus) == len(types.Hash{}):
-		r.PostState = postStateOrStatus
-	default:
-		return fmt.Errorf("invalid receipt status %x", postStateOrStatus)
-	}
-	return nil
-}
-//when encoding,use it to set PostStateOrStatus
-func (r *Receipt) StatusEncoding() []byte {
-	if len(r.PostState) == 0 {
-		if r.Status == ReceiptStatusFailed {
-			return receiptStatusFailedMsgp
-		}
-		return receiptStatusSuccessfulMsgp
-	}
-	return r.PostState
-}
-
 // String implements the Stringer interface.
 func (r *Receipt) String() string {
-	if len(r.PostState) == 0 {
-		return fmt.Sprintf("receipt{status=%d   bloom=%x logs=%v}", r.Status,  r.Bloom, r.Logs)
-	}
-	return fmt.Sprintf("receipt{med=%x   bloom=%x logs=%v}", r.PostState,   r.Bloom, r.Logs)
+	return fmt.Sprintf("receipt{status=%d   bloom=%x logs=%v}", r.Status,  r.Bloom, r.Logs)
 }
-
-// ReceiptForStorage is a wrapper around a Receipt that flattens and parses the
-// entire content of a receipt, as opposed to only the consensus fields originally.
-type ReceiptForStorage struct {
-	PostState         []byte      `json:"root"`
-	Status            uint        `json:"status"`
-	Bloom             types.Bloom `json:"logsBloom"         gencodec:"required"`
-	Logs              []*Log      `json:"logs"              gencodec:"required"`
-
-	// Implementation fields (don't reorder!)
-	TxHash          types.Hash    `json:"transactionHash"   gencodec:"required"`
-	ContractAddress types.Address `json:"contractAddress"`
-}
-
-
 
 // Receipts is a wrapper around a Receipt array to implement DerivableList.
 type Receipts []*Receipt
@@ -135,7 +82,13 @@ func (r Receipts) Len() int { return len(r) }
 
 func (r Receipts)GetMsgp(i int)[]byte{
 	var buf bytes.Buffer
-	err := msgp.Encode(&buf, r[i])
+	logPs := []*LogProtocol{}
+	for _, log := range r[i].Logs {
+		logP := &LogProtocol{log.Address,log.Topics, log.Data}
+		logPs = append(logPs, logP)
+	}
+	input := &ReceiptProtocol{r[i].Status, r[i].Bloom,logPs}
+	err := msgp.Encode(&buf, input)
 	if err != nil{
 		return nil
 	}
@@ -156,6 +109,7 @@ func CreateBloom(receipts Receipts) types.Bloom {
 }
 
 //type Receipts_s [][]*Receipt
+type ReceiptProtocols []*ReceiptProtocol
 type Receipts_s struct{
-	Receipts_s [] Receipts
+	Receipts_s [] ReceiptProtocols
 }
