@@ -34,6 +34,7 @@ import (
 	"github.com/tinylib/msgp/msgp"
 	"fmt"
 	"mjoy.io/utils/bloom"
+	"mjoy.io/common/types/util/hex"
 )
 
 type DerivableList interface {
@@ -303,7 +304,7 @@ func (h *Header) String() string {
 	R:                  %v
 	S:                  %v
     V:                  %v
-]`, h.Hash(), h.ParentHash, h.BlockProducer, h.StateRootHash, h.TxRootHash, h.ReceiptRootHash, h.Bloom, h.Number, h.Time, h.ConsensusData, h.R, h.S, h.V)
+]`, h.Hash(), h.ParentHash, h.BlockProducer, h.StateRootHash, h.TxRootHash, h.ReceiptRootHash, h.Bloom, (*hex.Big)(&h.Number.IntVal), (*hex.Big)(&h.Time.IntVal), h.ConsensusData, (*hex.Big)(&h.R.IntVal), (*hex.Big)(&h.S.IntVal), (*hex.Big)(&h.V.IntVal))
 }
 
 
