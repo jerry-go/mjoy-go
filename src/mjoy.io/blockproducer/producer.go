@@ -433,8 +433,8 @@ func (self *producer) commitNewWork() {
 	logger.Info(">>>>>>>>>PendingTx Len:" , len(pending))
 
 
-	txs := transaction.NewTransactionsForProducing(self.current.signer, pending)
-
+	//txs := transaction.NewTransactionsForProducing(self.current.signer, pending)
+	txs := transaction.NewTransactionsByPriorityAndNonce(self.current.signer , pending)
 	work.commitTransactions(self.mux, txs, self.chain, self.coinbase)
 
 
@@ -452,7 +452,7 @@ func (self *producer) commitNewWork() {
 	self.push(work)
 }
 
-func (env *Work) commitTransactions(mux *event.TypeMux, txs *transaction.TransactionForProducing, bc *blockchain.BlockChain, coinbase types.Address) {
+func (env *Work) commitTransactions(mux *event.TypeMux, txs *transaction.TransactionsByPriorityAndNonce, bc *blockchain.BlockChain, coinbase types.Address) {
 
 	var coalescedLogs []*transaction.Log
 

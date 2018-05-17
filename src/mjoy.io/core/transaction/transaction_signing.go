@@ -185,7 +185,9 @@ func (s MSigner) Hash(tx *Transaction) types.Hash {
 	}else{
 		itfcs = append(itfcs,tx.Data.To)
 	}
-	itfcs = append(itfcs,tx.Data.Actions)
+
+	itfcs = append(itfcs , tx.Data.Actions)
+	//itfcs = append(itfcs,tx.Data.Actions)
 	itfcs = append(itfcs,types.BigInt{*s.chainId}, uint(0), uint(0))
 
 

@@ -257,7 +257,7 @@ func (l *txList) Add(tx *transaction.Transaction, rev uint64) (bool, *transactio
 	old := l.txs.Get(tx.Nonce())
 	if old != nil {
 		//check priority
-		if old.Data.Priority.Int64() >= tx.Data.Priority.Int64() {
+		if old.Priority.Int64() >= tx.Priority.Int64() {
 			//Add false , because the old transaction's priority is higher than new
 			return false , nil
 		}
@@ -265,7 +265,7 @@ func (l *txList) Add(tx *transaction.Transaction, rev uint64) (bool, *transactio
 	// Otherwise overwrite the old transaction.Transaction with the current one
 	//has not yet
 	l.txs.Put(tx)
-	if priority := tx.Priority(); l.priority.Cmp(priority) < 0 {
+	if priority := tx.GetPriority(); l.priority.Cmp(priority) < 0 {
 		l.priority = priority
 	}
 
@@ -297,7 +297,7 @@ func (l *txList) Filter(priority *big.Int, reserve uint64) (transaction.Transact
 	// Filter out all the transaction.Transactions above the account's funds
 
 	removed := l.txs.Filter(func(tx *transaction.Transaction) bool {
-		return tx.Priority().Cmp(priority) > 0  })
+		return tx.GetPriority().Cmp(priority) > 0  })
 
 	// If the list was strict, filter anything above the lowest nonce
 	var invalids transaction.Transactions
@@ -370,7 +370,7 @@ type priorityHeap	[]*transaction.Transaction
 
 func (h priorityHeap) Len() int           { return len(h) }
 
-func (h priorityHeap) Less(i, j int) bool { return h[i].Priority().Cmp(h[j].Priority()) < 0 }
+func (h priorityHeap) Less(i, j int) bool { return h[i].GetPriority().Cmp(h[j].GetPriority()) < 0 }
 func (h priorityHeap) Swap(i, j int)      { h[i], h[j] = h[j], h[i] }
 
 func (h *priorityHeap)Push(x interface{}){
@@ -433,7 +433,7 @@ func (l *txPriorityList) Cap(threshold *big.Int, local *accountSet) transaction.
 			continue
 		}
 
-		if tx.Priority().Cmp(threshold) >= 0 {
+		if tx.GetPriority().Cmp(threshold) >= 0 {
 			save = append(save, tx)
 			break
 		}
@@ -475,7 +475,7 @@ func (l *txPriorityList) Underpriority(tx *transaction.Transaction, local *accou
 	}
 	cheapest := []*transaction.Transaction(*l.items)[0]
 
-	return cheapest.Priority().Cmp(tx.Priority()) >= 0
+	return cheapest.GetPriority().Cmp(tx.GetPriority()) >= 0
 }
 
 

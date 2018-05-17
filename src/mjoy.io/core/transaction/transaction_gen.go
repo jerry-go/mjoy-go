@@ -512,6 +512,83 @@ func (z Transactions) Msgsize() (s int) {
 }
 
 // DecodeMsg implements msgp.Decodable
+func (z *TransactionsByPriorityAndNonce) DecodeMsg(dc *msgp.Reader) (err error) {
+	var field []byte
+	_ = field
+	var zb0001 uint32
+	zb0001, err = dc.ReadMapHeader()
+	if err != nil {
+		return
+	}
+	for zb0001 > 0 {
+		zb0001--
+		field, err = dc.ReadMapKeyPtr()
+		if err != nil {
+			return
+		}
+		switch msgp.UnsafeString(field) {
+		default:
+			err = dc.Skip()
+			if err != nil {
+				return
+			}
+		}
+	}
+	return
+}
+
+// EncodeMsg implements msgp.Encodable
+func (z TransactionsByPriorityAndNonce) EncodeMsg(en *msgp.Writer) (err error) {
+	// map header, size 0
+	err = en.Append(0x80)
+	if err != nil {
+		return
+	}
+	return
+}
+
+// MarshalMsg implements msgp.Marshaler
+func (z TransactionsByPriorityAndNonce) MarshalMsg(b []byte) (o []byte, err error) {
+	o = msgp.Require(b, z.Msgsize())
+	// map header, size 0
+	o = append(o, 0x80)
+	return
+}
+
+// UnmarshalMsg implements msgp.Unmarshaler
+func (z *TransactionsByPriorityAndNonce) UnmarshalMsg(bts []byte) (o []byte, err error) {
+	var field []byte
+	_ = field
+	var zb0001 uint32
+	zb0001, bts, err = msgp.ReadMapHeaderBytes(bts)
+	if err != nil {
+		return
+	}
+	for zb0001 > 0 {
+		zb0001--
+		field, bts, err = msgp.ReadMapKeyZC(bts)
+		if err != nil {
+			return
+		}
+		switch msgp.UnsafeString(field) {
+		default:
+			bts, err = msgp.Skip(bts)
+			if err != nil {
+				return
+			}
+		}
+	}
+	o = bts
+	return
+}
+
+// Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
+func (z TransactionsByPriorityAndNonce) Msgsize() (s int) {
+	s = 1
+	return
+}
+
+// DecodeMsg implements msgp.Decodable
 func (z *TxByNonce) DecodeMsg(dc *msgp.Reader) (err error) {
 	var zb0002 uint32
 	zb0002, err = dc.ReadArrayHeader()
@@ -682,6 +759,176 @@ func (z TxByNonce) Msgsize() (s int) {
 }
 
 // DecodeMsg implements msgp.Decodable
+func (z *TxByPriority) DecodeMsg(dc *msgp.Reader) (err error) {
+	var zb0002 uint32
+	zb0002, err = dc.ReadArrayHeader()
+	if err != nil {
+		return
+	}
+	if cap((*z)) >= int(zb0002) {
+		(*z) = (*z)[:zb0002]
+	} else {
+		(*z) = make(TxByPriority, zb0002)
+	}
+	for zb0001 := range *z {
+		if dc.IsNil() {
+			err = dc.ReadNil()
+			if err != nil {
+				return
+			}
+			(*z)[zb0001] = nil
+		} else {
+			if (*z)[zb0001] == nil {
+				(*z)[zb0001] = new(Transaction)
+			}
+			var field []byte
+			_ = field
+			var zb0003 uint32
+			zb0003, err = dc.ReadMapHeader()
+			if err != nil {
+				return
+			}
+			for zb0003 > 0 {
+				zb0003--
+				field, err = dc.ReadMapKeyPtr()
+				if err != nil {
+					return
+				}
+				switch msgp.UnsafeString(field) {
+				case "Data":
+					err = (*z)[zb0001].Data.DecodeMsg(dc)
+					if err != nil {
+						return
+					}
+				default:
+					err = dc.Skip()
+					if err != nil {
+						return
+					}
+				}
+			}
+		}
+	}
+	return
+}
+
+// EncodeMsg implements msgp.Encodable
+func (z TxByPriority) EncodeMsg(en *msgp.Writer) (err error) {
+	err = en.WriteArrayHeader(uint32(len(z)))
+	if err != nil {
+		return
+	}
+	for zb0004 := range z {
+		if z[zb0004] == nil {
+			err = en.WriteNil()
+			if err != nil {
+				return
+			}
+		} else {
+			// map header, size 1
+			// write "Data"
+			err = en.Append(0x81, 0xa4, 0x44, 0x61, 0x74, 0x61)
+			if err != nil {
+				return
+			}
+			err = z[zb0004].Data.EncodeMsg(en)
+			if err != nil {
+				return
+			}
+		}
+	}
+	return
+}
+
+// MarshalMsg implements msgp.Marshaler
+func (z TxByPriority) MarshalMsg(b []byte) (o []byte, err error) {
+	o = msgp.Require(b, z.Msgsize())
+	o = msgp.AppendArrayHeader(o, uint32(len(z)))
+	for zb0004 := range z {
+		if z[zb0004] == nil {
+			o = msgp.AppendNil(o)
+		} else {
+			// map header, size 1
+			// string "Data"
+			o = append(o, 0x81, 0xa4, 0x44, 0x61, 0x74, 0x61)
+			o, err = z[zb0004].Data.MarshalMsg(o)
+			if err != nil {
+				return
+			}
+		}
+	}
+	return
+}
+
+// UnmarshalMsg implements msgp.Unmarshaler
+func (z *TxByPriority) UnmarshalMsg(bts []byte) (o []byte, err error) {
+	var zb0002 uint32
+	zb0002, bts, err = msgp.ReadArrayHeaderBytes(bts)
+	if err != nil {
+		return
+	}
+	if cap((*z)) >= int(zb0002) {
+		(*z) = (*z)[:zb0002]
+	} else {
+		(*z) = make(TxByPriority, zb0002)
+	}
+	for zb0001 := range *z {
+		if msgp.IsNil(bts) {
+			bts, err = msgp.ReadNilBytes(bts)
+			if err != nil {
+				return
+			}
+			(*z)[zb0001] = nil
+		} else {
+			if (*z)[zb0001] == nil {
+				(*z)[zb0001] = new(Transaction)
+			}
+			var field []byte
+			_ = field
+			var zb0003 uint32
+			zb0003, bts, err = msgp.ReadMapHeaderBytes(bts)
+			if err != nil {
+				return
+			}
+			for zb0003 > 0 {
+				zb0003--
+				field, bts, err = msgp.ReadMapKeyZC(bts)
+				if err != nil {
+					return
+				}
+				switch msgp.UnsafeString(field) {
+				case "Data":
+					bts, err = (*z)[zb0001].Data.UnmarshalMsg(bts)
+					if err != nil {
+						return
+					}
+				default:
+					bts, err = msgp.Skip(bts)
+					if err != nil {
+						return
+					}
+				}
+			}
+		}
+	}
+	o = bts
+	return
+}
+
+// Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
+func (z TxByPriority) Msgsize() (s int) {
+	s = msgp.ArrayHeaderSize
+	for zb0004 := range z {
+		if z[zb0004] == nil {
+			s += msgp.NilSize
+		} else {
+			s += 1 + 5 + z[zb0004].Data.Msgsize()
+		}
+	}
+	return
+}
+
+// DecodeMsg implements msgp.Decodable
 func (z *Txdata) DecodeMsg(dc *msgp.Reader) (err error) {
 	var field []byte
 	_ = field
@@ -718,22 +965,6 @@ func (z *Txdata) DecodeMsg(dc *msgp.Reader) (err error) {
 					return
 				}
 			}
-		case "Priority":
-			if dc.IsNil() {
-				err = dc.ReadNil()
-				if err != nil {
-					return
-				}
-				z.Priority = nil
-			} else {
-				if z.Priority == nil {
-					z.Priority = new(types.BigInt)
-				}
-				err = z.Priority.DecodeMsg(dc)
-				if err != nil {
-					return
-				}
-			}
 		case "Actions":
 			var zb0002 uint32
 			zb0002, err = dc.ReadArrayHeader()
@@ -743,46 +974,57 @@ func (z *Txdata) DecodeMsg(dc *msgp.Reader) (err error) {
 			if cap(z.Actions) >= int(zb0002) {
 				z.Actions = (z.Actions)[:zb0002]
 			} else {
-				z.Actions = make([]Action, zb0002)
+				z.Actions = make([]*Action, zb0002)
 			}
 			for za0001 := range z.Actions {
-				var zb0003 uint32
-				zb0003, err = dc.ReadMapHeader()
-				if err != nil {
-					return
-				}
-				for zb0003 > 0 {
-					zb0003--
-					field, err = dc.ReadMapKeyPtr()
+				if dc.IsNil() {
+					err = dc.ReadNil()
 					if err != nil {
 						return
 					}
-					switch msgp.UnsafeString(field) {
-					case "Address":
-						if dc.IsNil() {
-							err = dc.ReadNil()
-							if err != nil {
-								return
-							}
-							z.Actions[za0001].Address = nil
-						} else {
-							if z.Actions[za0001].Address == nil {
-								z.Actions[za0001].Address = new(types.Address)
-							}
-							err = z.Actions[za0001].Address.DecodeMsg(dc)
-							if err != nil {
-								return
-							}
-						}
-					case "Params":
-						z.Actions[za0001].Params, err = dc.ReadBytes(z.Actions[za0001].Params)
+					z.Actions[za0001] = nil
+				} else {
+					if z.Actions[za0001] == nil {
+						z.Actions[za0001] = new(Action)
+					}
+					var zb0003 uint32
+					zb0003, err = dc.ReadMapHeader()
+					if err != nil {
+						return
+					}
+					for zb0003 > 0 {
+						zb0003--
+						field, err = dc.ReadMapKeyPtr()
 						if err != nil {
 							return
 						}
-					default:
-						err = dc.Skip()
-						if err != nil {
-							return
+						switch msgp.UnsafeString(field) {
+						case "Address":
+							if dc.IsNil() {
+								err = dc.ReadNil()
+								if err != nil {
+									return
+								}
+								z.Actions[za0001].Address = nil
+							} else {
+								if z.Actions[za0001].Address == nil {
+									z.Actions[za0001].Address = new(types.Address)
+								}
+								err = z.Actions[za0001].Address.DecodeMsg(dc)
+								if err != nil {
+									return
+								}
+							}
+						case "Params":
+							z.Actions[za0001].Params, err = dc.ReadBytes(z.Actions[za0001].Params)
+							if err != nil {
+								return
+							}
+						default:
+							err = dc.Skip()
+							if err != nil {
+								return
+							}
 						}
 					}
 				}
@@ -835,22 +1077,6 @@ func (z *Txdata) DecodeMsg(dc *msgp.Reader) (err error) {
 					return
 				}
 			}
-		case "Hash":
-			if dc.IsNil() {
-				err = dc.ReadNil()
-				if err != nil {
-					return
-				}
-				z.Hash = nil
-			} else {
-				if z.Hash == nil {
-					z.Hash = new(types.Hash)
-				}
-				err = z.Hash.DecodeMsg(dc)
-				if err != nil {
-					return
-				}
-			}
 		default:
 			err = dc.Skip()
 			if err != nil {
@@ -863,9 +1089,9 @@ func (z *Txdata) DecodeMsg(dc *msgp.Reader) (err error) {
 
 // EncodeMsg implements msgp.Encodable
 func (z *Txdata) EncodeMsg(en *msgp.Writer) (err error) {
-	// map header, size 8
+	// map header, size 6
 	// write "AccountNonce"
-	err = en.Append(0x88, 0xac, 0x41, 0x63, 0x63, 0x6f, 0x75, 0x6e, 0x74, 0x4e, 0x6f, 0x6e, 0x63, 0x65)
+	err = en.Append(0x86, 0xac, 0x41, 0x63, 0x63, 0x6f, 0x75, 0x6e, 0x74, 0x4e, 0x6f, 0x6e, 0x63, 0x65)
 	if err != nil {
 		return
 	}
@@ -889,22 +1115,6 @@ func (z *Txdata) EncodeMsg(en *msgp.Writer) (err error) {
 			return
 		}
 	}
-	// write "Priority"
-	err = en.Append(0xa8, 0x50, 0x72, 0x69, 0x6f, 0x72, 0x69, 0x74, 0x79)
-	if err != nil {
-		return
-	}
-	if z.Priority == nil {
-		err = en.WriteNil()
-		if err != nil {
-			return
-		}
-	} else {
-		err = z.Priority.EncodeMsg(en)
-		if err != nil {
-			return
-		}
-	}
 	// write "Actions"
 	err = en.Append(0xa7, 0x41, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x73)
 	if err != nil {
@@ -915,31 +1125,38 @@ func (z *Txdata) EncodeMsg(en *msgp.Writer) (err error) {
 		return
 	}
 	for za0001 := range z.Actions {
-		// map header, size 2
-		// write "Address"
-		err = en.Append(0x82, 0xa7, 0x41, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73)
-		if err != nil {
-			return
-		}
-		if z.Actions[za0001].Address == nil {
+		if z.Actions[za0001] == nil {
 			err = en.WriteNil()
 			if err != nil {
 				return
 			}
 		} else {
-			err = z.Actions[za0001].Address.EncodeMsg(en)
+			// map header, size 2
+			// write "Address"
+			err = en.Append(0x82, 0xa7, 0x41, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73)
 			if err != nil {
 				return
 			}
-		}
-		// write "Params"
-		err = en.Append(0xa6, 0x50, 0x61, 0x72, 0x61, 0x6d, 0x73)
-		if err != nil {
-			return
-		}
-		err = en.WriteBytes(z.Actions[za0001].Params)
-		if err != nil {
-			return
+			if z.Actions[za0001].Address == nil {
+				err = en.WriteNil()
+				if err != nil {
+					return
+				}
+			} else {
+				err = z.Actions[za0001].Address.EncodeMsg(en)
+				if err != nil {
+					return
+				}
+			}
+			// write "Params"
+			err = en.Append(0xa6, 0x50, 0x61, 0x72, 0x61, 0x6d, 0x73)
+			if err != nil {
+				return
+			}
+			err = en.WriteBytes(z.Actions[za0001].Params)
+			if err != nil {
+				return
+			}
 		}
 	}
 	// write "V"
@@ -990,31 +1207,15 @@ func (z *Txdata) EncodeMsg(en *msgp.Writer) (err error) {
 			return
 		}
 	}
-	// write "Hash"
-	err = en.Append(0xa4, 0x48, 0x61, 0x73, 0x68)
-	if err != nil {
-		return
-	}
-	if z.Hash == nil {
-		err = en.WriteNil()
-		if err != nil {
-			return
-		}
-	} else {
-		err = z.Hash.EncodeMsg(en)
-		if err != nil {
-			return
-		}
-	}
 	return
 }
 
 // MarshalMsg implements msgp.Marshaler
 func (z *Txdata) MarshalMsg(b []byte) (o []byte, err error) {
 	o = msgp.Require(b, z.Msgsize())
-	// map header, size 8
+	// map header, size 6
 	// string "AccountNonce"
-	o = append(o, 0x88, 0xac, 0x41, 0x63, 0x63, 0x6f, 0x75, 0x6e, 0x74, 0x4e, 0x6f, 0x6e, 0x63, 0x65)
+	o = append(o, 0x86, 0xac, 0x41, 0x63, 0x63, 0x6f, 0x75, 0x6e, 0x74, 0x4e, 0x6f, 0x6e, 0x63, 0x65)
 	o = msgp.AppendUint64(o, z.AccountNonce)
 	// string "To"
 	o = append(o, 0xa2, 0x54, 0x6f)
@@ -1026,34 +1227,28 @@ func (z *Txdata) MarshalMsg(b []byte) (o []byte, err error) {
 			return
 		}
 	}
-	// string "Priority"
-	o = append(o, 0xa8, 0x50, 0x72, 0x69, 0x6f, 0x72, 0x69, 0x74, 0x79)
-	if z.Priority == nil {
-		o = msgp.AppendNil(o)
-	} else {
-		o, err = z.Priority.MarshalMsg(o)
-		if err != nil {
-			return
-		}
-	}
 	// string "Actions"
 	o = append(o, 0xa7, 0x41, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x73)
 	o = msgp.AppendArrayHeader(o, uint32(len(z.Actions)))
 	for za0001 := range z.Actions {
-		// map header, size 2
-		// string "Address"
-		o = append(o, 0x82, 0xa7, 0x41, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73)
-		if z.Actions[za0001].Address == nil {
+		if z.Actions[za0001] == nil {
 			o = msgp.AppendNil(o)
 		} else {
-			o, err = z.Actions[za0001].Address.MarshalMsg(o)
-			if err != nil {
-				return
+			// map header, size 2
+			// string "Address"
+			o = append(o, 0x82, 0xa7, 0x41, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73)
+			if z.Actions[za0001].Address == nil {
+				o = msgp.AppendNil(o)
+			} else {
+				o, err = z.Actions[za0001].Address.MarshalMsg(o)
+				if err != nil {
+					return
+				}
 			}
+			// string "Params"
+			o = append(o, 0xa6, 0x50, 0x61, 0x72, 0x61, 0x6d, 0x73)
+			o = msgp.AppendBytes(o, z.Actions[za0001].Params)
 		}
-		// string "Params"
-		o = append(o, 0xa6, 0x50, 0x61, 0x72, 0x61, 0x6d, 0x73)
-		o = msgp.AppendBytes(o, z.Actions[za0001].Params)
 	}
 	// string "V"
 	o = append(o, 0xa1, 0x56)
@@ -1081,16 +1276,6 @@ func (z *Txdata) MarshalMsg(b []byte) (o []byte, err error) {
 		o = msgp.AppendNil(o)
 	} else {
 		o, err = z.S.MarshalMsg(o)
-		if err != nil {
-			return
-		}
-	}
-	// string "Hash"
-	o = append(o, 0xa4, 0x48, 0x61, 0x73, 0x68)
-	if z.Hash == nil {
-		o = msgp.AppendNil(o)
-	} else {
-		o, err = z.Hash.MarshalMsg(o)
 		if err != nil {
 			return
 		}
@@ -1135,22 +1320,6 @@ func (z *Txdata) UnmarshalMsg(bts []byte) (o []byte, err error) {
 					return
 				}
 			}
-		case "Priority":
-			if msgp.IsNil(bts) {
-				bts, err = msgp.ReadNilBytes(bts)
-				if err != nil {
-					return
-				}
-				z.Priority = nil
-			} else {
-				if z.Priority == nil {
-					z.Priority = new(types.BigInt)
-				}
-				bts, err = z.Priority.UnmarshalMsg(bts)
-				if err != nil {
-					return
-				}
-			}
 		case "Actions":
 			var zb0002 uint32
 			zb0002, bts, err = msgp.ReadArrayHeaderBytes(bts)
@@ -1160,46 +1329,57 @@ func (z *Txdata) UnmarshalMsg(bts []byte) (o []byte, err error) {
 			if cap(z.Actions) >= int(zb0002) {
 				z.Actions = (z.Actions)[:zb0002]
 			} else {
-				z.Actions = make([]Action, zb0002)
+				z.Actions = make([]*Action, zb0002)
 			}
 			for za0001 := range z.Actions {
-				var zb0003 uint32
-				zb0003, bts, err = msgp.ReadMapHeaderBytes(bts)
-				if err != nil {
-					return
-				}
-				for zb0003 > 0 {
-					zb0003--
-					field, bts, err = msgp.ReadMapKeyZC(bts)
+				if msgp.IsNil(bts) {
+					bts, err = msgp.ReadNilBytes(bts)
 					if err != nil {
 						return
 					}
-					switch msgp.UnsafeString(field) {
-					case "Address":
-						if msgp.IsNil(bts) {
-							bts, err = msgp.ReadNilBytes(bts)
-							if err != nil {
-								return
-							}
-							z.Actions[za0001].Address = nil
-						} else {
-							if z.Actions[za0001].Address == nil {
-								z.Actions[za0001].Address = new(types.Address)
-							}
-							bts, err = z.Actions[za0001].Address.UnmarshalMsg(bts)
-							if err != nil {
-								return
-							}
-						}
-					case "Params":
-						z.Actions[za0001].Params, bts, err = msgp.ReadBytesBytes(bts, z.Actions[za0001].Params)
+					z.Actions[za0001] = nil
+				} else {
+					if z.Actions[za0001] == nil {
+						z.Actions[za0001] = new(Action)
+					}
+					var zb0003 uint32
+					zb0003, bts, err = msgp.ReadMapHeaderBytes(bts)
+					if err != nil {
+						return
+					}
+					for zb0003 > 0 {
+						zb0003--
+						field, bts, err = msgp.ReadMapKeyZC(bts)
 						if err != nil {
 							return
 						}
-					default:
-						bts, err = msgp.Skip(bts)
-						if err != nil {
-							return
+						switch msgp.UnsafeString(field) {
+						case "Address":
+							if msgp.IsNil(bts) {
+								bts, err = msgp.ReadNilBytes(bts)
+								if err != nil {
+									return
+								}
+								z.Actions[za0001].Address = nil
+							} else {
+								if z.Actions[za0001].Address == nil {
+									z.Actions[za0001].Address = new(types.Address)
+								}
+								bts, err = z.Actions[za0001].Address.UnmarshalMsg(bts)
+								if err != nil {
+									return
+								}
+							}
+						case "Params":
+							z.Actions[za0001].Params, bts, err = msgp.ReadBytesBytes(bts, z.Actions[za0001].Params)
+							if err != nil {
+								return
+							}
+						default:
+							bts, err = msgp.Skip(bts)
+							if err != nil {
+								return
+							}
 						}
 					}
 				}
@@ -1252,22 +1432,6 @@ func (z *Txdata) UnmarshalMsg(bts []byte) (o []byte, err error) {
 					return
 				}
 			}
-		case "Hash":
-			if msgp.IsNil(bts) {
-				bts, err = msgp.ReadNilBytes(bts)
-				if err != nil {
-					return
-				}
-				z.Hash = nil
-			} else {
-				if z.Hash == nil {
-					z.Hash = new(types.Hash)
-				}
-				bts, err = z.Hash.UnmarshalMsg(bts)
-				if err != nil {
-					return
-				}
-			}
 		default:
 			bts, err = msgp.Skip(bts)
 			if err != nil {
@@ -1287,21 +1451,19 @@ func (z *Txdata) Msgsize() (s int) {
 	} else {
 		s += z.To.Msgsize()
 	}
-	s += 9
-	if z.Priority == nil {
-		s += msgp.NilSize
-	} else {
-		s += z.Priority.Msgsize()
-	}
 	s += 8 + msgp.ArrayHeaderSize
 	for za0001 := range z.Actions {
-		s += 1 + 8
-		if z.Actions[za0001].Address == nil {
+		if z.Actions[za0001] == nil {
 			s += msgp.NilSize
 		} else {
-			s += z.Actions[za0001].Address.Msgsize()
+			s += 1 + 8
+			if z.Actions[za0001].Address == nil {
+				s += msgp.NilSize
+			} else {
+				s += z.Actions[za0001].Address.Msgsize()
+			}
+			s += 7 + msgp.BytesPrefixSize + len(z.Actions[za0001].Params)
 		}
-		s += 7 + msgp.BytesPrefixSize + len(z.Actions[za0001].Params)
 	}
 	s += 2
 	if z.V == nil {
@@ -1320,12 +1482,6 @@ func (z *Txdata) Msgsize() (s int) {
 		s += msgp.NilSize
 	} else {
 		s += z.S.Msgsize()
-	}
-	s += 5
-	if z.Hash == nil {
-		s += msgp.NilSize
-	} else {
-		s += z.Hash.Msgsize()
 	}
 	return
 }

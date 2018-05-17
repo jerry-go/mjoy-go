@@ -32,6 +32,7 @@ import (
 	"mjoy.io/common/types"
 	"bytes"
 	"github.com/tinylib/msgp/msgp"
+	"container/heap"
 )
 
 //go:generate msgp
@@ -48,18 +49,9 @@ func deriveSigner(V *big.Int) Signer {
 }
 
 
-/*
-TxBasicInfo is a  unmarshal result for other module,ex. txpool add
-*/
-
-type TxBasicInfo struct {
-	Amount	*big.Int
-	Fee		*big.Int
-}
-
-
 type Transaction struct {
 	Data Txdata
+	Priority    *big.Int    `msg:"-"`
 	// caches
 	hash atomic.Value
 	size atomic.Value
@@ -93,34 +85,33 @@ func (this *Transaction)msgpHash()(h types.Hash){
 }
 
 type Txdata struct {
-	AccountNonce 	uint64         	`json:"nonce"    gencodec:"required"`
-	To    			*types.Address 	`json:"to"		 msgp:"nil"`
-	Priority		*big.Int	`json:"priority" msgp:"-"`
-	Actions     	[]Action         `json:"actions"    gencodec:"required"`
+	AccountNonce 	uint64         	`json:"nonce"   gencodec:"required"`
+	To    			*types.Address 	`json:"to"  msgp:"nil"`
+	Actions     	[]*Action         `json:"actions"    gencodec:"required"`
 	// Signature values
-	V *types.BigInt             `json:"v"        gencodec:"required"`
-	R *types.BigInt             `json:"r"        gencodec:"required"`
-	S *types.BigInt             `json:"s"        gencodec:"required"`
+	V *types.BigInt             `json:"v"       gencodec:"required"`
+	R *types.BigInt             `json:"r"       gencodec:"required"`
+	S *types.BigInt             `json:"s"       gencodec:"required"`
 
 	// This is only used when marshaling to JSON.
-	Hash *types.Hash            `json:"hash"     msgp:"-"`
+	Hash *types.Hash            `json:"hash"        msg:"-"`
 }
 
 type Action struct{
-	Address		*types.Address	`json:"address"	gencodec:"required"`
-	Params 		[]byte			`json:"params"	gencodec:"required"`
+	Address		*types.Address	`json:"address" gencodec:"required"`
+	Params 		[]byte			`json:"params"  gencodec:"required"`
 }
 
 //All actions is made by interpreter
-func NewTransaction(nonce uint64, to types.Address, actions []Action) *Transaction {
+func NewTransaction(nonce uint64, to types.Address, actions []*Action) *Transaction {
 	return newTransaction(nonce, &to, actions)
 }
 //All acions is made by interpreter
-func NewContractCreation(nonce uint64,actions []Action) *Transaction {
+func NewContractCreation(nonce uint64,actions []*Action) *Transaction {
 	return newTransaction(nonce, nil, actions)
 }
 //the actions is right or not ,should be judged by interpreter,we have no right to do this
-func newTransaction(nonce uint64, to *types.Address, actions []Action) *Transaction {
+func newTransaction(nonce uint64, to *types.Address, actions []*Action) *Transaction {
 	if len(actions) < 0 {
 		return nil
 	}
@@ -277,8 +268,8 @@ func (tx *Transaction) WithSignature(signer Signer, sig []byte) (*Transaction, e
 //	total.Add(total, &tx.Data.Amount.IntVal)
 //	return total
 //}
-func (tx *Transaction)Priority()*big.Int{
-	return big.NewInt(tx.Data.Priority.Int64())
+func (tx *Transaction)GetPriority()*big.Int{
+	return big.NewInt(tx.Priority.Int64())
 }
 func (tx *Transaction) RawSignatureValues() (*big.Int, *big.Int, *big.Int) {
 	return &tx.Data.V.IntVal, &tx.Data.R.IntVal, &tx.Data.S.IntVal
@@ -368,6 +359,81 @@ func (t *TransactionForProducing)Shift(){
 		t.Pop()
 	}
 }
+////////////////////////////////////////////
+type TxByPriority Transactions
+
+func (s TxByPriority)Len()	int 			{return len(s)}
+func (s TxByPriority)Less(i , j int)bool 	{return s[i].Priority.Cmp(s[j].Priority) > 0}
+func (s TxByPriority) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
+
+func (s *TxByPriority) Push(x interface{}) {
+	*s = append(*s, x.(*Transaction))
+}
+
+func (s *TxByPriority) Pop() interface{} {
+	old := *s
+	n := len(old)
+	x := old[n-1]
+	*s = old[0 : n-1]
+	return x
+}
+
+
+type TransactionsByPriorityAndNonce struct {
+	txs 	map[types.Address]Transactions
+	heads 	TxByPriority
+	signer 	Signer
+
+}
+
+func NewTransactionsByPriorityAndNonce(signer Signer , txs map[types.Address]Transactions)*TransactionsByPriorityAndNonce {
+	// Initialize a price based heap with the head transactions
+	heads := make(TxByPriority, 0, len(txs))
+	for _, accTxs := range txs {
+		heads = append(heads, accTxs[0])
+		// Ensure the sender address is from the signer
+		acc, _ := Sender(signer, accTxs[0])
+		txs[acc] = accTxs[1:]
+	}
+	heap.Init(&heads)
+
+	// Assemble and return the transaction set
+	return &TransactionsByPriorityAndNonce{
+		txs:    txs,
+		heads:  heads,
+		signer: signer,
+	}
+}
+
+// Peek returns the next transaction by price.
+func (t *TransactionsByPriorityAndNonce) Peek() *Transaction {
+	if len(t.heads) == 0 {
+		return nil
+	}
+	return t.heads[0]
+}
+
+// Shift replaces the current best head with the next one from the same account.
+func (t *TransactionsByPriorityAndNonce) Shift() {
+	acc, _ := Sender(t.signer, t.heads[0])
+	if txs, ok := t.txs[acc]; ok && len(txs) > 0 {
+		t.heads[0], t.txs[acc] = txs[0], txs[1:]
+		heap.Fix(&t.heads, 0)
+	} else {
+		heap.Pop(&t.heads)
+	}
+}
+
+// Pop removes the best transaction, *not* replacing it with the next one from
+// the same account. This should be used when a transaction cannot be executed
+// and hence all subsequent ones should be discarded from the same account.
+func (t *TransactionsByPriorityAndNonce) Pop() {
+	heap.Pop(&t.heads)
+}
+
+
+
+
 
 // TxByNonce implements the sort interface to allow sorting a list of transactions
 // by their nonces. This is usually only useful for sorting transactions from a
@@ -377,6 +443,16 @@ type TxByNonce Transactions
 func (s TxByNonce) Len() int           { return len(s) }
 func (s TxByNonce) Less(i, j int) bool { return s[i].Data.AccountNonce < s[j].Data.AccountNonce }
 func (s TxByNonce) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
+
+
+
+
+
+
+
+
+
+
 
 
 // Message is a fully derived transaction and implements core.Message
