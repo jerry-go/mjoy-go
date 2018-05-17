@@ -38,6 +38,8 @@ import (
 //go:generate msgp
 //msgp:ignore Message TransactionsByPriceAndNonce
 
+//go:generate gencodec -type Txdata  -out gen_tx_json.go
+
 var (
 	ErrInvalidSig = errors.New("invalid transaction v, r, s values")
 	errNoSigner   = errors.New("missing signing methods")
