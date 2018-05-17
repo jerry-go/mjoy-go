@@ -22,8 +22,8 @@ func TestTransactionNew(t *testing.T){
 
 	tx := newTransaction(nonce , &address , actions)
 
-	s := NewMSigner(big.NewInt(1))
-	h := s.Hash(tx)
+	sig := NewMSigner(big.NewInt(1))
+	h := sig.Hash(tx)
 	t.Logf("transaction hash = %x", h)
 	if !reflect.DeepEqual(h, types.HexToHash(want)) {
 		t.Errorf("Error: have hash: %x, want: %v", h, want)

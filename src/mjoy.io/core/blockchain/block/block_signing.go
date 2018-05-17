@@ -30,7 +30,6 @@ import (
 	"crypto/ecdsa"
 )
 
-
 var (
 	ErrInvalidSig = errors.New("invalid block v, r, s values")
 	ErrInvalidChainId = errors.New("invalid chain id for block signer")
@@ -83,8 +82,6 @@ func (s BlockSigner) Equal(signer Signer) bool {
 	return ok && bSigner.chainId.Cmp(s.chainId) == 0
 }
 
-
-
 func (s BlockSigner) Sender(h *Header) (types.Address, error) {
 	if deriveChainId(&h.V.IntVal).Cmp(s.chainId) != 0 {
 		return types.Address{}, ErrInvalidChainId
@@ -107,7 +104,7 @@ func (s BlockSigner) Sender(h *Header) (types.Address, error) {
 	return address, err
 }
 
-func (s BlockSigner) VerifySignature(h *Header) (bool,error){
+func (s BlockSigner) VerifySignature(h *Header) (bool,error) {
 	//chain id check
 	if deriveChainId(&h.V.IntVal).Cmp(s.chainId) != 0 {
 		return false, ErrInvalidChainId
@@ -147,8 +144,6 @@ func (s BlockSigner) VerifySignature(h *Header) (bool,error){
 	return ret, nil
 }
 
-
-
 // SignatureValues returns a header's R S V based given signature. This signature
 // needs to be in the [R || S || V] format where V is 0 or 1.
 func (s BlockSigner) SignatureValues(h *Header, sig []byte) (R, S, V *big.Int, err error) {
@@ -174,7 +169,6 @@ func (s BlockSigner) SignatureValues(h *Header, sig []byte) (R, S, V *big.Int, e
 func (s BlockSigner) Hash(h *Header) types.Hash {
 	return h.HashNoSig()
 }
-
 
 func recoverPlain(sighash types.Hash, R, S, Vb *big.Int, homestead bool) (types.Address, error) {
 	if Vb.BitLen() > 8 {
