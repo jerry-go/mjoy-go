@@ -89,10 +89,12 @@ type Action struct{
 	Params 		[]byte			`json:"params"  gencodec:"required"`
 }
 
+type ActionSlice []Action
+
 type Txdata struct {
 	AccountNonce 	uint64         	`json:"nonce"   gencodec:"required"`
 	To    			*types.Address 	`json:"to"  msgp:"nil"`
-	Actions     	[]Action         `json:"actions"    gencodec:"required"`
+	Actions     	ActionSlice         `json:"actions"    gencodec:"required"`
 	// Signature values
 	V *types.BigInt                 `json:"v"       gencodec:"required"`
 	R *types.BigInt                 `json:"r"       gencodec:"required"`
@@ -117,17 +119,30 @@ func newTransaction(nonce uint64, to *types.Address, actions []Action) *Transact
 	if len(actions) < 0 {
 		return nil
 	}
-	newActions := make([]Action , len(actions))
-	newActions = newActions[:0]
-	copy(newActions , actions)
+	//newActions := make([]Action , len(actions))
+
 	d := Txdata{
 		AccountNonce: nonce,
 		To:    to,
-		Actions:	newActions,
+		Actions:	actions,
 		V:            new(types.BigInt),
 		R:            new(types.BigInt),
 		S:            new(types.BigInt),
 	}
+
+
+	//fmt.Println("len actions" , len(actions) , "   lenNewActions:" , len(d.Actions))
+	//d.Actions = d.Actions[:0]
+	//fmt.Println("len actions" , len(actions) , "   lenNewActions:" , len(d.Actions))
+	////newActions = append(d.Actions , actions...)
+	//d.Actions = append(d.Actions , actions...)
+	////copy(newActions , actions)
+	//fmt.Println("len actions" , len(actions) , "   lenNewActions:" , len(d.Actions))
+	//fmt.Println("actions :" , d.Actions)
+	//fmt.Println("type1:",reflect.TypeOf(d.Actions).Kind())
+	//fmt.Println("type2:",reflect.TypeOf(actions).Kind())
+	//fmt.Printf("p1:%p\n" , actions)
+	//fmt.Printf("p2:%p\n" , d.Actions)
 	//here should add some judgement for checking a transaction structure is valiable
 
 	return &Transaction{Data: d}
