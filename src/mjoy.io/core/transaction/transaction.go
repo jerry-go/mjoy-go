@@ -86,15 +86,16 @@ func (this *Transaction)msgpHash()(h types.Hash){
 
 type Txdata struct {
 	AccountNonce 	uint64         	`json:"nonce"   gencodec:"required"`
-	To    			*types.Address 	`json:"to"  msgp:"nil"`
-	Actions     	[]*Action         `json:"actions"    gencodec:"required"`
+	To    			*types.Address 	`json:"to"`
+	Actions     	[]*Action       `json:"actions" gencodec:"required"`
+
 	// Signature values
-	V *types.BigInt             `json:"v"       gencodec:"required"`
-	R *types.BigInt             `json:"r"       gencodec:"required"`
-	S *types.BigInt             `json:"s"       gencodec:"required"`
+	V *types.BigInt                 `json:"v"       gencodec:"required"`
+	R *types.BigInt                 `json:"r"       gencodec:"required"`
+	S *types.BigInt                 `json:"s"       gencodec:"required"`
 
 	// This is only used when marshaling to JSON.
-	Hash *types.Hash            `json:"hash"        msg:"-"`
+	Hash *types.Hash                `json:"hash"    msg:"-"`
 }
 
 type Action struct{
@@ -117,8 +118,8 @@ func newTransaction(nonce uint64, to *types.Address, actions []*Action) *Transac
 	}
 	d := Txdata{
 		AccountNonce: nonce,
-		To:    to,
-		Actions:	actions,
+		To:           to,
+		Actions:	  actions,
 		V:            new(types.BigInt),
 		R:            new(types.BigInt),
 		S:            new(types.BigInt),
