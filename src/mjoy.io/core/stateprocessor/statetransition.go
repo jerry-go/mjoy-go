@@ -21,11 +21,10 @@
 package stateprocessor
 
 import (
-	"math/big"
 	"mjoy.io/common/types"
 	"mjoy.io/core/state"
 	"mjoy.io/core"
-	"fmt"
+	"mjoy.io/core/transaction"
 )
 
 /*
@@ -46,8 +45,7 @@ The state transitioning model does all all the necessary work to work out a vali
 */
 type StateTransition struct {
 	msg        Message
-	value      *big.Int
-	data       []byte
+	actions     []transaction.Action
 	statedb    *state.StateDB
 	coinBase   types.Address
 }
@@ -56,20 +54,16 @@ type StateTransition struct {
 type Message interface {
 	From() types.Address
 	To() *types.Address
-
-	Value() *big.Int
-
+	Actions()[]transaction.Action
 	Nonce() uint64
 	CheckNonce() bool
-	Data() []byte
 }
 
 // NewStateTransition initialises and returns a new state transition object.
 func NewStateTransition(statedb *state.StateDB, msg Message, coinBase types.Address) *StateTransition {
 	return &StateTransition{
 		msg:      msg,
-		value:    msg.Value(),
-		data:     msg.Data(),
+		actions:msg.Actions(),
 		statedb:  statedb,
 		coinBase: coinBase,
 	}
@@ -128,61 +122,70 @@ func (st *StateTransition) TransitionDb() (ret []byte, failed bool, err error) {
 	if err = st.preCheck(); err != nil {
 		return
 	}
-	msg := st.msg
-	sender := st.from() // err checked in preCheck
 
-	contractCreation := msg.To() == nil
+	return  []byte{1,2,3},true , nil
 
-	// Snapshot !!!!!!!!!!!!!!!!!
-	revid := st.statedb.Snapshot()
-	if contractCreation {
-		// TODO:
+	//if false{
+	//
+	//	msg := st.msg
+	//	sender := st.from() // err checked in preCheck
+	//
+	//	contractCreation := msg.To() == nil
+	//
+	//
+	//	// Snapshot !!!!!!!!!!!!!!!!!
+	//	revid := st.statedb.Snapshot()
+	//	if contractCreation {
+	//		// TODO:
+	//
+	//		// RevertToSnapshot !!!!!!!!!!!!!!!!!
+	//		st.statedb.RevertToSnapshot(revid)
+	//		logger.Warnf("Not support create contraction.")
+	//		return nil, true, fmt.Errorf("Not support create contraction.")
+	//	} else {
+	//		// TODO:
+	//		logger.Debugf("Just process simple transaction.")
+	//
+	//		// Increment the nonce for the next transaction
+	//		st.statedb.SetNonce(sender, st.statedb.GetNonce(sender)+1)
+	//		// skip, direct success
+	//
+	//		// TODO: for test
+	//		{
+	//			fee := new(big.Int).Div(st.msg.Value(), new(big.Int).SetUint64(1000))
+	//			if fee.Cmp(new(big.Int).SetUint64(1)) < 0 {
+	//				fee.SetUint64(1)
+	//			}
+	//			if st.statedb.GetBalance(sender).Cmp(fee.Add(fee, st.value)) < 0 {
+	//				// RevertToSnapshot !!!!!!!!!!!!!!!!!
+	//				st.statedb.RevertToSnapshot(revid)
+	//				return nil, true, fmt.Errorf("Insufficient balance(addr: %x).", sender)
+	//			}
+	//
+	//			st.statedb.AddBalance(*msg.To(), st.value)
+	//		}
+	//	}
+	//	/*if vmerr != nil {
+	//		logger.Debug("VM returned with error", "err", vmerr)
+	//		// The only possible consensus-error would be if there wasn't
+	//		// sufficient balance to make the transfer happen. The first
+	//		// balance transfer may never fail.
+	//		if vmerr == vm.ErrInsufficientBalance {
+	//			return nil, 0, false, vmerr
+	//		}
+	//	}*/
+	//
+	//	// TODO: just for test, fee per transaction
+	//	fee := new(big.Int).Div(st.msg.Value(), new(big.Int).SetUint64(1000))
+	//	if fee.Cmp(new(big.Int).SetUint64(1)) < 0 {
+	//		fee.SetUint64(1)
+	//	}
+	//	st.statedb.AddBalance(st.coinBase, fee)
+	//
+	//	st.statedb.SubBalance(sender, fee.Add(fee,st.value))
+	//
+	//	return ret, false, err
+	//
+	//}
 
-		// RevertToSnapshot !!!!!!!!!!!!!!!!!
-		st.statedb.RevertToSnapshot(revid)
-		logger.Warnf("Not support create contraction.")
-		return nil, true, fmt.Errorf("Not support create contraction.")
-	} else {
-		// TODO:
-		logger.Debugf("Just process simple transaction.")
-
-		// Increment the nonce for the next transaction
-		st.statedb.SetNonce(sender, st.statedb.GetNonce(sender)+1)
-		// skip, direct success
-
-		// TODO: for test
-		{
-			fee := new(big.Int).Div(st.msg.Value(), new(big.Int).SetUint64(1000))
-			if fee.Cmp(new(big.Int).SetUint64(1)) < 0 {
-				fee.SetUint64(1)
-			}
-			if st.statedb.GetBalance(sender).Cmp(fee.Add(fee, st.value)) < 0 {
-				// RevertToSnapshot !!!!!!!!!!!!!!!!!
-				st.statedb.RevertToSnapshot(revid)
-				return nil, true, fmt.Errorf("Insufficient balance(addr: %x).", sender)
-			}
-
-			st.statedb.AddBalance(*msg.To(), st.value)
-		}
-	}
-	/*if vmerr != nil {
-		logger.Debug("VM returned with error", "err", vmerr)
-		// The only possible consensus-error would be if there wasn't
-		// sufficient balance to make the transfer happen. The first
-		// balance transfer may never fail.
-		if vmerr == vm.ErrInsufficientBalance {
-			return nil, 0, false, vmerr
-		}
-	}*/
-
-	// TODO: just for test, fee per transaction
-	fee := new(big.Int).Div(st.msg.Value(), new(big.Int).SetUint64(1000))
-	if fee.Cmp(new(big.Int).SetUint64(1)) < 0 {
-		fee.SetUint64(1)
-	}
-	st.statedb.AddBalance(st.coinBase, fee)
-
-	st.statedb.SubBalance(sender, fee.Add(fee,st.value))
-
-	return ret, false, err
 }
