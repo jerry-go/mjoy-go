@@ -54,7 +54,16 @@ type Log struct {
 
 	// The Removed field is true if this log was reverted due to a chain reorganisation.
 	// You must pay attention to this field if you receive logs through a filter query.
-	Removed bool `json:"removed"`
+	Removed bool `json:"removed"  msg:"-"`
+}
+
+// LogProtocol is the consensus encoding of a Log.
+type LogProtocol struct {
+	Address types.Address
+	// list of topics provided by the contract.
+	Topics []types.Hash
+	// supplied by the contract, usually ABI-encoded
+	Data []byte
 }
 
 type logMarshaling struct {
@@ -69,8 +78,5 @@ func (l *Log) String() string {
 	return fmt.Sprintf(`log: %x %x %x %x %d %x %d`, l.Address, l.Topics, l.Data, l.TxHash, l.TxIndex, l.BlockHash, l.Index)
 }
 
-// LogForStorage is a wrapper around a Log that flattens and parses the entire content of
-// a log including non-consensus fields.
-type LogForStorage Log
 
 

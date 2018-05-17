@@ -245,7 +245,6 @@ func GetBlockReceipts(db DatabaseReader, hash types.Hash, number uint64) transac
 			logger.Error("Invalid receipt array MSGP", "hash", hash, "err", err)
 			return nil
 		}
-		r.SetStatus(r.PostState)
 		receipts = append(receipts, &r)
 		left, _ = msgp.Skip(left)
 	}
@@ -442,7 +441,6 @@ func WriteBlockReceipts(db database.IDatabasePutter, hash types.Hash, number uin
 	// Convert the receipts into their storage form and serialize them
 	var buf bytes.Buffer
 	for _, receipt := range receipts {
-		receipt.StatusEncoding()
 		err := msgp.Encode(&buf, receipt)
 		if err != nil {
 			logger.Critical("Failed to Encode receipts", "err", err)

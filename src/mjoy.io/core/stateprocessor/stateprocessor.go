@@ -108,12 +108,11 @@ func ApplyTransaction(config *params.ChainConfig, author *types.Address, statedb
 		return nil, err
 	}
 	// Update the state with pending changes
-	var root []byte
 	statedb.Finalise(true)
 
 	// Create a new receipt for the transaction, storing the intermediate root  by the tx
 	// based on the mip phase, we're passing wether the root touch-delete accounts.
-	receipt := transaction.NewReceipt(root, failed)
+	receipt := transaction.NewReceipt(failed)
 	receipt.TxHash = tx.Hash()
 	// if the transaction created a contract, store the creation address in the receipt.
 	if msg.To() == nil {
