@@ -507,8 +507,18 @@ func (pm *ProtocolManager) handleMsg(p *peer) error {
 					continue
 				}
 			}
+			receiptPs := []*transaction.ReceiptProtocol{}
+			for _, receipt := range results {
+				logPs := []*transaction.LogProtocol{}
+				for _, log := range receipt.Logs {
+					logP := &transaction.LogProtocol{log.Address,log.Topics,log.Data}
+					logPs = append(logPs, logP)
+				}
+				loreceiptP := &transaction.ReceiptProtocol{receipt.Status,receipt.Bloom, logPs}
+				receiptPs = append(receiptPs, loreceiptP)
+			}
 			// If known, encode and queue for response packet
-			receipts.Receipts_s = append(receipts.Receipts_s, results)
+			receipts.Receipts_s = append(receipts.Receipts_s, receiptPs)
 
 		}
 		return p.SendReceipts(&receipts)
@@ -521,8 +531,23 @@ func (pm *ProtocolManager) handleMsg(p *peer) error {
 		}
 
 		var receipts_s [][]*transaction.Receipt
-		for _, r := range receipts.Receipts_s{
-			receipts_s = append(receipts_s, r)
+		for _, rs := range receipts.Receipts_s {
+			receipt_s := []*transaction.Receipt{}
+			for _, r := range rs {
+				logs := []*transaction.Log{}
+				for _, l := range r.Logs {
+					log:= &transaction.Log{Address:l.Address, Topics:l.Topics, Data:l.Data}
+					logs = append(logs,log)
+				}
+				receipt := &transaction.Receipt{
+					Status: r.Status,
+					Bloom: r.Bloom,
+					Logs: logs,
+				}
+				receipt_s = append(receipt_s, receipt)
+			}
+
+			receipts_s = append(receipts_s, receipt_s)
 		}
 		// Deliver all to the downloader
 		if err := pm.downloader.DeliverReceipts(p.id, receipts_s); err != nil {

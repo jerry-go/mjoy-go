@@ -124,8 +124,8 @@ func BenchmarkDecodeLog(b *testing.B) {
 	}
 }
 
-func TestMarshalUnmarshalLogForStorage(t *testing.T) {
-	v := LogForStorage{}
+func TestMarshalUnmarshalLogProtocol(t *testing.T) {
+	v := LogProtocol{}
 	bts, err := v.MarshalMsg(nil)
 	if err != nil {
 		t.Fatal(err)
@@ -147,8 +147,8 @@ func TestMarshalUnmarshalLogForStorage(t *testing.T) {
 	}
 }
 
-func BenchmarkMarshalMsgLogForStorage(b *testing.B) {
-	v := LogForStorage{}
+func BenchmarkMarshalMsgLogProtocol(b *testing.B) {
+	v := LogProtocol{}
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -156,8 +156,8 @@ func BenchmarkMarshalMsgLogForStorage(b *testing.B) {
 	}
 }
 
-func BenchmarkAppendMsgLogForStorage(b *testing.B) {
-	v := LogForStorage{}
+func BenchmarkAppendMsgLogProtocol(b *testing.B) {
+	v := LogProtocol{}
 	bts := make([]byte, 0, v.Msgsize())
 	bts, _ = v.MarshalMsg(bts[0:0])
 	b.SetBytes(int64(len(bts)))
@@ -168,8 +168,8 @@ func BenchmarkAppendMsgLogForStorage(b *testing.B) {
 	}
 }
 
-func BenchmarkUnmarshalLogForStorage(b *testing.B) {
-	v := LogForStorage{}
+func BenchmarkUnmarshalLogProtocol(b *testing.B) {
+	v := LogProtocol{}
 	bts, _ := v.MarshalMsg(nil)
 	b.ReportAllocs()
 	b.SetBytes(int64(len(bts)))
@@ -182,8 +182,8 @@ func BenchmarkUnmarshalLogForStorage(b *testing.B) {
 	}
 }
 
-func TestEncodeDecodeLogForStorage(t *testing.T) {
-	v := LogForStorage{}
+func TestEncodeDecodeLogProtocol(t *testing.T) {
+	v := LogProtocol{}
 	var buf bytes.Buffer
 	msgp.Encode(&buf, &v)
 
@@ -192,7 +192,7 @@ func TestEncodeDecodeLogForStorage(t *testing.T) {
 		t.Logf("WARNING: Msgsize() for %v is inaccurate", v)
 	}
 
-	vn := LogForStorage{}
+	vn := LogProtocol{}
 	err := msgp.Decode(&buf, &vn)
 	if err != nil {
 		t.Error(err)
@@ -206,8 +206,8 @@ func TestEncodeDecodeLogForStorage(t *testing.T) {
 	}
 }
 
-func BenchmarkEncodeLogForStorage(b *testing.B) {
-	v := LogForStorage{}
+func BenchmarkEncodeLogProtocol(b *testing.B) {
+	v := LogProtocol{}
 	var buf bytes.Buffer
 	msgp.Encode(&buf, &v)
 	b.SetBytes(int64(buf.Len()))
@@ -220,8 +220,8 @@ func BenchmarkEncodeLogForStorage(b *testing.B) {
 	en.Flush()
 }
 
-func BenchmarkDecodeLogForStorage(b *testing.B) {
-	v := LogForStorage{}
+func BenchmarkDecodeLogProtocol(b *testing.B) {
+	v := LogProtocol{}
 	var buf bytes.Buffer
 	msgp.Encode(&buf, &v)
 	b.SetBytes(int64(buf.Len()))
