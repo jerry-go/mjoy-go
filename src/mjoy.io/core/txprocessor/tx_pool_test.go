@@ -71,13 +71,13 @@ func (bc *testBlockChain)SubscribeChainHeadEvent(ch chan<-core.ChainHeadEvent)ev
 	return bc.chainHeadFeed.Subscribe(ch)
 }
 
-func randomActions()[]*transaction.Action{
+func randomActions()[]transaction.Action{
 	address := types.HexToAddress("0x5aaeb6053f3e94c9b9a09f33669435e7ef1beaed")
 	t := rand.Intn(10)
-	r := []*transaction.Action{}
+	r := []transaction.Action{}
 
 	for i:=0;i<t;i++{
-		action := new(transaction.Action)
+		action := transaction.Action{}
 		action.Address = &address
 
 		action.Params = []byte{}
