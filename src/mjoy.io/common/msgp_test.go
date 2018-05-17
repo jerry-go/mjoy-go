@@ -35,7 +35,7 @@ type testst struct {
 
 func TestMsgpHash(t *testing.T) {
 	want := "msgp: type \"common.testst\" not supported"
-	_, err := msgpHash([]interface{}{
+	_, err := MsgpHash([]interface{}{
 		uint64(1),
 		uint(0),
 		types.NewBigInt(*big.NewInt(123)),

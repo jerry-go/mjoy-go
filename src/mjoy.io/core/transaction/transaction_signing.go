@@ -30,9 +30,7 @@ import (
 
 	"mjoy.io/common/types"
 	"fmt"
-	"bytes"
-	"github.com/tinylib/msgp/msgp"
-	"mjoy.io/utils/crypto/sha3"
+	"mjoy.io/common"
 )
 
 var (
@@ -51,15 +49,6 @@ func MakeSigner(config *params.ChainConfig, blockNumber *big.Int) Signer {
 	var signer Signer
 	//use latest Signer
 	signer = NewMSigner(config.ChainId)
-
-	//switch {
-	//case config.IsEIP155(blockNumber):
-	//	signer = NewMSigner(config.ChainId)
-	//case config.IsHomestead(blockNumber):
-	//	signer = HomesteadSigner{}
-	//default:
-	//	signer = FrontierSigner{}
-	//}
 	return signer
 }
 
@@ -113,7 +102,6 @@ type Signer interface {
 	Equal(Signer) bool
 }
 
-
 type MSigner struct {
 	chainId, chainIdMul *big.Int
 }
@@ -149,18 +137,13 @@ func (s MSigner) Sender(tx *Transaction) (types.Address, error) {
 // needs to be in the [R || S || V] format where V is 0 or 1.
 func (s MSigner) SignatureValues(tx *Transaction, sig []byte) (R, S, V *big.Int, err error) {
 	//here use Frontier SignatureValues Function directly
-
-	{
-		if len(sig) != 65 {
-			errStr:=fmt.Sprintf("wrong size for signature: got %d, want 65", len(sig))
-			err = errors.New(errStr)
-		}else{
-			R = new(big.Int).SetBytes(sig[:32])
-			S = new(big.Int).SetBytes(sig[32:64])
-			V = new(big.Int).SetBytes([]byte{sig[64] + 27})
-		}
-
-
+	if len(sig) != 65 {
+		errStr:=fmt.Sprintf("wrong size for signature: got %d, want 65", len(sig))
+		err = errors.New(errStr)
+	}else{
+		R = new(big.Int).SetBytes(sig[:32])
+		S = new(big.Int).SetBytes(sig[32:64])
+		V = new(big.Int).SetBytes([]byte{sig[64] + 27})
 	}
 
 	if err != nil {
@@ -173,46 +156,25 @@ func (s MSigner) SignatureValues(tx *Transaction, sig []byte) (R, S, V *big.Int,
 	return R, S, V, nil
 }
 
-
 // Hash returns the hash to be signed by the sender.
 // It does not uniquely identify the transaction.
 func (s MSigner) Hash(tx *Transaction) types.Hash {
-
-	itfcs:=make([]interface{},0)
-	itfcs = append(itfcs,tx.Data.AccountNonce)
 	if nil == tx.Data.To {
-		itfcs = append(itfcs,&types.Address{})
-	}else{
-		itfcs = append(itfcs,tx.Data.To)
+		tx.Data.To = &types.Address{}
 	}
 
-	itfcs = append(itfcs , tx.Data.Actions)
-	//itfcs = append(itfcs,tx.Data.Actions)
-	itfcs = append(itfcs,types.BigInt{*s.chainId}, uint(0), uint(0))
-
-
-	var buf bytes.Buffer
-	wr := msgp.NewWriter(&buf)
-	for _,it:=range itfcs{
-		err := wr.WriteIntf(it)
-		if err != nil{
-			panic(fmt.Sprintf("MSigner Wrong.Err:",err.Error()))
-		}
+	h, err := common.MsgpHash([]interface{}{
+		tx.Data.AccountNonce,
+		tx.Data.To,
+		tx.Data.Actions,
+		types.BigInt{*s.chainId}, uint(0), uint(0),
+	})
+	if err != nil {
+		panic(err)
 	}
 
-	err := wr.Flush()
-	if err!=nil{
-		panic(fmt.Sprintf("MSigner Wrong.Err:",err.Error()))
-	}
-	var h types.Hash
-
-	hw:=sha3.NewKeccak256()
-	hw.Write(buf.Bytes())
-	hw.Sum(h[:0])
 	return h
 }
-
-
 
 func recoverPlain(sighash types.Hash, R, S, Vb *big.Int, homestead bool) (types.Address, error) {
 	if Vb.BitLen() > 8 {

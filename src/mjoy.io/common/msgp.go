@@ -22,13 +22,12 @@ package common
 
 import (
 	"github.com/tinylib/msgp/msgp"
-	"bytes"
 	"mjoy.io/utils/crypto/sha3"
 	"mjoy.io/common/types"
 	"fmt"
 )
 
-func msgpHash(x interface{}) (h types.Hash, err error) {
+func MsgpHash(x interface{}) (h types.Hash, err error) {
 	defer func() {
 		panic := recover()
 		if panic != nil {
@@ -36,8 +35,8 @@ func msgpHash(x interface{}) (h types.Hash, err error) {
 		}
 	}()
 
-	var buf bytes.Buffer
-	wr := msgp.NewWriter(&buf)
+	hw := sha3.NewKeccak256()
+	wr := msgp.NewWriter(hw)
 	err = wr.WriteIntf(x)
 	if err != nil{
 		return
@@ -48,9 +47,6 @@ func msgpHash(x interface{}) (h types.Hash, err error) {
 		return
 	}
 
-	hw:=sha3.NewKeccak256()
-	hw.Write(buf.Bytes())
 	hw.Sum(h[:0])
-
 	return h, nil
 }

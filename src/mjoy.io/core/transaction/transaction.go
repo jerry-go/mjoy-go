@@ -28,7 +28,6 @@ import (
 	"mjoy.io/utils/crypto"
 	"mjoy.io/common"
 	"fmt"
-	"mjoy.io/utils/crypto/sha3"
 	"mjoy.io/common/types"
 	"bytes"
 	"github.com/tinylib/msgp/msgp"
@@ -50,7 +49,6 @@ func deriveSigner(V *big.Int) Signer {
 	return NewMSigner(deriveChainId(V))
 }
 
-
 type Transaction struct {
 	Data Txdata
 	Priority    *big.Int    `msg:"-"`
@@ -60,33 +58,19 @@ type Transaction struct {
 	from atomic.Value
 }
 
-func (this * Transaction)PrintDataInfo(){
+func (this * Transaction)PrintDataInfo() {
 	//logger.Debug("Txdata.Amount Value:",this.Data.Amount)
 	//fmt.Println("txData.Amount Value:",this.Data.Amount)
 }
 
 //for test
-func (this * Transaction)PrintVSR(){
+func (this * Transaction)PrintVSR() {
 	fmt.Printf("V:=%d,S:=%d,R:=%d\n",this.Data.V.IntVal.Int64(),
 											this.Data.S.IntVal.Int64(),
 											this.Data.R.IntVal.Int64())
 }
 
-func (this *Transaction)msgpHash()(h types.Hash){
-	var buf bytes.Buffer
-	err := msgp.Encode(&buf, this)
-	if err != nil{
-		return types.Hash{}
-	}else{
-		hw:=sha3.NewKeccak256()
-		hw.Write(buf.Bytes())
-		hw.Sum(h[:0])
-
-		return h
-	}
-}
-
-type Action struct{
+type Action struct {
 	Address		*types.Address	`json:"address" gencodec:"required"`
 	Params 		[]byte			`json:"params"  gencodec:"required"`
 }
@@ -95,8 +79,8 @@ type ActionSlice []Action
 
 type Txdata struct {
 	AccountNonce 	uint64         	`json:"nonce"   gencodec:"required"`
-	To    			*types.Address 	`json:"to"  msgp:"nil"`
-	Actions     	ActionSlice         `json:"actions"    gencodec:"required"`
+	To    			*types.Address 	`json:"to"`
+	Actions     	ActionSlice     `json:"actions" gencodec:"required"`
 	// Signature values
 	V *types.BigInt                 `json:"v"       gencodec:"required"`
 	R *types.BigInt                 `json:"r"       gencodec:"required"`
@@ -106,22 +90,19 @@ type Txdata struct {
 	Hash *types.Hash                `json:"hash"    msg:"-"`
 }
 
-
-
 //All actions is made by interpreter
-func NewTransaction(nonce uint64, to types.Address, actions []Action) *Transaction {
+func NewTransaction(nonce uint64, to types.Address, actions ActionSlice) *Transaction {
 	return newTransaction(nonce, &to, actions)
 }
 //All acions is made by interpreter
-func NewContractCreation(nonce uint64,actions []Action) *Transaction {
+func NewContractCreation(nonce uint64, actions ActionSlice) *Transaction {
 	return newTransaction(nonce, nil, actions)
 }
 //the actions is right or not ,should be judged by interpreter,we have no right to do this
-func newTransaction(nonce uint64, to *types.Address, actions []Action) *Transaction {
+func newTransaction(nonce uint64, to *types.Address, actions ActionSlice) *Transaction {
 	if len(actions) < 0 {
 		return nil
 	}
-	//newActions := make([]Action , len(actions))
 
 	d := Txdata{
 		AccountNonce: nonce,
@@ -131,21 +112,6 @@ func newTransaction(nonce uint64, to *types.Address, actions []Action) *Transact
 		R:            new(types.BigInt),
 		S:            new(types.BigInt),
 	}
-
-
-	//fmt.Println("len actions" , len(actions) , "   lenNewActions:" , len(d.Actions))
-	//d.Actions = d.Actions[:0]
-	//fmt.Println("len actions" , len(actions) , "   lenNewActions:" , len(d.Actions))
-	////newActions = append(d.Actions , actions...)
-	//d.Actions = append(d.Actions , actions...)
-	////copy(newActions , actions)
-	//fmt.Println("len actions" , len(actions) , "   lenNewActions:" , len(d.Actions))
-	//fmt.Println("actions :" , d.Actions)
-	//fmt.Println("type1:",reflect.TypeOf(d.Actions).Kind())
-	//fmt.Println("type2:",reflect.TypeOf(actions).Kind())
-	//fmt.Printf("p1:%p\n" , actions)
-	//fmt.Printf("p2:%p\n" , d.Actions)
-	//here should add some judgement for checking a transaction structure is valiable
 
 	return &Transaction{Data: d}
 }
@@ -169,7 +135,6 @@ func isProtectedV(V *big.Int) bool {
 	// anything not 27 or 28 are considered unprotected
 	return true
 }
-
 
 // MarshalJSON encodes the web3 RPC transaction format.
 func (tx *Transaction) MarshalJSON() ([]byte, error) {
@@ -199,10 +164,8 @@ func (tx *Transaction) UnmarshalJSON(input []byte) error {
 	return nil
 }
 
-
 func (tx *Transaction) Nonce() uint64      { return tx.Data.AccountNonce }
 func (tx *Transaction) CheckNonce() bool   { return true }
-
 
 // To returns the recipient address of the transaction.
 // It returns nil if the transaction is a contract creation.
@@ -221,12 +184,15 @@ func (tx *Transaction) Hash() types.Hash {
 		return hash.(types.Hash)
 	}
 
-	v := tx.msgpHash()
+	v, err := common.MsgpHash(tx)
+	if err != nil {
+		logger.Errorf("Transaction hash error: %v", err)
+		return types.Hash{}
+	}
+
 	tx.hash.Store(v)
 	return v
 }
-
-
 
 type writeCounter common.StorageSize
 
@@ -234,7 +200,6 @@ func (c *writeCounter) Write(b []byte) (int, error) {
 	*c += writeCounter(len(b))
 	return len(b), nil
 }
-
 
 // Size returns the true MSGP encoded storage size of the transaction, either by
 // encoding and returning it, or returning a previsouly cached value.
@@ -400,7 +365,6 @@ func (s *TxByPriority) Pop() interface{} {
 	return x
 }
 
-
 type TransactionsByPriorityAndNonce struct {
 	txs 	map[types.Address]Transactions
 	heads 	TxByPriority
@@ -453,10 +417,6 @@ func (t *TransactionsByPriorityAndNonce) Pop() {
 	heap.Pop(&t.heads)
 }
 
-
-
-
-
 // TxByNonce implements the sort interface to allow sorting a list of transactions
 // by their nonces. This is usually only useful for sorting transactions from a
 // single account, otherwise a nonce comparison doesn't make much sense.
@@ -465,17 +425,6 @@ type TxByNonce Transactions
 func (s TxByNonce) Len() int           { return len(s) }
 func (s TxByNonce) Less(i, j int) bool { return s[i].Data.AccountNonce < s[j].Data.AccountNonce }
 func (s TxByNonce) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
-
-
-
-
-
-
-
-
-
-
-
 
 // Message is a fully derived transaction and implements core.Message
 //
