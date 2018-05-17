@@ -29,7 +29,6 @@ import (
 	"sync/atomic"
 	"math/big"
 	"time"
-	"mjoy.io/utils/crypto/sha3"
 	"sort"
 	"mjoy.io/common"
 	"github.com/tinylib/msgp/msgp"
@@ -97,23 +96,13 @@ type Block struct {
 	ReceivedFrom interface{}    `msg:"-"`
 }
 
-func (h *Header) Hash() (out types.Hash) {
-	var buf bytes.Buffer
-	err := msgp.Encode(&buf, h)
-	if err == nil{
-		return sh3Hash(buf.Bytes())
-	}else{
+func (h *Header) Hash() types.Hash {
+	hash, err := common.MsgpHash(h)
+	if err != nil {
 		return types.Hash{}
 	}
+	return hash
 }
-
-func sh3Hash(x interface{}) (h types.Hash) {
-	h3 := sha3.NewKeccak256()
-	h3.Write(x.([]byte))
-	h3.Sum(h[:0])
-	return h
-}
-
 
 var (
 	EmptyRootHash  = DeriveSha(transaction.Transactions{})
@@ -288,7 +277,6 @@ func (b *Block) Hash() types.Hash {
 	return v
 }
 
-
 func (b *Block) String() string {
 	str := fmt.Sprintf(`Block(#%v): Size: %v {
 BlockproducerHash: %x
@@ -350,24 +338,22 @@ func Number(b1, b2 *Block) bool { return b1.B_header.Number.IntVal.Cmp(&b2.B_hea
 type HeaderNoSig struct {
 	ParentHash  		types.Hash            `json:"parentHash" `
 	StateRootHash   	types.Hash            `json:"stateRoot" `
-	TxRootHash      	types.Hash            `json:"transactionsRoot" `
+	TxRootHash      	types.Hash            `json:"transactionsRoot"`
 	ReceiptRootHash 	types.Hash            `json:"receiptsRoot" `
 	Bloom       		types.Bloom           `json:"logsBloom" `
 	Number      		*types.BigInt         `json:"number" `
 	Time        		*types.BigInt         `json:"timestamp" `
 
 	//BlockProducer is not used in protocol.
-	BlockProducer   	types.Address         `json:"blockProducer" msg:"-"`
+	BlockProducer   	types.Address         `json:"blockProducer" msg:"-" `
 	ConsensusData     	ConsensusData         `json:"consensusData" `
 }
 func (h *HeaderNoSig) Hash() types.Hash {
-	var buf bytes.Buffer
-	err := msgp.Encode(&buf, h)
-	if err == nil{
-		return sh3Hash(buf.Bytes())
-	}else{
+	hash, err := common.MsgpHash(h)
+	if err != nil {
 		return types.Hash{}
 	}
+	return hash
 }
 
 //type Headers []*Header
