@@ -65,9 +65,10 @@ func (this * Transaction)PrintDataInfo() {
 
 //for test
 func (this * Transaction)PrintVSR() {
-	fmt.Printf("V:=%d,S:=%d,R:=%d\n",this.Data.V.IntVal.Int64(),
-											this.Data.S.IntVal.Int64(),
-											this.Data.R.IntVal.Int64())
+	fmt.Printf("V:%v, S:%v, R:%v\n",
+		this.Data.V.IntVal,
+		this.Data.S.IntVal,
+		this.Data.R.IntVal)
 }
 
 type Action struct {
