@@ -38,11 +38,7 @@ var errGenesisNoConfig = errors.New("genesis has no chain configuration")
 // fork switch-over blocks through the chain configuration.
 type Genesis struct {
 	Config     *params.ChainConfig `json:"config"`
-	Nonce      uint64              `json:"nonce"`
 	Timestamp  uint64              `json:"timestamp"`
-	ExtraData  []byte              `json:"extraData"`
-	Mixhash    types.Hash          `json:"mixHash"`
-	Coinbase   types.Address       `json:"coinbase"`
 	Alloc      GenesisAlloc        `json:"alloc"`
 
 	// These fields are used for consensus tests. Please don't use them
@@ -142,7 +138,6 @@ func (g *Genesis) configOrDefault(ghash types.Hash) *params.ChainConfig {
 func DefaultGenesisBlock() *Genesis {
 	return &Genesis{
 		Config:     params.DefaultChainConfig,
-		Nonce:      666,
 	}
 }
 
@@ -164,7 +159,6 @@ func (g *Genesis) ToBlock() (*block.Block, *state.StateDB) {
 		Number:     		types.NewBigInt(*new(big.Int).SetUint64(g.Number)),
 		Time:       		types.NewBigInt(*new(big.Int).SetUint64(g.Timestamp)),
 		ParentHash: 		g.ParentHash,
-		BlockProducer:   	g.Coinbase,
 		StateRootHash: 		root,
 	}
 

@@ -60,6 +60,7 @@ type Signer interface {
 
 	// Equal returns true if the given signer is the same as the receiver.
 	Equal(Signer) bool
+
 }
 
 type BlockSigner struct {
@@ -88,6 +89,12 @@ func (s BlockSigner) Sender(h *Header) (types.Address, error) {
 	if deriveChainId(&h.V.IntVal).Cmp(s.chainId) != 0 {
 		return types.Address{}, ErrInvalidChainId
 	}
+
+	empty := types.Address{}
+	if h.BlockProducer != empty {
+		return h.BlockProducer, nil
+	}
+
     V := &big.Int{}
 	if s.chainId.Sign() != 0 {
 		V = V.Sub(&h.V.IntVal, s.chainIdMul)
@@ -99,6 +106,48 @@ func (s BlockSigner) Sender(h *Header) (types.Address, error) {
 	h.BlockProducer = address
 	return address, err
 }
+
+func (s BlockSigner) VerifySignature(h *Header) (bool,error){
+	//chain id check
+	if deriveChainId(&h.V.IntVal).Cmp(s.chainId) != 0 {
+		return false, ErrInvalidChainId
+	}
+
+	//R S V check
+	var V uint64
+	if s.chainId.Sign() != 0 {
+		V = h.V.IntVal.Uint64() - s.chainIdMul.Uint64() - 35
+	} else{
+		V = h.V.IntVal.Uint64() - 27
+	}
+
+	if !crypto.ValidateSignatureValues(byte(V), &h.R.IntVal, &h.S.IntVal, true) {
+		return false, ErrInvalidSig
+	}
+
+	//encode the snature in uncompressed format
+	R, S := h.R.IntVal.Bytes(), h.S.IntVal.Bytes()
+	sig := make([]byte, 65)
+	copy(sig[32-len(R):32], R)
+	copy(sig[64-len(S):64], S)
+	sig[64] = byte(V)
+
+	// recover the public key from the signature
+	hash := s.Hash(h).Bytes()
+	pub, err := crypto.Ecrecover(hash, sig)
+	if err != nil {
+		return false, err
+	}
+	if len(pub) == 0 || pub[0] != 4 {
+		return false, errors.New("invalid public key")
+	}
+
+	ret := crypto.VerifySignature(pub, hash, sig[:64])
+
+	return ret, nil
+}
+
+
 
 // SignatureValues returns a header's R S V based given signature. This signature
 // needs to be in the [R || S || V] format where V is 0 or 1.

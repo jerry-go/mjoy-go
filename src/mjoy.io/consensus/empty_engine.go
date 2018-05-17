@@ -32,7 +32,7 @@ type Engine_empty struct {
 }
 
 
-func (empty *Engine_empty) Author(header *block.Header) (types.Address, error) {
+func (empty *Engine_empty) Author(chain ChainReader, header *block.Header) (types.Address, error) {
 	return header.BlockProducer, nil
 }
 

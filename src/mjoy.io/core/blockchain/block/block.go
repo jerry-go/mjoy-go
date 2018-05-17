@@ -72,7 +72,7 @@ type Header struct {
 	Time        		*types.BigInt         `json:"timestamp" `
 
 	//BlockProducer is not used in protocol.
-	BlockProducer   	types.Address         `json:"blockProducer" msgp:"-"`
+	BlockProducer   	types.Address         `json:"blockProducer" msg:"-"`
 	ConsensusData     	ConsensusData         `json:"consensusData" `
 	//Signature values
 	V                 	*types.BigInt         `json:"v"`
@@ -346,10 +346,7 @@ func (self blockSorter) Less(i, j int) bool { return self.by(self.blocks[i], sel
 
 func Number(b1, b2 *Block) bool { return b1.B_header.Number.IntVal.Cmp(&b2.B_header.Number.IntVal) < 0 }
 
-
-
-// header wihtout mixhash and nonce
-
+// header wihtout signature
 type HeaderNoSig struct {
 	ParentHash  		types.Hash            `json:"parentHash" `
 	StateRootHash   	types.Hash            `json:"stateRoot" `
@@ -360,7 +357,7 @@ type HeaderNoSig struct {
 	Time        		*types.BigInt         `json:"timestamp" `
 
 	//BlockProducer is not used in protocol.
-	BlockProducer   	types.Address         `json:"blockProducer" msgp:"-"`
+	BlockProducer   	types.Address         `json:"blockProducer" msg:"-"`
 	ConsensusData     	ConsensusData         `json:"consensusData" `
 }
 func (h *HeaderNoSig) Hash() types.Hash {
