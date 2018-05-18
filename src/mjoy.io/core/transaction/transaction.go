@@ -76,6 +76,7 @@ type Action struct {
 	Params 		[]byte			`json:"params"  gencodec:"required"`
 }
 
+//ActionSlice just for msgp.For other memery logic deal,we just need use '[]Action'
 type ActionSlice []Action
 
 type Txdata struct {
@@ -223,19 +224,19 @@ func (tx *Transaction) Size() common.StorageSize {
 
 //In Mjoy, all details of transaction dealing should not visiable for others except vm(interpreter)
 
-//func (tx *Transaction) AsMessage(s Signer) (Message, error) {
-//	msg := Message{
-//		nonce:      tx.Data.AccountNonce,
-//		to:         tx.Data.Recipient,
-//		amount:     &tx.Data.Amount.IntVal,
-//		data:       tx.Data.Payload,
-//		checkNonce: true,
-//	}
-//
-//	var err error
-//	msg.from, err = Sender(s, tx)
-//	return msg, err
-//}
+func (tx *Transaction) AsMessage(s Signer) (Message, error) {
+	newActions := []Action{}
+	newActions = append(newActions , tx.Data.Actions...)
+	msg := Message{
+		nonce:      tx.Data.AccountNonce,
+		to:         tx.Data.To,
+		actions:    newActions,
+		checkNonce: true,
+	}
+	var err error
+	msg.from, err = Sender(s, tx)
+	return msg, err
+}
 
 // WithSignature returns a new transaction with the given signature.
 // This signature needs to be formatted as described in the yellow paper (v+27).
@@ -427,6 +428,7 @@ func (s TxByNonce) Len() int           { return len(s) }
 func (s TxByNonce) Less(i, j int) bool { return s[i].Data.AccountNonce < s[j].Data.AccountNonce }
 func (s TxByNonce) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
 
+
 // Message is a fully derived transaction and implements core.Message
 //
 // NOTE: In a future PR this will be removed.
@@ -434,25 +436,22 @@ type Message struct {
 	to         *types.Address
 	from       types.Address
 	nonce      uint64
-	amount     *big.Int
-	data       []byte
+	actions    []Action
 	checkNonce bool
 }
 
-func NewMessage(from types.Address, to *types.Address, nonce uint64, amount *big.Int, data []byte, checkNonce bool) Message {
+func NewMessage(from types.Address, to *types.Address, nonce uint64, actions ActionSlice, checkNonce bool) Message {
 	return Message{
 		from:       from,
 		to:         to,
 		nonce:      nonce,
-		amount:     amount,
-		data:       data,
+		actions:    actions,
 		checkNonce: checkNonce,
 	}
 }
 
 func (m Message) From() types.Address { return m.from }
 func (m Message) To() *types.Address  { return m.to }
-func (m Message) Value() *big.Int      { return m.amount }
 func (m Message) Nonce() uint64        { return m.nonce }
-func (m Message) Data() []byte         { return m.data }
+func (m Message) Actions()[]Action      {return m.actions}
 func (m Message) CheckNonce() bool     { return m.checkNonce }
