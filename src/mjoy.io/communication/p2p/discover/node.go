@@ -56,20 +56,20 @@ const NodeIDBytes = NodeIDBits / 8
 // Node represents a host on the network.
 // The fields of Node may not be modified.
 type Node struct {
-	IP       types.IP `msgp:",extension"` // len 4 for IPv4 or 16 for IPv6
+	IP       types.IP `msg:",extension"` // len 4 for IPv4 or 16 for IPv6
 	UDP, TCP uint16   // port numbers
-	ID       NodeID   `msgp:",extension"` // the node's public key
+	ID       NodeID   `msg:",extension"` // the node's public key
 
 	// This is a cached copy of sha3(ID) which is used for node
 	// distance calculations. This is part of Node in order to make it
 	// possible to write tests that need a node at a certain distance.
 	// In those tests, the content of sha will not actually correspond
 	// with ID.
-	sha types.Hash `msgp:",extension"`
+	Sha types.Hash `msg:",extension"`
 
 	// whether this node is currently being pinged in order to replace
 	// it in a bucket
-	contested bool
+	Contested bool
 }
 
 // NewNode creates a new node. It is mostly meant to be used for
@@ -83,7 +83,7 @@ func NewNode(id NodeID, ip net.IP, udpPort, tcpPort uint16) *Node {
 		UDP: udpPort,
 		TCP: tcpPort,
 		ID:  id,
-		sha: crypto.Keccak256Hash(id[:]),
+		Sha: crypto.Keccak256Hash(id[:]),
 	}
 }
 
