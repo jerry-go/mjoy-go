@@ -300,7 +300,7 @@ func (h *Header) String() string {
 	Bloom:              %x
 	Number:	            %v
 	Time:               %v
-	ConsensusData:      %s
+	ConsensusData:      %v
 	R:                  %v
 	S:                  %v
     V:                  %v
