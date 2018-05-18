@@ -243,7 +243,7 @@ func TestUDP_findnode(t *testing.T) {
 	targetHash := crypto.Keccak256Hash(testTarget[:])
 	nodes := &nodesByDistance{target: targetHash}
 	for i := 0; i < bucketSize; i++ {
-		nodes.push(nodeAtDistance(test.table.self.sha, i+2), bucketSize)
+		nodes.push(nodeAtDistance(test.table.self.Sha, i+2), bucketSize)
 	}
 	test.table.stuff(nodes.entries)
 

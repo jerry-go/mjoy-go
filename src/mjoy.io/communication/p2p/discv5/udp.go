@@ -74,7 +74,7 @@ type (
 		Topics []Topic
 
 		// Ignore additional fields (for forward compatibility).
-		Rest []byte `msgp:"-"`
+		Rest []byte `msg:"-"`
 	}
 
 	// pong is the reply to Ping.
@@ -88,28 +88,28 @@ type (
 		Expiration uint64 // Absolute timestamp at which the packet becomes invalid.
 
 		// v5
-		TopicHash    types.Hash `msgp:",extension"`
+		TopicHash    types.Hash `msg:",extension"`
 		TicketSerial uint32
 		WaitPeriods  []uint32
 
 		// Ignore additional fields (for forward compatibility).
-		Rest []byte `msgp:"-"`
+		Rest []byte `msg:"-"`
 	}
 
 	// Findnode is a query for nodes close to the given target.
 	Findnode struct {
-		Target     NodeID `msgp:",extension"` // doesn't need to be an actual public key
+		Target     NodeID `msg:",extension"` // doesn't need to be an actual public key
 		Expiration uint64
 		// Ignore additional fields (for forward compatibility).
-		Rest []byte `msgp:"-"`
+		Rest []byte `msg:"-"`
 	}
 
 	// FindnodeHash is a query for nodes close to the given target.
 	FindnodeHash struct {
-		Target     types.Hash `msgp:",extension"`
+		Target     types.Hash `msg:",extension"`
 		Expiration uint64
 		// Ignore additional fields (for forward compatibility).
-		Rest []byte `msgp:"-"`
+		Rest []byte `msg:"-"`
 	}
 
 	// reply to Findnode
@@ -117,7 +117,7 @@ type (
 		Nodes      []RpcNode
 		Expiration uint64
 		// Ignore additional fields (for forward compatibility).
-		Rest []byte `msgp:"-"`
+		Rest []byte `msg:"-"`
 	}
 
 	TopicRegister struct {
@@ -133,19 +133,19 @@ type (
 
 	// reply to TopicQuery
 	TopicNodes struct {
-		Echo  types.Hash `msgp:",extension"`
+		Echo  types.Hash `msg:",extension"`
 		Nodes []RpcNode
 	}
 
 	RpcNode struct {
-		IP  types.IP `msgp:",extension"` // len 4 for IPv4 or 16 for IPv6
+		IP  types.IP `msg:",extension"` // len 4 for IPv4 or 16 for IPv6
 		UDP uint16   // for discovery protocol
 		TCP uint16   // for Msgpx protocol
 		ID  NodeID
 	}
 
 	RpcEndpoint struct {
-		IP  types.IP `msgp:",extension"` // len 4 for IPv4 or 16 for IPv6
+		IP  types.IP `msg:",extension"` // len 4 for IPv4 or 16 for IPv6
 		UDP uint16   // for discovery protocol
 		TCP uint16   // for Msgpx protocol
 	}

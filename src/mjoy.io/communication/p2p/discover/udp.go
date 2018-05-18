@@ -79,7 +79,7 @@ type (
 		To         RpcEndpoint
 		Expiration uint64
 		// Ignore additional fields (for forward compatibility).
-		Rest []byte `msgp:"-"`
+		Rest []byte `msg:"-"`
 	}
 
 	// Pong is the reply to Ping.
@@ -92,15 +92,15 @@ type (
 		ReplyTok   []byte // This contains the hash of the Ping packet.
 		Expiration uint64 // Absolute timestamp at which the packet becomes invalid.
 		// Ignore additional fields (for forward compatibility).
-		Rest []byte `msgp:"-"`
+		Rest []byte `msg:"-"`
 	}
 
 	// Findnode is a query for nodes close to the given target.
 	Findnode struct {
-		Target     NodeID `msgp:",extension"` // doesn't need to be an actual public key
+		Target     NodeID `msg:",extension"` // doesn't need to be an actual public key
 		Expiration uint64
 		// Ignore additional fields (for forward compatibility).
-		Rest []byte `msgp:"-"`
+		Rest []byte `msg:"-"`
 	}
 
 	// reply to Findnode
@@ -108,18 +108,18 @@ type (
 		Nodes      []RpcNode
 		Expiration uint64
 		// Ignore additional fields (for forward compatibility).
-		Rest []byte `msgp:"-"`
+		Rest []byte `msg:"-"`
 	}
 
 	RpcNode struct {
-		IP  types.IP `msgp:",extension"` // len 4 for IPv4 or 16 for IPv6
+		IP  types.IP `msg:",extension"` // len 4 for IPv4 or 16 for IPv6
 		UDP uint16   // for discovery protocol
 		TCP uint16   // for Msgpx protocol
-		ID  NodeID   `msgp:",extension"`
+		ID  NodeID   `msg:",extension"`
 	}
 
 	RpcEndpoint struct {
-		IP  types.IP `msgp:",extension"` // len 4 for IPv4 or 16 for IPv6
+		IP  types.IP `msg:",extension"` // len 4 for IPv4 or 16 for IPv6
 		UDP uint16   // for discovery protocol
 		TCP uint16   // for Msgpx protocol
 	}
