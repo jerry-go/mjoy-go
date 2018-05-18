@@ -505,14 +505,16 @@ func TestFastVsFullChains(t *testing.T) {
 		}
 		genesis = gspec.MustCommit(gendb)
 		signer  = transaction.NewMSigner(gspec.Config.ChainId)
+		actions = transaction.ActionSlice{}
 	)
+	actions = append(actions,transaction.Action{&types.Address{0x00},[]byte{1,2,3,4,5}})
 	blocks, receipts := GenerateChain(gspec.Config, genesis, &consensus.Engine_empty{}, gendb, 1024, func(i int, blockGen *BlockGen) {
 		blockGen.SetCoinbase(types.Address{0x00})
 
 		// If the block number is multiple of 3, send a few bonus transactions to the blockproducer
 		if i%3 == 2 {
 			for j := 0; j < i%4+1; j++ {
-				tx, err := transaction.SignTx(transaction.NewTransaction(blockGen.TxNonce(address), types.Address{0x00}, big.NewInt(1000), 100, nil, nil), signer, key)
+				tx, err := transaction.SignTx(transaction.NewTransaction(blockGen.TxNonce(address), types.Address{0x00},actions), signer, key)
 				if err != nil {
 					panic(err)
 				}
@@ -670,13 +672,16 @@ func TestChainTxReorgs(t *testing.T) {
 		}
 		genesis = gspec.MustCommit(db)
 		signer  = transaction.NewMSigner(gspec.Config.ChainId)
+		actions = transaction.ActionSlice{}
 	)
+	actions = append(actions,transaction.Action{&types.Address{0x00},[]byte{1,2,3,4,5}})
 
 	// Create two transactions shared between the chains:
 	//  - postponed: transaction included at a later block in the forked chain
 	//  - swapped: transaction included at the same block number in the forked chain
-	postponed, _ := transaction.SignTx(transaction.NewTransaction(0, addr1, big.NewInt(1000), 100, nil, nil), signer, key1)
-	swapped, _ := transaction.SignTx(transaction.NewTransaction(1, addr1, big.NewInt(1000), 100, nil, nil), signer, key1)
+	postponed, _ := transaction.SignTx(transaction.NewTransaction(0, addr1, actions), signer, key1)
+	//todo set nonce 0 for fake test. future need change to 1
+	swapped, _ := transaction.SignTx(transaction.NewTransaction(0, addr1, actions), signer, key1)
 
 	// Create two transactions that will be dropped by the forked chain:
 	//  - pastDrop: transaction dropped retroactively from a past block
@@ -692,13 +697,13 @@ func TestChainTxReorgs(t *testing.T) {
 	chain, _ := GenerateChain(gspec.Config, genesis, &consensus.Engine_empty{}, db, 3, func(i int, gen *BlockGen) {
 		switch i {
 		case 0:
-			pastDrop, _ = transaction.SignTx(transaction.NewTransaction(gen.TxNonce(addr2), addr2, big.NewInt(1000), 100, nil, nil), signer, key2)
+			pastDrop, _ = transaction.SignTx(transaction.NewTransaction(gen.TxNonce(addr2), addr2, actions), signer, key2)
 
 			gen.AddTx(pastDrop)  // This transaction will be dropped in the fork from below the split point
 			gen.AddTx(postponed) // This transaction will be postponed till block #3 in the fork
 
 		case 2:
-			freshDrop, _ = transaction.SignTx(transaction.NewTransaction(gen.TxNonce(addr2), addr2, big.NewInt(1000), 100, nil, nil), signer, key2)
+			freshDrop, _ = transaction.SignTx(transaction.NewTransaction(gen.TxNonce(addr2), addr2, actions), signer, key2)
 
 			gen.AddTx(freshDrop) // This transaction will be dropped in the fork from exactly at the split point
 			gen.AddTx(swapped)   // This transaction will be swapped out at the exact height
@@ -717,18 +722,18 @@ func TestChainTxReorgs(t *testing.T) {
 	chain, _ = GenerateChain(gspec.Config, genesis, &consensus.Engine_empty{}, db, 5, func(i int, gen *BlockGen) {
 		switch i {
 		case 0:
-			pastAdd, _ = transaction.SignTx(transaction.NewTransaction(gen.TxNonce(addr3), addr3, big.NewInt(1000), 100, nil, nil), signer, key3)
+			pastAdd, _ = transaction.SignTx(transaction.NewTransaction(gen.TxNonce(addr3), addr3, actions), signer, key3)
 			gen.AddTx(pastAdd) // This transaction needs to be injected during reorg
 
 		case 2:
 			gen.AddTx(postponed) // This transaction was postponed from block #1 in the original chain
 			gen.AddTx(swapped)   // This transaction was swapped from the exact current spot in the original chain
 
-			freshAdd, _ = transaction.SignTx(transaction.NewTransaction(gen.TxNonce(addr3), addr3, big.NewInt(1000), 100, nil, nil), signer, key3)
+			freshAdd, _ = transaction.SignTx(transaction.NewTransaction(gen.TxNonce(addr3), addr3, actions), signer, key3)
 			gen.AddTx(freshAdd) // This transaction will be added exactly at reorg time
 
 		case 3:
-			futureAdd, _ = transaction.SignTx(transaction.NewTransaction(gen.TxNonce(addr3), addr3, big.NewInt(1000), 100, nil, nil), signer, key3)
+			futureAdd, _ = transaction.SignTx(transaction.NewTransaction(gen.TxNonce(addr3), addr3, actions), signer, key3)
 			gen.AddTx(futureAdd) // This transaction will be added after a full reorg
 		}
 	})
@@ -776,8 +781,9 @@ func TestLogReorgs(t *testing.T) {
 		gspec   = &genesis.Genesis{Config: defaultChainConfig, Alloc: genesis.GenesisAlloc{addr1: {Balance: big.NewInt(10000000000000)}}}
 		genesis = gspec.MustCommit(db)
 		signer  = transaction.NewMSigner(gspec.Config.ChainId)
+		actions = transaction.ActionSlice{}
 	)
-
+	actions = append(actions,transaction.Action{&types.Address{0x00},[]byte{1,2,3,4,5}})
 	blockchain, _ := blockchain.NewBlockChain(db, gspec.Config, &consensus.Engine_empty{})
 	defer blockchain.Stop()
 
@@ -785,7 +791,7 @@ func TestLogReorgs(t *testing.T) {
 	blockchain.SubscribeRemovedLogsEvent(rmLogsCh)
 	chain, _ := GenerateChain(defaultChainConfig, genesis, &consensus.Engine_empty{}, db, 2, func(i int, gen *BlockGen) {
 		if i == 1 {
-			tx, err := transaction.SignTx(transaction.NewTransaction(gen.TxNonce(addr1), addr1, big.NewInt(1000), 100, nil, nil), signer, key1)
+			tx, err := transaction.SignTx(transaction.NewTransaction(gen.TxNonce(addr1), addr1, actions), signer, key1)
 			// todo : tx, err := transaction.SignTx(transaction.NewContractCreation(gen.TxNonce(addr1), big.NewInt(100), 1000000, big.NewInt(100), code), signer, key1)
 			if err != nil {
 				t.Fatalf("failed to create tx: %v", err)
@@ -824,8 +830,9 @@ func TestReorgSideEvent(t *testing.T) {
 		}
 		genesis = gspec.MustCommit(db)
 		signer  = transaction.NewMSigner(gspec.Config.ChainId)
+		actions = transaction.ActionSlice{}
 	)
-
+	actions = append(actions,transaction.Action{&types.Address{0x00},[]byte{1,2,3,4,5}})
 	blockchain, _ := blockchain.NewBlockChain(db, gspec.Config, &consensus.Engine_empty{})
 	defer blockchain.Stop()
 
@@ -835,7 +842,7 @@ func TestReorgSideEvent(t *testing.T) {
 	}
 
 	replacementBlocks, _ := GenerateChain(gspec.Config, genesis, &consensus.Engine_empty{}, db, 4, func(i int, gen *BlockGen) {
-		tx, err := transaction.SignTx(transaction.NewTransaction(gen.TxNonce(addr1), addr1, big.NewInt(1000), 100, nil, nil), signer, key1)
+		tx, err := transaction.SignTx(transaction.NewTransaction(gen.TxNonce(addr1), addr1, actions), signer, key1)
 		//tx, err := transaction.SignTx(transaction.NewContractCreation(gen.TxNonce(addr1), big.NewInt(100), 1000000, big.NewInt(100), nil), signer, key1)
 		if i == 2 {
 			gen.OffsetTime(-9)
