@@ -1,5 +1,9 @@
 # mjoy-go
-Golang implementation of the mjoychain.
+Upon blockchain technology, MJOY aims to build up a democratic ecosystem among Gaming Developers, IP (intellectual Property) Derivatives Developers and End Users. In that ecosystem, most value will be distributed to contributors based on their contributions, correctly and instantly.
+
+MJOY is striving to boost indie-game industry and in the future to scale up to top tier gaming industry.
+
+This repository is the Golang implementation of the mjoychain.
 
 [MJOY.IO](https://mjoy.io)
 
