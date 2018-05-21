@@ -207,7 +207,7 @@ func CreateDB(ctx *node.ServiceContext, config *Config, name string) (database.I
 // CreateConsensusEngine creates the required type of consensus engine instance for an Mjoy service
 func CreateConsensusEngine(ctx *node.ServiceContext, configNoUse interface{}, chainConfig *params.ChainConfig, db database.IDatabase) consensus.Engine {
 
-	engine := new(consensus.Engine_empty)
+	engine := new(consensus.Engine_basic)
 	return engine
 }
 

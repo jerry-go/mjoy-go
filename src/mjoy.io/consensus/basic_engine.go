@@ -12,6 +12,7 @@ import (
 )
 
 type Engine_basic struct {
+	//todo: need interpreter information
 }
 
 var (
@@ -55,6 +56,32 @@ func (basic *Engine_basic) VerifyHeader(chain ChainReader, header *block.Header,
 	return nil
 }
 
+func (basic *Engine_basic) verifyHeader(chain ChainReader, header, parent *block.Header, seal bool) error {
+	//if the header is known, verify success
+	number := header.Number.IntVal.Uint64()
+	if chain.GetHeader(header.Hash(), number) != nil {
+		return nil
+	}
+
+	// Verify that the block number is parent's +1
+	if diff := new(big.Int).Sub(&header.Number.IntVal, &parent.Number.IntVal); diff.Cmp(common.Big1) != 0 {
+		return ErrInvalidNumber
+	}
+
+	//verify time
+	if header.Time.IntVal.Cmp(&parent.Time.IntVal) <= 0 {
+		return ErrBlockTime
+	}
+
+	//verify signature
+	singner := block.NewBlockSigner(chain.Config().ChainId)
+	if _, err := singner.Sender(header); err!=nil{
+		return ErrSignature
+	}
+
+	return nil
+}
+
 func (basic *Engine_basic) verifyHeaderWorker(chain ChainReader, headers []*block.Header, seals []bool, index int) error {
 	var parent *block.Header
 	if index == 0 {
@@ -68,7 +95,7 @@ func (basic *Engine_basic) verifyHeaderWorker(chain ChainReader, headers []*bloc
 	if chain.GetHeader(headers[index].Hash(), headers[index].Number.IntVal.Uint64()) != nil {
 		return nil // known block
 	}
-	return basic.VerifyHeader(chain, headers[index], seals[index])
+	return basic.verifyHeader(chain, headers[index], parent,seals[index])
 }
 
 // VerifyHeaders is similar to VerifyHeader, but verifies a batch of headers
@@ -125,6 +152,8 @@ func (basic *Engine_basic) VerifyHeaders(chain ChainReader, headers []*block.Hea
 	return abort, errorsOut
 }
 
+
+//todo this need interpreter process ConsensusData
 func (basic *Engine_basic) VerifySeal(chain ChainReader, header *block.Header) error {
 	return nil
 }
@@ -133,6 +162,9 @@ func (basic *Engine_basic) Prepare(chain ChainReader, header *block.Header) erro
 	return nil
 }
 
+
+//todo this need interpreter process
+//interpreter need change state
 func (basic *Engine_basic) Finalize(chain ChainReader, header *block.Header, state *state.StateDB, txs []*transaction.Transaction, receipts []*transaction.Receipt) (*block.Block, error) {
 	reward := big.NewInt(5e+18)
 	state.AddBalance(header.BlockProducer, reward)
@@ -140,6 +172,7 @@ func (basic *Engine_basic) Finalize(chain ChainReader, header *block.Header, sta
 	return block.NewBlock(header, txs, receipts), nil
 }
 
+//todo fill header ConsensusData
 func (basic *Engine_basic) Seal(chain ChainReader, block *block.Block, stop <-chan struct{}) (*block.Block, error){
 	header := block.Header()
 	return block.WithSeal(header), nil

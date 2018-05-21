@@ -45,7 +45,12 @@ func newTestBlockChain(fake bool) *blockchain.BlockChain {
 		Config:     defaultChainConfig,
 	}
 	gspec.MustCommit(db)
-	engine := &consensus.Engine_empty{}
+
+	var engine consensus.Engine
+	engine = &consensus.Engine_basic{}
+	if fake {
+		engine = &consensus.Engine_empty{}
+	}
 
 	blockchain, err := blockchain.NewBlockChain(db, gspec.Config, engine)
 	if err != nil {
@@ -186,7 +191,7 @@ func TestLastBlock(t *testing.T) {
 	bchain := newTestBlockChain(false)
 	defer bchain.Stop()
 
-	block := makeBlockChain(bchain.CurrentBlock(), 1, &consensus.Engine_empty{}, bchain.GetDb(), 0)[0]
+	block := makeBlockChain(bchain.CurrentBlock(), 1, &consensus.Engine_basic{}, bchain.GetDb(), 0)[0]
 	bchain.Test_insert(block)
 	if block.Hash() != blockchain.GetHeadBlockHash(bchain.GetDb()) {
 		t.Errorf("Write/Get HeadBlockHash failed")
@@ -358,6 +363,12 @@ func makeHeaderChainWithDiff(genesis *block.Block, n int, seed byte) []*block.He
 
 func makeBlockChainWithDiff(genesis *block.Block, n int, seed byte) []*block.Block {
 	var chain []*block.Block
+	singner := block.NewBlockSigner(defaultChainConfig.ChainId)
+
+	var(
+		key , _ = crypto.HexToECDSA("b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f292")
+	)
+
 	for i:= 0 ;i <n; i++{
 		header := &block.Header{
 			BlockProducer:		types.Address{seed},
@@ -371,7 +382,9 @@ func makeBlockChainWithDiff(genesis *block.Block, n int, seed byte) []*block.Blo
 		} else {
 			header.ParentHash = chain[i-1].Hash()
 		}
-		block := block.NewBlockWithHeader(header)
+		signHeaer, _ := block.SignHeader(header, singner, key)
+		//fmt.Println(signHeaer)
+		block := block.NewBlockWithHeader(signHeaer)
 		chain = append(chain, block)
 	}
 	return chain
@@ -396,7 +409,7 @@ func testReorgShort(t *testing.T, full bool) {
 }
 
 func testReorg(t *testing.T, first, second  int, num uint64, full bool) {
-	bc := newTestBlockChain(true)
+	bc := newTestBlockChain(false)
 	defer bc.Stop()
 
 	// Insert an easy and a difficult chain afterwards

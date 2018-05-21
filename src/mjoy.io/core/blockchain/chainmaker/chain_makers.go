@@ -41,7 +41,7 @@ var (
 	canonicalSeed = 1
 	forkSeed      = 2
 )
-var defaultChainConfig = params.DefaultChainConfig
+var defaultChainConfig = params.TestChainConfig
 // BlockGen creates blocks for testing.
 // See GenerateChain for a detailed explanation.
 type BlockGen struct {
