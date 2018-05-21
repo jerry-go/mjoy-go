@@ -1,4 +1,12 @@
 package interpreter
 
-type HandleFunc func([]byte)map[string]interface{}
+type HandleFunc func([]byte)error
 
+/**********************************/
+//Handlers
+/**********************************/
+
+
+/**********************  Fee Cut  **************************/
+
+/**********************  Balance Transfer  **************************/

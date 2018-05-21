@@ -49,6 +49,7 @@ import (
 	"mjoy.io/blockproducer"
 	"mjoy.io/communication/rpc/mjoyapi"
 	"mjoy.io/mjoyd/config"
+	"mjoy.io/core/interpreter"
 )
 
 type LesServer interface {
@@ -87,7 +88,7 @@ type Mjoy struct {
 
 
 	blockproducer     *blockproducer.Blockproducer
-
+	interVm             *interpreter.Vms
 	coinbase types.Address
 
 	networkId     uint64
@@ -178,8 +179,16 @@ func New(ctx *node.ServiceContext) (*Mjoy, error) {
 	if mjoy.protocolManager, err = NewProtocolManager(mjoy.chainConfig, config.SyncMode, config.NetworkId, mjoy.eventMux, mjoy.txPool, mjoy.engine, mjoy.blockchain, chainDb); err != nil {
 		return nil, err
 	}
+	//step 1:init interpreter
+	//init interpreter
+	mjoy.interVm = interpreter.NewVm()
+	//start interpreter
+	go mjoy.interVm.Run()
 
-	mjoy.blockproducer = blockproducer.New(mjoy,mjoy.chainConfig,mjoy.EventMux() , mjoy.engine)
+	//step 2:init miner
+	//Init miner
+	mjoy.blockproducer = blockproducer.New(mjoy,mjoy.interVm,mjoy.chainConfig,mjoy.EventMux() , mjoy.engine)
+
 	mjoy.ApiBackend = &MjoyApiBackend{mjoy}
 
 
@@ -269,7 +278,7 @@ func (self *Mjoy) SetCoinbase(coinbase types.Address) {
 	self.coinbase = coinbase
 	self.lock.Unlock()
 
-	self.blockproducer.SetCoinbase(coinbase)
+	//self.blockproducer.SetCoinbase(coinbase)
 }
 
 func (s *Mjoy) StartProducing(local bool) error {
@@ -286,6 +295,8 @@ func (s *Mjoy) StartProducing(local bool) error {
 		// will ensure that private networks work in single blockproducer mode too.
 		atomic.StoreUint32(&s.protocolManager.acceptTxs, 1)
 	}
+	//go s.interVm.Run()
+	_ = eb
 	go s.blockproducer.Start(eb)
 	return nil
 }

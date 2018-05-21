@@ -39,6 +39,7 @@ import (
 	"mjoy.io/utils/database"
 	"mjoy.io/core/blockchain"
 	"mjoy.io/core/txprocessor"
+	"mjoy.io/core/transaction"
 )
 
 
@@ -49,7 +50,10 @@ type Backend interface {
 	TxPool() *txprocessor.TxPool
 	ChainDb() database.IDatabase
 }
-
+//Interpreter
+type Interpreter interface {
+	SendWork(from types.Address , actions []transaction.Action)<-chan error
+}
 // Blockproducer creates blocks and searches for proof-of-work values.
 type Blockproducer struct {
 	mux *event.TypeMux
@@ -59,18 +63,20 @@ type Blockproducer struct {
 	coinbase types.Address
 	producing   int32
 	mjoy      Backend
+	inter     Interpreter
 	engine   consensus.Engine
 
 	canStart    int32 // can start indicates whether we can start the producing operation
 	shouldStart int32 // should start indicates whether we should start after sync
 }
 
-func New(mjoy Backend, config *params.ChainConfig, mux *event.TypeMux, engine consensus.Engine) *Blockproducer {
+func New(mjoy Backend,inter Interpreter, config *params.ChainConfig, mux *event.TypeMux, engine consensus.Engine) *Blockproducer {
 	blockproducer := &Blockproducer{
 		mjoy:      mjoy,
+		inter:      inter,
 		mux:      mux,
 		engine:   engine,
-		producer:   newProducer(config, engine, types.Address{}, mjoy, mux),
+		producer:   newProducer(config, engine, types.Address{}, mjoy,inter, mux),
 		canStart: 1,
 	}
 	blockproducer.Register(NewCpuAgent(mjoy.BlockChain(), engine))

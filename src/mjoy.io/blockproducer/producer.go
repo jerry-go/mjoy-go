@@ -79,7 +79,8 @@ type Work struct {
 	header   *block.Header
 	txs      []*transaction.Transaction
 	receipts []*transaction.Receipt
-
+	mjoy     Backend
+	inter    Interpreter
 	createdAt time.Time
 }
 
@@ -109,6 +110,7 @@ type producer struct {
 	recv   chan *Result
 
 	mjoy     Backend
+	inter    Interpreter
 	chain   *blockchain.BlockChain
 	proc    blockchain.Validator
 	chainDb database.IDatabase
@@ -126,11 +128,12 @@ type producer struct {
 	atWork int32
 }
 
-func newProducer(config *params.ChainConfig, engine consensus.Engine, coinbase types.Address, mjoy Backend, mux *event.TypeMux) *producer {
+func newProducer(config *params.ChainConfig, engine consensus.Engine, coinbase types.Address, mjoy Backend,inter Interpreter ,  mux *event.TypeMux) *producer {
 	producer := &producer{
 		config:         config,
 		engine:         engine,
 		mjoy:            mjoy,
+		inter:          inter,
 		mux:            mux,
 		txCh:           make(chan core.TxPreEvent, txChanSize),
 		chainHeadCh:    make(chan core.ChainHeadEvent, chainHeadChanSize),
@@ -360,6 +363,7 @@ func (self *producer) makeCurrent(parent *block.Block, header *block.Header) err
 		state:     state,
 		ancestors: set.New(),
 		family:    set.New(),
+		inter:      self.inter,
 		header:    header,
 		createdAt: time.Now(),
 	}
@@ -448,7 +452,7 @@ func (self *producer) commitNewWork() {
 		logger.Info("Commit new producing work", "number", work.Block.Number(), "txs", work.tcount, "elapsed", common.PrettyDuration(time.Since(tstart)))
 		self.unconfirmed.Shift(work.Block.NumberU64() - 1)
 	}
-
+	work.mjoy = self.mjoy
 	self.push(work)
 }
 
@@ -477,6 +481,12 @@ func (env *Work) commitTransactions(mux *event.TypeMux, txs *transaction.Transac
 				txs.Pop()
 				continue
 			}
+		}
+		err := env.inter.SendWork(from , tx.Data.Actions)
+		if err != nil{
+			txs.Shift()
+		}else{
+			txs.Shift()
 		}
 
 		// Start executing the transaction

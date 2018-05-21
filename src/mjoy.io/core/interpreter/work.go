@@ -1,16 +1,29 @@
 package interpreter
 
-import "mjoy.io/core/transaction"
+import (
+	"mjoy.io/core/transaction"
+	"mjoy.io/common/types"
+)
 
-type Work struct {
-	transaction *transaction.Transaction
-	errCh <-chan error
+type WorkResult struct {
+	Err error
+	Logs []*transaction.Log
 }
 
-func NewWork(tx *transaction.Transaction)*Work{
+
+type Work struct {
+	actions []transaction.Action
+	from types.Address
+	resultChan chan WorkResult
+}
+
+func NewWork(from types.Address , actions []transaction.Action)*Work{
 	w := new(Work)
-	w.transaction = tx
-	w.errCh = make(chan error , 1)
+
+	//copy actions
+	w.actions= make([]transaction.Action , len(actions))
+	copy(w.actions , actions)
+	w.resultChan = make(chan WorkResult , 1)
 	return w
 }
 
