@@ -41,6 +41,7 @@ import (
 	"mjoy.io/utils/crypto"
 	"mjoy.io/utils/event"
 	"mjoy.io/core/transaction"
+	"mjoy.io/core/blockchain/block"
 )
 
 var (
@@ -287,6 +288,30 @@ func (ks *KeyStore) SignTx(a accounts.Account, tx *transaction.Transaction, chai
 		return transaction.SignTx(tx, transaction.NewMSigner(chainID), unlockedKey.PrivateKey)
 	}
 	return nil,ErrChainId
+}
+
+func (ks *KeyStore) SignHeader( h *block.Header,chainID *big.Int) (*block.Header, error) {
+	// Look up the key to sign with and abort if it cannot be found
+	ks.mu.RLock()
+	defer ks.mu.RUnlock()
+
+	if len(ks.wallets) < 0 {
+		return nil , errors.New("no wallets in keystore")
+	}
+
+	mjoyBaseAccouts := ks.wallets[0]
+	if len(mjoyBaseAccouts.Accounts()) < 0 {
+		return nil , errors.New("no accounts in wallet")
+	}
+	a := mjoyBaseAccouts.Accounts()[0]
+
+
+	unlockedKey, found := ks.unlocked[a.Address]
+	if !found {
+		return nil, ErrLocked
+	}
+
+	return block.SignHeader(h , block.NewBlockSigner(chainID),unlockedKey.PrivateKey)
 }
 
 // SignHashWithPassphrase signs hash if the private key matching the given address
