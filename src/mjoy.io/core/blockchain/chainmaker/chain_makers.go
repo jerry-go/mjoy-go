@@ -171,7 +171,7 @@ func GenerateChain(config *params.ChainConfig, parent *block.Block, engine conse
 
 		if b.engine != nil {
 			//b.header.StateHash = statedb.IntermediateRoot()
-			block, _ := b.engine.Finalize(b.chainReader, b.header, statedb, b.txs, b.receipts)
+			block, _ := b.engine.Finalize(b.chainReader, b.header, statedb, b.txs, b.receipts, true)
 			//b.header.StateHash = statedb.IntermediateRoot()
 			//block.B_header.StateHash = statedb.IntermediateRoot(true)
 			// Write state changes to db

@@ -83,7 +83,7 @@ func (p *StateProcessor) Process(block *block.Block, statedb *state.StateDB) (tr
 	// TODO: need to be compeleted, now skip this step
 	// Finalize the block, applying any consensus engine specific extras (e.g. block rewards)
 	if p.engine != nil {
-		p.engine.Finalize(p.cs, header, statedb, block.Transactions(), receipts)
+		p.engine.Finalize(p.cs, header, statedb, block.Transactions(), receipts, false)
 	}
 
 	return receipts, allLogs, nil

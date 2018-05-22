@@ -326,6 +326,15 @@ func (ks *KeyStore) SignHashWithPassphrase(a accounts.Account, passphrase string
 	return crypto.Sign(hash, key.PrivateKey)
 }
 
+func (ks *KeyStore) GetKeyWithPassphrase(a accounts.Account, auth string) ( *ecdsa.PrivateKey, error) {
+	a, err := ks.Find(a)
+	if err != nil {
+		return nil, err
+	}
+	key, err := ks.storage.GetKey(a.Address, a.URL.Path, auth)
+	return key.PrivateKey, err
+}
+
 // SignTxWithPassphrase signs the transaction if the private key matching the
 // given address can be decrypted with the given passphrase.
 func (ks *KeyStore) SignTxWithPassphrase(a accounts.Account, passphrase string, tx *transaction.Transaction, chainID *big.Int) (*transaction.Transaction, error) {

@@ -9,25 +9,31 @@ import (
 	"errors"
 	"mjoy.io/common"
 	"runtime"
-	"mjoy.io/accounts"
+	"crypto/ecdsa"
 )
 
 
-// Backend interface provides the common API services
-type Backend interface {
-	AccountManager() *accounts.Manager
-}
 type Engine_basic struct {
 	//todo: need interpreter information
 
-
-	b	Backend
+	//key for sign header
+	prv *ecdsa.PrivateKey
 }
 
 var (
 	ErrBlockTime     = errors.New("timestamp less than or equal parent's timestamp")
 	ErrSignature     = errors.New("signature is not right")
 )
+
+func NewBasicEngine(prv *ecdsa.PrivateKey)  (*Engine_basic){
+	return &Engine_basic{
+		prv,
+	}
+}
+
+func (basic *Engine_basic)SetKey(prv *ecdsa.PrivateKey)  {
+	basic.prv = prv
+}
 
 func (basic *Engine_basic) Author(chain ChainReader, header *block.Header) (types.Address, error) {
 	singner := block.NewBlockSigner(chain.Config().ChainId)
@@ -181,24 +187,25 @@ func (basic *Engine_basic) Prepare(chain ChainReader, header *block.Header) erro
 
 //todo this need interpreter process
 //interpreter need change state
-func (basic *Engine_basic) Finalize(chain ChainReader, header *block.Header, state *state.StateDB, txs []*transaction.Transaction, receipts []*transaction.Receipt) (*block.Block, error) {
+func (basic *Engine_basic) Finalize(chain ChainReader, header *block.Header, state *state.StateDB, txs []*transaction.Transaction, receipts []*transaction.Receipt, sign bool) (*block.Block, error) {
 	reward := big.NewInt(5e+18)
 	state.AddBalance(header.BlockProducer, reward)
 	header.StateRootHash = state.IntermediateRoot()
 
 	//sign header
-	if wallets := basic.b.AccountManager().Wallets(); len(wallets) > 0 {
-		if accounts := wallets[0].Accounts(); len(accounts) > 0 {
-			signHeader, err := wallets[0].SignHeader(header, chain.Config().ChainId)
-			if err != nil {
-				return nil, err
-			}
-			return block.NewBlock(signHeader, txs, receipts), nil
+	if sign {
+		if basic.prv == nil {
+			return nil, errors.New("No key found fo sign header")
 		}
-		return nil, errors.New("No account found, cann't sign header")
+		signHeader, err := block.SignHeader(header, block.NewBlockSigner(chain.Config().ChainId), basic.prv)
+		if err != nil {
+			return nil, err
+		}
+		return block.NewBlock(signHeader, txs, receipts), nil
+	} else {
+		return block.NewBlock(header, txs, receipts), nil
 	}
 
-	return nil, errors.New("No wallet found, cann't sign header")
 }
 
 //todo fill header ConsensusData

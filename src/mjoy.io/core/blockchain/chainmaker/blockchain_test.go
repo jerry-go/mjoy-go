@@ -47,7 +47,8 @@ func newTestBlockChain(fake bool) *blockchain.BlockChain {
 	gspec.MustCommit(db)
 
 	var engine consensus.Engine
-	engine = &consensus.Engine_basic{}
+	key , _ := crypto.HexToECDSA("b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f292")
+	engine = consensus.NewBasicEngine(key)
 	if fake {
 		engine = &consensus.Engine_empty{}
 	}
@@ -188,10 +189,10 @@ func insertChain(done chan bool, blockchain *blockchain.BlockChain, chain block.
 }
 
 func TestLastBlock(t *testing.T) {
-	bchain := newTestBlockChain(true)
+	bchain := newTestBlockChain(false)
 	defer bchain.Stop()
-
-	block := makeBlockChain(bchain.CurrentBlock(), 1, &consensus.Engine_empty{}, bchain.GetDb(), 0)[0]
+	key , _ := crypto.HexToECDSA("b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f292")
+	block := makeBlockChain(bchain.CurrentBlock(), 1, consensus.NewBasicEngine(key), bchain.GetDb(), 0)[0]
 	bchain.Test_insert(block)
 	if block.Hash() != blockchain.GetHeadBlockHash(bchain.GetDb()) {
 		t.Errorf("Write/Get HeadBlockHash failed")
@@ -409,7 +410,7 @@ func testReorgShort(t *testing.T, full bool) {
 }
 
 func testReorg(t *testing.T, first, second  int, num uint64, full bool) {
-	bc := newTestBlockChain(true)
+	bc := newTestBlockChain(false)
 	defer bc.Stop()
 
 	// Insert an easy and a difficult chain afterwards

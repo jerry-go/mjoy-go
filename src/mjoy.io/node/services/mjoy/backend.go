@@ -138,7 +138,6 @@ func New(ctx *node.ServiceContext) (*Mjoy, error) {
 		chainConfig:    chainConfig,
 		eventMux:       ctx.EventMux,
 		accountManager: ctx.AccountManager,
-		engine:         CreateConsensusEngine(ctx, 0, chainConfig, chainDb),
 		shutdownChan:   make(chan bool),
 		stopDbUpgrade:  stopDbUpgrade,
 		networkId:      config.NetworkId,
@@ -148,7 +147,7 @@ func New(ctx *node.ServiceContext) (*Mjoy, error) {
 	}
 
 	logger.Info("Initialising Mjoy protocol", "versions", ProtocolVersions, "network", config.NetworkId)
-
+	mjoy.engine = CreateConsensusEngine(mjoy)
 	if !config.SkipBcVersionCheck {
 		bcVersion := blockchain.GetBlockChainVersion(chainDb)
 		if bcVersion != blockchain.BlockChainVersion && bcVersion != 0 {
@@ -205,9 +204,8 @@ func CreateDB(ctx *node.ServiceContext, config *Config, name string) (database.I
 }
 
 // CreateConsensusEngine creates the required type of consensus engine instance for an Mjoy service
-func CreateConsensusEngine(ctx *node.ServiceContext, configNoUse interface{}, chainConfig *params.ChainConfig, db database.IDatabase) consensus.Engine {
-
-	engine := new(consensus.Engine_basic)
+func CreateConsensusEngine(mjoy *Mjoy) consensus.Engine {
+	engine := consensus.NewBasicEngine(nil)
 	return engine
 }
 

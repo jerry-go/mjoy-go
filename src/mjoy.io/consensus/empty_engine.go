@@ -56,7 +56,7 @@ func (empty *Engine_empty) Prepare(chain ChainReader, header *block.Header) erro
 	return nil
 }
 
-func (empty *Engine_empty) Finalize(chain ChainReader, header *block.Header, state *state.StateDB, txs []*transaction.Transaction, receipts []*transaction.Receipt) (*block.Block, error) {
+func (empty *Engine_empty) Finalize(chain ChainReader, header *block.Header, state *state.StateDB, txs []*transaction.Transaction, receipts []*transaction.Receipt, sign bool) (*block.Block, error) {
 	reward := big.NewInt(5e+18)
 	state.AddBalance(header.BlockProducer, reward)
 	header.StateRootHash = state.IntermediateRoot()
