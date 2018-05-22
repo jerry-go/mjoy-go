@@ -247,14 +247,8 @@ func (s *Mjoy) ResetWithGenesisBlock(gb *block.Block) {
 	s.blockchain.ResetWithGenesisBlock(gb)
 }
 
-func (s *Mjoy) Coinbase() (eb types.Address, err error) {
-	s.lock.RLock()
-	coinbase := s.coinbase
-	s.lock.RUnlock()
+func (s *Mjoy) Coinbase() (eb accounts.Account, err error) {
 
-	if coinbase != (types.Address{}) {
-		return coinbase, nil
-	}
 	if wallets := s.AccountManager().Wallets(); len(wallets) > 0 {
 		if accounts := wallets[0].Accounts(); len(accounts) > 0 {
 			coinbase := accounts[0].Address
@@ -264,10 +258,10 @@ func (s *Mjoy) Coinbase() (eb types.Address, err error) {
 			s.lock.Unlock()
 
 			logger.Infof("Coinbase automatically configured address:0x%x\n" , coinbase)
-			return coinbase, nil
+			return accounts[0], nil
 		}
 	}
-	return types.Address{}, fmt.Errorf("Coinbase must be explicitly specified")
+	return accounts.Account{}, fmt.Errorf("Coinbase must be explicitly specified")
 }
 
 // set in js console via admin interface or wrapper from cli flags
@@ -288,7 +282,7 @@ func (s *Mjoy) StartProducing(local bool, password string) error {
 
 	//get key
 	ks := s.AccountManager().Backends(keystore.KeyStoreType)[0].(*keystore.KeyStore)
-	key, err := ks.GetKeyWithPassphrase(accounts.Account{Address: eb}, password)
+	key, err := ks.GetKeyWithPassphrase(eb, password)
 	if err != nil {
 		logger.Error("Cannot start producing without coinbase, get sign key err ", "err", err)
 		return fmt.Errorf("get sign key err: %v", err)
@@ -302,7 +296,7 @@ func (s *Mjoy) StartProducing(local bool, password string) error {
 		// will ensure that private networks work in single blockproducer mode too.
 		atomic.StoreUint32(&s.protocolManager.acceptTxs, 1)
 	}
-	go s.blockproducer.Start(eb)
+	go s.blockproducer.Start(eb.Address)
 	return nil
 }
 
@@ -350,7 +344,7 @@ func (s *Mjoy) Start(srvr *p2p.Server) error {
 		s.lesServer.Start(srvr)
 	}
 
-	eb , err := s.Coinbase()
+	_ , err := s.Coinbase()
 	if err != nil{
 		fmt.Println("[Warn]No CoinBase Do Not Start Producing Block!!!!!!!!!!!!!!!!!s")
 	}
