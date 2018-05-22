@@ -188,10 +188,10 @@ func insertChain(done chan bool, blockchain *blockchain.BlockChain, chain block.
 }
 
 func TestLastBlock(t *testing.T) {
-	bchain := newTestBlockChain(false)
+	bchain := newTestBlockChain(true)
 	defer bchain.Stop()
 
-	block := makeBlockChain(bchain.CurrentBlock(), 1, &consensus.Engine_basic{}, bchain.GetDb(), 0)[0]
+	block := makeBlockChain(bchain.CurrentBlock(), 1, &consensus.Engine_empty{}, bchain.GetDb(), 0)[0]
 	bchain.Test_insert(block)
 	if block.Hash() != blockchain.GetHeadBlockHash(bchain.GetDb()) {
 		t.Errorf("Write/Get HeadBlockHash failed")
@@ -409,7 +409,7 @@ func testReorgShort(t *testing.T, full bool) {
 }
 
 func testReorg(t *testing.T, first, second  int, num uint64, full bool) {
-	bc := newTestBlockChain(false)
+	bc := newTestBlockChain(true)
 	defer bc.Stop()
 
 	// Insert an easy and a difficult chain afterwards

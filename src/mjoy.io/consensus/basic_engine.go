@@ -9,10 +9,19 @@ import (
 	"errors"
 	"mjoy.io/common"
 	"runtime"
+	"mjoy.io/accounts"
 )
 
+
+// Backend interface provides the common API services
+type Backend interface {
+	AccountManager() *accounts.Manager
+}
 type Engine_basic struct {
 	//todo: need interpreter information
+
+
+	b	Backend
 }
 
 var (
@@ -45,6 +54,13 @@ func (basic *Engine_basic) VerifyHeader(chain ChainReader, header *block.Header,
 	//verify time
 	if header.Time.IntVal.Cmp(&parent.Time.IntVal) <= 0 {
 		return ErrBlockTime
+	}
+
+	//verify ConsensusData
+	if seal {
+		if err := basic.VerifySeal(chain, header); err != nil {
+			return err
+		}
 	}
 
 	//verify signature
@@ -169,7 +185,20 @@ func (basic *Engine_basic) Finalize(chain ChainReader, header *block.Header, sta
 	reward := big.NewInt(5e+18)
 	state.AddBalance(header.BlockProducer, reward)
 	header.StateRootHash = state.IntermediateRoot()
-	return block.NewBlock(header, txs, receipts), nil
+
+	//sign header
+	if wallets := basic.b.AccountManager().Wallets(); len(wallets) > 0 {
+		if accounts := wallets[0].Accounts(); len(accounts) > 0 {
+			signHeader, err := wallets[0].SignHeader(header, chain.Config().ChainId)
+			if err != nil {
+				return nil, err
+			}
+			return block.NewBlock(signHeader, txs, receipts), nil
+		}
+		return nil, errors.New("No account found, cann't sign header")
+	}
+
+	return nil, errors.New("No wallet found, cann't sign header")
 }
 
 //todo fill header ConsensusData
