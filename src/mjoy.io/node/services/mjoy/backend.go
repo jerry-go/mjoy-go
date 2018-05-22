@@ -49,6 +49,8 @@ import (
 	"mjoy.io/blockproducer"
 	"mjoy.io/communication/rpc/mjoyapi"
 	"mjoy.io/mjoyd/config"
+	"mjoy.io/accounts/keystore"
+	"crypto/ecdsa"
 )
 
 type LesServer interface {
@@ -209,6 +211,13 @@ func CreateConsensusEngine(mjoy *Mjoy) consensus.Engine {
 	return engine
 }
 
+func (s *Mjoy) SetEngineKey(pri *ecdsa.PrivateKey) {
+	switch v := s.engine.(type) {
+	case *consensus.Engine_basic:
+		v.SetKey(pri)
+	}
+}
+
 // APIs returns the collection of RPC services the mjoy package offers.
 // NOTE, some of these services probably need to be moved to somewhere else.
 
@@ -270,12 +279,21 @@ func (self *Mjoy) SetCoinbase(coinbase types.Address) {
 	self.blockproducer.SetCoinbase(coinbase)
 }
 
-func (s *Mjoy) StartProducing(local bool) error {
+func (s *Mjoy) StartProducing(local bool, password string) error {
 	eb, err := s.Coinbase()
 	if err != nil {
 		logger.Error("Cannot start producing without coinbase", "err", err)
 		return fmt.Errorf("coinbase missing: %v", err)
 	}
+
+	//get key
+	ks := s.AccountManager().Backends(keystore.KeyStoreType)[0].(*keystore.KeyStore)
+	key, err := ks.GetKeyWithPassphrase(accounts.Account{Address: eb}, password)
+	if err != nil {
+		logger.Error("Cannot start producing without coinbase, get sign key err ", "err", err)
+		return fmt.Errorf("get sign key err: %v", err)
+	}
+	s.SetEngineKey(key)
 
 	if local {
 		// If local (CPU) producing is started, we can disable the transaction rejection
@@ -339,7 +357,7 @@ func (s *Mjoy) Start(srvr *p2p.Server) error {
 	//when start mjoy service,not start blockproducer,except the cmd order we should start it
 	if s.config.StartBlockproducerAtStart{
 		fmt.Println("Start Blockproducer At Service Start.......................")
-		s.blockproducer.Start(eb)
+		//s.blockproducer.Start(eb)
 	}else {
 		fmt.Println("Not Start Blockproducer At Service Start........................")
 	}
