@@ -26,6 +26,7 @@ import (
 	"mjoy.io/common"
 	"mjoy.io/accounts"
 	"mjoy.io/core/transaction"
+	"mjoy.io/core/blockchain/block"
 )
 
 // keystoreWallet implements the accounts.Wallet interface for the original
@@ -113,6 +114,12 @@ func (w *keystoreWallet) SignTx(account accounts.Account, tx *transaction.Transa
 	// Account seems valid, request the keystore to sign
 	return w.keystore.SignTx(account, tx, chainID)
 }
+
+func (w *keystoreWallet) SignHeader( h *block.Header,chainID *big.Int) (*block.Header, error) {
+	// Look up the key to sign with and abort if it cannot be found
+	return w.keystore.SignHeader(h,chainID)
+}
+
 
 // SignHashWithPassphrase implements accounts.Wallet, attempting to sign the
 // given hash with the given account using passphrase as extra authentication.
