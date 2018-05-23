@@ -134,8 +134,8 @@ func (basic *Engine_basic) Prepare(chain ChainReader, header *block.Header) erro
 }
 
 func (basic *Engine_basic) Finalize(chain ChainReader, header *block.Header, state *state.StateDB, txs []*transaction.Transaction, receipts []*transaction.Receipt) (*block.Block, error) {
-	reward := big.NewInt(5e+18)
-	state.AddBalance(header.BlockProducer, reward)
+	//reward := big.NewInt(5e+18)
+	//state.AddBalance(header.BlockProducer, reward)
 	header.StateRootHash = state.IntermediateRoot()
 	return block.NewBlock(header, txs, receipts), nil
 }

@@ -25,13 +25,11 @@ import (
 	"encoding/binary"
 	"fmt"
 	"math"
-	"math/big"
 	"math/rand"
 	"reflect"
 	"strings"
 	"testing"
 	"testing/quick"
-	check "gopkg.in/check.v1"
 	"mjoy.io/utils/database"
 	"mjoy.io/common/types"
 	"mjoy.io/core/transaction"
@@ -47,7 +45,6 @@ func TestUpdateLeaks(t *testing.T) {
 	// Update it with some accounts
 	for i := byte(0); i < 255; i++ {
 		addr := types.BytesToAddress([]byte{i})
-		state.AddBalance(addr, big.NewInt(int64(11*i)))
 		state.SetNonce(addr, uint64(42*i))
 		if i%2 == 0 {
 			state.SetState(addr, types.BytesToHash([]byte{i, i, i}), types.BytesToHash([]byte{i, i, i, i}))
@@ -74,7 +71,6 @@ func TestIntermediateLeaks(t *testing.T) {
 	finalState, _ := New(types.Hash{}, NewDatabase(finalDb))
 
 	modify := func(state *StateDB, addr types.Address, i, tweak byte) {
-		state.SetBalance(addr, big.NewInt(int64(11*i)+int64(tweak)))
 		state.SetNonce(addr, uint64(42*i+tweak))
 		if i%2 == 0 {
 			state.SetState(addr, types.Hash{i, i, i, 0}, types.Hash{})
@@ -128,7 +124,6 @@ func TestCopy(t *testing.T) {
 
 	for i := byte(0); i < 255; i++ {
 		obj := orig.GetOrNewStateObject(types.BytesToAddress([]byte{i}))
-		obj.AddBalance(big.NewInt(int64(i)))
 		orig.updateStateObject(obj)
 	}
 	orig.Finalise(false)
@@ -140,8 +135,6 @@ func TestCopy(t *testing.T) {
 		origObj := orig.GetOrNewStateObject(types.BytesToAddress([]byte{i}))
 		copyObj := copy.GetOrNewStateObject(types.BytesToAddress([]byte{i}))
 
-		origObj.AddBalance(big.NewInt(2 * int64(i)))
-		copyObj.AddBalance(big.NewInt(3 * int64(i)))
 
 		orig.updateStateObject(origObj)
 		copy.updateStateObject(copyObj)
@@ -157,6 +150,7 @@ func TestCopy(t *testing.T) {
 
 	// Verify that the two states have been updated independently
 	for i := byte(0); i < 255; i++ {
+/*
 		origObj := orig.GetOrNewStateObject(types.BytesToAddress([]byte{i}))
 		copyObj := copy.GetOrNewStateObject(types.BytesToAddress([]byte{i}))
 
@@ -166,6 +160,7 @@ func TestCopy(t *testing.T) {
 		if want := big.NewInt(4 * int64(i)); copyObj.Balance().Cmp(want) != 0 {
 			t.Errorf("copy obj %d: balance mismatch: have %v, want %v", i, copyObj.Balance(), want)
 		}
+*/
 	}
 }
 
@@ -208,20 +203,6 @@ type testAction struct {
 // newTestAction creates a random action that changes state.
 func newTestAction(addr types.Address, r *rand.Rand) testAction {
 	actions := []testAction{
-		{
-			name: "SetBalance",
-			fn: func(a testAction, s *StateDB) {
-				s.SetBalance(addr, big.NewInt(a.args[0]))
-			},
-			args: make([]int64, 1),
-		},
-		{
-			name: "AddBalance",
-			fn: func(a testAction, s *StateDB) {
-				s.AddBalance(addr, big.NewInt(a.args[0]))
-			},
-			args: make([]int64, 1),
-		},
 		{
 			name: "SetNonce",
 			fn: func(a testAction, s *StateDB) {
@@ -378,7 +359,6 @@ func (test *snapshotTest) checkEqual(state, checkstate *StateDB) error {
 		// Check basic accessor methods.
 		checkeq("Exist", state.Exist(addr), checkstate.Exist(addr))
 		checkeq("HasSuicided", state.HasSuicided(addr), checkstate.HasSuicided(addr))
-		checkeq("GetBalance", state.GetBalance(addr), checkstate.GetBalance(addr))
 		checkeq("GetNonce", state.GetNonce(addr), checkstate.GetNonce(addr))
 		checkeq("GetCode", state.GetCode(addr), checkstate.GetCode(addr))
 		checkeq("GetCodeHash", state.GetCodeHash(addr), checkstate.GetCodeHash(addr))
@@ -408,19 +388,4 @@ func (test *snapshotTest) checkEqual(state, checkstate *StateDB) error {
 	return nil
 }
 
-func (s *StateSuite) TestTouchDelete(c *check.C) {
-	s.state.GetOrNewStateObject(types.Address{})
-	root, _ := s.state.CommitTo(s.db, false)
-	s.state.Reset(root)
 
-	snapshot := s.state.Snapshot()
-	s.state.AddBalance(types.Address{}, new(big.Int))
-	if len(s.state.stateObjectsDirty) != 1 {
-		c.Fatal("expected one dirty state object")
-	}
-
-	s.state.RevertToSnapshot(snapshot)
-	if len(s.state.stateObjectsDirty) != 0 {
-		c.Fatal("expected no dirty state object")
-	}
-}

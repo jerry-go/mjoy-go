@@ -22,7 +22,6 @@ package state
 
 import (
 	"bytes"
-	"math/big"
 	"testing"
 	checker "gopkg.in/check.v1"
 	"mjoy.io/utils/database"
@@ -42,11 +41,10 @@ var toAddr = types.BytesToAddress
 func (s *StateSuite) TestDump(c *checker.C) {
 	// generate a few entries
 	obj1 := s.state.GetOrNewStateObject(toAddr([]byte{0x01}))
-	obj1.AddBalance(big.NewInt(22))
 	obj2 := s.state.GetOrNewStateObject(toAddr([]byte{0x01, 0x02}))
 	obj2.SetCode(crypto.Keccak256Hash([]byte{3, 3, 3, 3, 3, 3, 3}), []byte{3, 3, 3, 3, 3, 3, 3})
 	obj3 := s.state.GetOrNewStateObject(toAddr([]byte{0x02}))
-	obj3.SetBalance(big.NewInt(44))
+	obj3.SetCode(crypto.Keccak256Hash([]byte{3, 5, 3, 3, 5, 3, 5}), []byte{3, 5, 3, 3, 5, 3, 5})
 
 	// write some of them to the trie
 	s.state.updateStateObject(obj1)
@@ -56,10 +54,9 @@ func (s *StateSuite) TestDump(c *checker.C) {
 	// check that dump contains the state objects that are in trie
 	got := string(s.state.Dump())
 	want := `{
-    "root": "0x9bcc6c8d815e54e983414d3f59f047a3a6b825f9375ad13d235bae9f893ef2b4",
+    "root": "0x90ead5c4aad5b62dc763d03ddd32df75e09d5e34857eaafd4d46d63fc511ccf3",
     "accounts": {
         "0000000000000000000000000000000000000001": {
-            "balance": "22",
             "nonce": 0,
             "root": "56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
             "codeHash": "c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
@@ -67,15 +64,13 @@ func (s *StateSuite) TestDump(c *checker.C) {
             "storage": {}
         },
         "0000000000000000000000000000000000000002": {
-            "balance": "44",
             "nonce": 0,
             "root": "56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
-            "codeHash": "c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
-            "code": "",
+            "codeHash": "89e0e0af05a51f58639bd640d9e401d4f02e92da24b1340bd927d65860cec862",
+            "code": "03050303050305",
             "storage": {}
         },
         "0000000000000000000000000000000000000102": {
-            "balance": "0",
             "nonce": 0,
             "root": "56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
             "codeHash": "87874902497a5bb968da31a2998d8f22e949d1ef6214bcdedd8bae24cca4b9e3",
@@ -152,7 +147,7 @@ func TestSnapshot2(t *testing.T) {
 
 	// db, trie are already non-empty values
 	so0 := state.getStateObject(stateobjaddr0)
-	so0.SetBalance(big.NewInt(42))
+	//so0.SetBalance(big.NewInt(42))
 	so0.SetNonce(43)
 	so0.SetCode(crypto.Keccak256Hash([]byte{'c', 'a', 'f', 'e'}), []byte{'c', 'a', 'f', 'e'})
 	so0.suicided = false
@@ -164,7 +159,7 @@ func TestSnapshot2(t *testing.T) {
 
 	// and one with deleted == true
 	so1 := state.getStateObject(stateobjaddr1)
-	so1.SetBalance(big.NewInt(52))
+	//so1.SetBalance(big.NewInt(52))
 	so1.SetNonce(53)
 	so1.SetCode(crypto.Keccak256Hash([]byte{'c', 'a', 'f', 'e', '2'}), []byte{'c', 'a', 'f', 'e', '2'})
 	so1.suicided = true
@@ -196,9 +191,6 @@ func TestSnapshot2(t *testing.T) {
 func compareStateObjects(so0, so1 *stateObject, t *testing.T) {
 	if so0.Address() != so1.Address() {
 		t.Fatalf("Address mismatch: have %v, want %v", so0.address, so1.address)
-	}
-	if so0.Balance().Cmp(so1.Balance()) != 0 {
-		t.Fatalf("Balance mismatch: have %v, want %v", so0.Balance(), so1.Balance())
 	}
 	if so0.Nonce() != so1.Nonce() {
 		t.Fatalf("Nonce mismatch: have %v, want %v", so0.Nonce(), so1.Nonce())

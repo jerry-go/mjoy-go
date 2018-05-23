@@ -53,7 +53,6 @@ type GenesisAlloc map[types.Address]GenesisAccount
 type GenesisAccount struct {
 	Code       []byte                      `json:"code,omitempty"`
 	Storage    map[types.Hash]types.Hash   `json:"storage,omitempty"`
-	Balance    *big.Int                    `json:"balance"`
 	Nonce      uint64                      `json:"nonce,omitempty"`
 }
 
@@ -147,7 +146,6 @@ func (g *Genesis) ToBlock() (*block.Block, *state.StateDB) {
 	db, _ := database.OpenMemDB()
 	statedb, _ := state.New(types.Hash{}, state.NewDatabase(db))
 	for addr, account := range g.Alloc {
-		statedb.AddBalance(addr, account.Balance)
 		statedb.SetCode(addr, account.Code)
 		statedb.SetNonce(addr, account.Nonce)
 		for key, value := range account.Storage {
@@ -210,6 +208,7 @@ func (g *Genesis) MustCommit(db database.IDatabase) *block.Block {
 }
 
 func GenesisBlockForTesting(db database.IDatabase, addr types.Address, balance *big.Int) *block.Block {
-	g := Genesis{Alloc: GenesisAlloc{addr: {Balance: balance}}}
+	//todo
+	g := Genesis{Alloc: GenesisAlloc{addr: {}}}
 	return g.MustCommit(db)
 }

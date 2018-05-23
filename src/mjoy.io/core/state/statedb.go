@@ -24,9 +24,7 @@ import (
 	"sync"
 	"mjoy.io/common/types"
 	"mjoy.io/core/transaction"
-	"mjoy.io/common"
 	"mjoy.io/trie"
-	"math/big"
 	"fmt"
 	"sort"
 	"mjoy.io/utils/crypto"
@@ -175,16 +173,6 @@ func (self *StateDB) Empty(addr types.Address) bool {
 	return so == nil || so.empty()
 }
 
-// Retrieve the balance from the given address or 0 if object not found
-func (self *StateDB) GetBalance(addr types.Address) *big.Int {
-	stateObject := self.getStateObject(addr)
-	if stateObject != nil {
-		return stateObject.Balance()
-	}
-	fmt.Println("GetBalance Return common.Big0")
-	return common.Big0
-}
-
 func (self *StateDB) GetNonce(addr types.Address) uint64 {
 	stateObject := self.getStateObject(addr)
 	if stateObject != nil {
@@ -255,30 +243,6 @@ func (self *StateDB) HasSuicided(addr types.Address) bool {
 /*
  * SETTERS
  */
-
-// AddBalance adds amount to the account associated with addr
-func (self *StateDB) AddBalance(addr types.Address, amount *big.Int) {
-	stateObject := self.GetOrNewStateObject(addr)
-	if stateObject != nil {
-		stateObject.AddBalance(amount)
-	}
-}
-
-// SubBalance subtracts amount from the account associated with addr
-func (self *StateDB) SubBalance(addr types.Address, amount *big.Int) {
-	stateObject := self.GetOrNewStateObject(addr)
-	if stateObject != nil {
-		stateObject.SubBalance(amount)
-	}
-}
-
-func (self *StateDB) SetBalance(addr types.Address, amount *big.Int) {
-	stateObject := self.GetOrNewStateObject(addr)
-	if stateObject != nil {
-		stateObject.SetBalance(amount)
-	}
-}
-
 func (self *StateDB) SetNonce(addr types.Address, nonce uint64) {
 	stateObject := self.GetOrNewStateObject(addr)
 	if stateObject != nil {
@@ -313,10 +277,8 @@ func (self *StateDB) Suicide(addr types.Address) bool {
 	self.journal = append(self.journal, suicideChange{
 		account:     &addr,
 		prev:        stateObject.suicided,
-		prevbalance: new(big.Int).Set(stateObject.Balance()),
 	})
 	stateObject.markSuicided()
-	stateObject.data.Balance = types.NewBigInt(*new(big.Int))
 
 	return true
 }
@@ -417,10 +379,7 @@ func (self *StateDB) createObject(addr types.Address) (newobj, prev *stateObject
 //
 // Carrying over the balance ensures that Mjoy doesn't disappear.
 func (self *StateDB) CreateAccount(addr types.Address) {
-	new, prev := self.createObject(addr)
-	if prev != nil {
-		new.setBalance(prev.data.Balance)
-	}
+	self.createObject(addr)
 }
 
 func (db *StateDB) ForEachStorage(addr types.Address, cb func(key, value types.Hash) bool) {
