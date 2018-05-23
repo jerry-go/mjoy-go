@@ -48,9 +48,21 @@ func (z *Log) DecodeMsg(dc *msgp.Reader) (err error) {
 				}
 			}
 		case "Data":
-			z.Data, err = dc.ReadBytes(z.Data)
+			var zb0003 uint32
+			zb0003, err = dc.ReadArrayHeader()
 			if err != nil {
 				return
+			}
+			if cap(z.Data) >= int(zb0003) {
+				z.Data = (z.Data)[:zb0003]
+			} else {
+				z.Data = make([][]byte, zb0003)
+			}
+			for za0002 := range z.Data {
+				z.Data[za0002], err = dc.ReadBytes(z.Data[za0002])
+				if err != nil {
+					return
+				}
 			}
 		case "BlockNumber":
 			z.BlockNumber, err = dc.ReadUint64()
@@ -119,9 +131,15 @@ func (z *Log) EncodeMsg(en *msgp.Writer) (err error) {
 	if err != nil {
 		return
 	}
-	err = en.WriteBytes(z.Data)
+	err = en.WriteArrayHeader(uint32(len(z.Data)))
 	if err != nil {
 		return
+	}
+	for za0002 := range z.Data {
+		err = en.WriteBytes(z.Data[za0002])
+		if err != nil {
+			return
+		}
 	}
 	// write "BlockNumber"
 	err = en.Append(0xab, 0x42, 0x6c, 0x6f, 0x63, 0x6b, 0x4e, 0x75, 0x6d, 0x62, 0x65, 0x72)
@@ -192,7 +210,10 @@ func (z *Log) MarshalMsg(b []byte) (o []byte, err error) {
 	}
 	// string "Data"
 	o = append(o, 0xa4, 0x44, 0x61, 0x74, 0x61)
-	o = msgp.AppendBytes(o, z.Data)
+	o = msgp.AppendArrayHeader(o, uint32(len(z.Data)))
+	for za0002 := range z.Data {
+		o = msgp.AppendBytes(o, z.Data[za0002])
+	}
 	// string "BlockNumber"
 	o = append(o, 0xab, 0x42, 0x6c, 0x6f, 0x63, 0x6b, 0x4e, 0x75, 0x6d, 0x62, 0x65, 0x72)
 	o = msgp.AppendUint64(o, z.BlockNumber)
@@ -256,9 +277,21 @@ func (z *Log) UnmarshalMsg(bts []byte) (o []byte, err error) {
 				}
 			}
 		case "Data":
-			z.Data, bts, err = msgp.ReadBytesBytes(bts, z.Data)
+			var zb0003 uint32
+			zb0003, bts, err = msgp.ReadArrayHeaderBytes(bts)
 			if err != nil {
 				return
+			}
+			if cap(z.Data) >= int(zb0003) {
+				z.Data = (z.Data)[:zb0003]
+			} else {
+				z.Data = make([][]byte, zb0003)
+			}
+			for za0002 := range z.Data {
+				z.Data[za0002], bts, err = msgp.ReadBytesBytes(bts, z.Data[za0002])
+				if err != nil {
+					return
+				}
 			}
 		case "BlockNumber":
 			z.BlockNumber, bts, err = msgp.ReadUint64Bytes(bts)
@@ -302,7 +335,11 @@ func (z *Log) Msgsize() (s int) {
 	for za0001 := range z.Topics {
 		s += z.Topics[za0001].Msgsize()
 	}
-	s += 5 + msgp.BytesPrefixSize + len(z.Data) + 12 + msgp.Uint64Size + 7 + z.TxHash.Msgsize() + 8 + msgp.UintSize + 10 + z.BlockHash.Msgsize() + 6 + msgp.UintSize
+	s += 5 + msgp.ArrayHeaderSize
+	for za0002 := range z.Data {
+		s += msgp.BytesPrefixSize + len(z.Data[za0002])
+	}
+	s += 12 + msgp.Uint64Size + 7 + z.TxHash.Msgsize() + 8 + msgp.UintSize + 10 + z.BlockHash.Msgsize() + 6 + msgp.UintSize
 	return
 }
 
@@ -345,9 +382,21 @@ func (z *LogProtocol) DecodeMsg(dc *msgp.Reader) (err error) {
 				}
 			}
 		case "Data":
-			z.Data, err = dc.ReadBytes(z.Data)
+			var zb0003 uint32
+			zb0003, err = dc.ReadArrayHeader()
 			if err != nil {
 				return
+			}
+			if cap(z.Data) >= int(zb0003) {
+				z.Data = (z.Data)[:zb0003]
+			} else {
+				z.Data = make([][]byte, zb0003)
+			}
+			for za0002 := range z.Data {
+				z.Data[za0002], err = dc.ReadBytes(z.Data[za0002])
+				if err != nil {
+					return
+				}
 			}
 		default:
 			err = dc.Skip()
@@ -391,9 +440,15 @@ func (z *LogProtocol) EncodeMsg(en *msgp.Writer) (err error) {
 	if err != nil {
 		return
 	}
-	err = en.WriteBytes(z.Data)
+	err = en.WriteArrayHeader(uint32(len(z.Data)))
 	if err != nil {
 		return
+	}
+	for za0002 := range z.Data {
+		err = en.WriteBytes(z.Data[za0002])
+		if err != nil {
+			return
+		}
 	}
 	return
 }
@@ -419,7 +474,10 @@ func (z *LogProtocol) MarshalMsg(b []byte) (o []byte, err error) {
 	}
 	// string "Data"
 	o = append(o, 0xa4, 0x44, 0x61, 0x74, 0x61)
-	o = msgp.AppendBytes(o, z.Data)
+	o = msgp.AppendArrayHeader(o, uint32(len(z.Data)))
+	for za0002 := range z.Data {
+		o = msgp.AppendBytes(o, z.Data[za0002])
+	}
 	return
 }
 
@@ -462,9 +520,21 @@ func (z *LogProtocol) UnmarshalMsg(bts []byte) (o []byte, err error) {
 				}
 			}
 		case "Data":
-			z.Data, bts, err = msgp.ReadBytesBytes(bts, z.Data)
+			var zb0003 uint32
+			zb0003, bts, err = msgp.ReadArrayHeaderBytes(bts)
 			if err != nil {
 				return
+			}
+			if cap(z.Data) >= int(zb0003) {
+				z.Data = (z.Data)[:zb0003]
+			} else {
+				z.Data = make([][]byte, zb0003)
+			}
+			for za0002 := range z.Data {
+				z.Data[za0002], bts, err = msgp.ReadBytesBytes(bts, z.Data[za0002])
+				if err != nil {
+					return
+				}
 			}
 		default:
 			bts, err = msgp.Skip(bts)
@@ -483,6 +553,9 @@ func (z *LogProtocol) Msgsize() (s int) {
 	for za0001 := range z.Topics {
 		s += z.Topics[za0001].Msgsize()
 	}
-	s += 5 + msgp.BytesPrefixSize + len(z.Data)
+	s += 5 + msgp.ArrayHeaderSize
+	for za0002 := range z.Data {
+		s += msgp.BytesPrefixSize + len(z.Data[za0002])
+	}
 	return
 }
