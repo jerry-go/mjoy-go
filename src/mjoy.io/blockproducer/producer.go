@@ -492,8 +492,8 @@ func (env *Work) commitTransactions(mux *event.TypeMux, txs *transaction.Transac
 		// Start executing the transaction
 		env.state.Prepare(tx.Hash(), types.Hash{}, env.tcount)
 
-		err, logs := env.commitTransaction(tx, bc, coinbase )
-		switch err {
+		err1, logs := env.commitTransaction(tx, bc, coinbase )
+		switch err1 {
 		case core.ErrNonceTooLow:
 			// New head notification data race between the transaction pool and blockproducer, shift
 			logger.Trace("Skipping transaction with low nonce", "sender", from, "nonce", tx.Nonce())

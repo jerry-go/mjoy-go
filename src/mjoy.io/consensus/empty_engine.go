@@ -25,7 +25,6 @@ import (
 	"mjoy.io/common/types"
 	"mjoy.io/core/state"
 	"mjoy.io/core/transaction"
-	"math/big"
 )
 
 type Engine_empty struct {
