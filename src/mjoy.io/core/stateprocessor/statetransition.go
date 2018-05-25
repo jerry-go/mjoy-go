@@ -26,7 +26,7 @@ import (
 	"mjoy.io/core"
 	"mjoy.io/core/transaction"
 	"mjoy.io/core/interpreter"
-	"mjoy.io/common"
+	"mjoy.io/utils/crypto"
 )
 
 /*
@@ -175,7 +175,7 @@ func (st *StateTransition) TransitionDb() (ret []byte, failed bool, err error) {
 		//1, collect results for block producer future write level db
 		st.Cache.Cache[string(storgageKey)] = interpreter.MemDatabase{
 			contractAddr,
-			storgageKey,
+			result.Key,
 			result.Val}
 
 		//2. make log for receipt
@@ -184,9 +184,9 @@ func (st *StateTransition) TransitionDb() (ret []byte, failed bool, err error) {
 		st.statedb.AddLog(log)
 
 		//3, change statedb storage
-		storgageKeyHash := common.Hash(storgageKey)
-		storgageValHash := common.Hash(result.Val)
-		st.statedb.SetState(contractAddr, storgageKeyHash, storgageValHash)
+		storageKeyHash := crypto.Keccak256Hash(storgageKey)
+		storageValHash := crypto.Keccak256Hash(result.Val)
+		st.statedb.SetState(contractAddr, storageKeyHash, storageValHash)
 	}
 
 	return ret, false, err
