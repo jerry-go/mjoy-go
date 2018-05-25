@@ -842,8 +842,9 @@ func (bc *BlockChain) WriteBlockAndState(block *block.Block, receipts []*transac
 		status = SideStatTy
 	}
 
-	for _, reult := range cache.Cache {
-		if err := batch.Put(reult.Key, reult.Val); err != nil {
+	for _, result := range cache.Cache {
+		keyHash := common.Hash(append(append(result.Address.Bytes() ,result.Key...), block.B_header.StateRootHash.Bytes()...))
+		if err := batch.Put(keyHash.Bytes(), result.Val); err != nil {
 			logger.Critical("Failed to store CacheDb value", "err", err)
 			return NonStatTy, err
 		}

@@ -26,6 +26,7 @@ import (
 	"mjoy.io/core"
 	"mjoy.io/core/transaction"
 	"mjoy.io/core/interpreter"
+	"mjoy.io/common"
 )
 
 /*
@@ -121,14 +122,11 @@ func (st *StateTransition) preCheck() error {
 
 // make log  function
 func MakeLog(address types.Address, results interpreter.ActionResults, blockNumber uint64) *transaction.Log {
-	size := len(results)
-	if size == 0 {
-		return nil
-	}
-	topics := make([]types.Hash, size)
+	topics := []types.Hash{}
 	data := [][]byte{}
-	for i, result := range results {
-		topics[i] = types.BytesToHash(result.Key)
+
+	for _, result := range results {
+		topics = append(topics,types.BytesToHash(result.Key))
 		data = append(data, result.Key)
 	}
 
@@ -172,10 +170,23 @@ func (st *StateTransition) TransitionDb() (ret []byte, failed bool, err error) {
 	}
 
 	for _, result := range results {
-		st.Cache.Cache[string(result.Key)] = interpreter.MemDatabase{result.Key, result.Val}
+		storgageKey := append(contractAddr.Bytes(), result.Key...)
+
+		//1, collect results for block producer future write level db
+		st.Cache.Cache[string(storgageKey)] = interpreter.MemDatabase{
+			contractAddr,
+			storgageKey,
+			result.Val}
+
+		//2. make log for receipt
 		//todo here need vm ctx
 		log := MakeLog(contractAddr,results, 0)
 		st.statedb.AddLog(log)
+
+		//3, change statedb storage
+		storgageKeyHash := common.Hash(storgageKey)
+		storgageValHash := common.Hash(result.Val)
+		st.statedb.SetState(contractAddr, storgageKeyHash, storgageValHash)
 	}
 
 	return ret, false, err

@@ -50,3 +50,11 @@ func MsgpHash(x interface{}) (h types.Hash, err error) {
 	hw.Sum(h[:0])
 	return h, nil
 }
+
+
+func Hash(v []byte) (h types.Hash){
+	hw := sha3.NewKeccak256()
+	hw.Write(v)
+	hw.Sum(h[:0])
+	return h
+}

@@ -15,8 +15,9 @@ type ActionResult struct {
 }
 
 type MemDatabase struct {
-	Key []byte
-	Val []byte
+	Address types.Address
+	Key 	[]byte
+	Val 	[]byte
 }
 
 type ActionResults []ActionResult
