@@ -21,7 +21,7 @@ func NewVm()*Vms{
 
 
 type Vms struct {
-	pInnerContractMaper *InnerContractMaper
+	pInnerContractMaper *InnerContractManager
 	pOutDeference *OutDeference
 
 	lock sync.RWMutex   //working  mux
@@ -37,7 +37,7 @@ func (this *Vms)init(){
 	//init workingChan
 	this.WorkingChan = make(chan *Work , 1000)
 	//init innerContractMapper
-	this.pInnerContractMaper = NewInnerContractMaper()
+	this.pInnerContractMaper = NewInnerContractManager()
 	//init outdeference
 	this.pOutDeference = NewOutDeference()
 

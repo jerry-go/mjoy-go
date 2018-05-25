@@ -12,30 +12,30 @@ import (
 
 //InnerContrancInterface
 type InnerContract interface {
-	DoFun(fName string , params interface{})(interface{} , error)
+	DoFun(fName string , params interface{})([]ActionResult , error)
 }
 
 //InnerContranctMap is a innerContract controller,like check contract ,do a contract
-type InnerContractMaper struct {
+type InnerContractManager struct {
 	mu sync.RWMutex
 	Inners map[types.Address]InnerContract
 }
 
 //New A InnerContractMaper
-func NewInnerContractMaper()*InnerContractMaper{
-	maper := new(InnerContractMaper)
+func NewInnerContractManager()*InnerContractManager{
+	maper := new(InnerContractManager)
 	maper.Inners = make(map[types.Address]InnerContract)
 	maper.init()
 	return maper
 }
 
-func (this *InnerContractMaper)init(){
+func (this *InnerContractManager)init(){
 	this.register()
 }
 
 var zeroAddress = types.BigToAddress(big.NewInt(0))
 
-func (this *InnerContractMaper)register(){
+func (this *InnerContractManager)register(){
 	this.mu.Lock()
 	defer this.mu.Unlock()
 
@@ -53,7 +53,7 @@ func (this *InnerContractMaper)register(){
 
 
 //check innerContract is exist
-func (this *InnerContractMaper)Exist(address types.Address)bool{
+func (this *InnerContractManager)Exist(address types.Address)bool{
 	this.mu.RLock()
 	defer this.mu.RUnlock()
 
@@ -64,7 +64,7 @@ func (this *InnerContractMaper)Exist(address types.Address)bool{
 }
 
 //call a innerContract.Please call Exist ensure a innerContract is exist or not before this
-func (this *InnerContractMaper)DoFun(address types.Address , fname string , params interface{})(interface{} ,  error){
+func (this *InnerContractManager)DoFun(address types.Address , fname string , params interface{})([]ActionResult ,  error){
 	inner := this.Inners[address]
 	return inner.DoFun(fname , params)
 }

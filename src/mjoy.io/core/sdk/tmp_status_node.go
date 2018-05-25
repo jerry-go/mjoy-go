@@ -2,8 +2,7 @@ package sdk
 
 import (
 	"mjoy.io/common/types"
-	"mjoy.io/common"
-	"errors"
+	"mjoy.io/utils/crypto"
 )
 
 type TmpKey struct {
@@ -21,11 +20,8 @@ func (this *TmpKey)MakeHashKey()(types.Hash , error){
 	keyHex = append(keyHex , this.key...)
 	keyHex = append(keyHex , this.stateRoot[:]...)
 
-	hash , err := common.MsgpHash(keyHex)
-	if err != nil {
-		logger.Error("MsgpHash Errror:" , err.Error())
-		return types.Hash{} , errors.New("MspHash Error")
-	}
+
+	hash := crypto.Keccak256Hash(keyHex)
 
 	return hash , nil
 }

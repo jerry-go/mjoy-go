@@ -7,7 +7,7 @@ import (
 
 type WorkResult struct {
 	Err error
-	Logs []*transaction.Log
+	Results []ActionResult
 }
 
 
