@@ -843,7 +843,7 @@ func (bc *BlockChain) WriteBlockAndState(block *block.Block, receipts []*transac
 	}
 
 	for _, result := range cache.Cache {
-		keyHash := common.Hash(append(append(result.Address.Bytes() ,result.Key...), block.B_header.StateRootHash.Bytes()...))
+		keyHash := crypto.Keccak256Hash(append(append(result.Address.Bytes() ,result.Key...), block.B_header.StateRootHash.Bytes()...))
 		if err := batch.Put(keyHash.Bytes(), result.Val); err != nil {
 			logger.Critical("Failed to store CacheDb value", "err", err)
 			return NonStatTy, err
