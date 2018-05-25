@@ -21,33 +21,30 @@ func NewVm()*Vms{
 
 
 type Vms struct {
+	pInnerContractMaper *InnerContractMaper
+	pOutDeference *OutDeference
 
-	handlers map[types.Address]HandleFunc   //all address -> handleFunc
-	stateDb interface{} //database for account state
-	keystore interface{}    //accouts interface
 	lock sync.RWMutex   //working  mux
 	WorkingChan chan *Work    //work chan
 }
 
+
+
+
+
+
 func (this *Vms)init(){
-	this.handlers = make(map[types.Address]HandleFunc)
-	this.stateDb = nil
-	this.keystore = nil
+	//init workingChan
 	this.WorkingChan = make(chan *Work , 1000)
+	//init innerContractMapper
+	this.pInnerContractMaper = NewInnerContractMaper()
+	//init outdeference
+	this.pOutDeference = NewOutDeference()
+
 }
 
 
 
-func (this *Vms)RegisterHandlerFunc(codeAddress types.Address , f HandleFunc)error{
-	this.lock.Lock()
-	defer this.lock.Unlock()
-	if _ , ok := this.handlers[codeAddress];ok{
-		return errors.New("Exist HandleFunc")
-	}
-
-	this.handlers[codeAddress] = f
-	return nil
-}
 
 
 
