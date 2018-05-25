@@ -118,6 +118,28 @@ func (st *StateTransition) preCheck() error {
 	return nil
 }
 
+
+// make log  function
+func MakeLog(address types.Address, results interpreter.ActionResults, blockNumber uint64) *transaction.Log {
+	size := len(results)
+	if size == 0 {
+		return nil
+	}
+	topics := make([]types.Hash, size)
+	data := [][]byte{}
+	for i, result := range results {
+		topics[i] = types.BytesToHash(result.Key)
+		data = append(data, result.Key)
+	}
+
+	return &transaction.Log{
+		Address:     address,
+		Topics:      topics,
+		Data:        data,
+		BlockNumber:   blockNumber,
+	}
+}
+
 // TransitionDb will transition the state by applying the current message and
 // returning the result. It returns an error if it
 // failed. An error indicates a consensus issue.
@@ -135,8 +157,9 @@ func (st *StateTransition) TransitionDb() (ret []byte, failed bool, err error) {
 	// Snapshot !!!!!!!!!!!!!!!!!
 	snapshot := st.statedb.Snapshot()
 	results := interpreter.ActionResults{}
+	contractAddr := types.Address{}
 	if contractCreation {
-		results, _, err = interpreter.Create(sender, st.statedb, st.actions)
+		results, contractAddr, err = interpreter.Create(sender, st.statedb, st.actions)
 	} else {
 		// TODO:
 		logger.Debugf("Just process simple transaction.")
@@ -150,6 +173,9 @@ func (st *StateTransition) TransitionDb() (ret []byte, failed bool, err error) {
 
 	for _, result := range results {
 		st.Cache.Cache[string(result.Key)] = interpreter.MemDatabase{result.Key, result.Val}
+		//todo here need vm ctx
+		log := MakeLog(contractAddr,results, 0)
+		st.statedb.AddLog(log)
 	}
 
 	return ret, false, err
