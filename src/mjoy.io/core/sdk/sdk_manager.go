@@ -21,7 +21,24 @@ func NewSdkManager(db database.IDatabaseGetter){
 	PtrSdkManager.pStatusManager = nil
 }
 
-func (this *SdkManager)
+//call this before block producer
+func (this *SdkManager)Prepare(lastRoot types.Hash){
+	this.mu.Lock()
+	defer this.mu.Unlock()
+
+	this.lastroot = lastRoot
+	//new a statusManager and run it
+	this.pStatusManager = NewTmpStatusManager(this.lastroot , this.db)
+}
+
+//call this after block producer
+func (this *SdkManager)Down(){
+	this.mu.Lock()
+	defer this.mu.Unlock()
+
+	//gc should take back the memery
+	this.pStatusManager = nil
+}
 
 
 

@@ -6,9 +6,6 @@ type Result struct {
 	val []byte
 }
 
-type Results []Result
-
-
 
 
 

@@ -25,6 +25,8 @@ import (
 	"mjoy.io/core/state"
 	"mjoy.io/core"
 	"mjoy.io/core/transaction"
+	"mjoy.io/core/interpreter"
+	"mjoy.io/common"
 )
 
 /*
@@ -48,6 +50,7 @@ type StateTransition struct {
 	actions     []transaction.Action
 	statedb    *state.StateDB
 	coinBase   types.Address
+	Cache      *DbCache
 }
 
 // Message represents a message sent to a contract.
@@ -60,19 +63,20 @@ type Message interface {
 }
 
 // NewStateTransition initialises and returns a new state transition object.
-func NewStateTransition(statedb *state.StateDB, msg Message, coinBase types.Address) *StateTransition {
+func NewStateTransition(statedb *state.StateDB, msg Message, coinBase types.Address, cache *DbCache) *StateTransition {
 	return &StateTransition{
 		msg:      msg,
-		actions:msg.Actions(),
+		actions:  msg.Actions(),
 		statedb:  statedb,
 		coinBase: coinBase,
+		Cache : cache,
 	}
 }
 
 // ApplyMessage computes the new state by applying the given message
 // against the old state within the environment.
-func ApplyMessage(statedb *state.StateDB, msg Message, coinBase types.Address) ([]byte, bool, error) {
-	return NewStateTransition(statedb, msg, coinBase).TransitionDb()
+func ApplyMessage(statedb *state.StateDB, msg Message, coinBase types.Address, cache *DbCache) ([]byte, bool, error) {
+	return NewStateTransition(statedb, msg, coinBase, cache).TransitionDb()
 }
 
 func (st *StateTransition) from() types.Address {
@@ -115,6 +119,25 @@ func (st *StateTransition) preCheck() error {
 	return nil
 }
 
+
+// make log  function
+func MakeLog(address types.Address, results interpreter.ActionResults, blockNumber uint64) *transaction.Log {
+	topics := []types.Hash{}
+	data := [][]byte{}
+
+	for _, result := range results {
+		topics = append(topics,types.BytesToHash(result.Key))
+		data = append(data, result.Key)
+	}
+
+	return &transaction.Log{
+		Address:     address,
+		Topics:      topics,
+		Data:        data,
+		BlockNumber:   blockNumber,
+	}
+}
+
 // TransitionDb will transition the state by applying the current message and
 // returning the result. It returns an error if it
 // failed. An error indicates a consensus issue.
@@ -123,69 +146,49 @@ func (st *StateTransition) TransitionDb() (ret []byte, failed bool, err error) {
 		return
 	}
 
-	return  []byte{1,2,3},true , nil
+	//return  []byte{1,2,3},true , nil
+	msg := st.msg
+	sender := st.from() // err checked in preCheck
 
-	//if false{
-	//
-	//	msg := st.msg
-	//	sender := st.from() // err checked in preCheck
-	//
-	//	contractCreation := msg.To() == nil
-	//
-	//
-	//	// Snapshot !!!!!!!!!!!!!!!!!
-	//	revid := st.statedb.Snapshot()
-	//	if contractCreation {
-	//		// TODO:
-	//
-	//		// RevertToSnapshot !!!!!!!!!!!!!!!!!
-	//		st.statedb.RevertToSnapshot(revid)
-	//		logger.Warnf("Not support create contraction.")
-	//		return nil, true, fmt.Errorf("Not support create contraction.")
-	//	} else {
-	//		// TODO:
-	//		logger.Debugf("Just process simple transaction.")
-	//
-	//		// Increment the nonce for the next transaction
-	//		st.statedb.SetNonce(sender, st.statedb.GetNonce(sender)+1)
-	//		// skip, direct success
-	//
-	//		// TODO: for test
-	//		{
-	//			fee := new(big.Int).Div(st.msg.Value(), new(big.Int).SetUint64(1000))
-	//			if fee.Cmp(new(big.Int).SetUint64(1)) < 0 {
-	//				fee.SetUint64(1)
-	//			}
-	//			if st.statedb.GetBalance(sender).Cmp(fee.Add(fee, st.value)) < 0 {
-	//				// RevertToSnapshot !!!!!!!!!!!!!!!!!
-	//				st.statedb.RevertToSnapshot(revid)
-	//				return nil, true, fmt.Errorf("Insufficient balance(addr: %x).", sender)
-	//			}
-	//
-	//			st.statedb.AddBalance(*msg.To(), st.value)
-	//		}
-	//	}
-	//	/*if vmerr != nil {
-	//		logger.Debug("VM returned with error", "err", vmerr)
-	//		// The only possible consensus-error would be if there wasn't
-	//		// sufficient balance to make the transfer happen. The first
-	//		// balance transfer may never fail.
-	//		if vmerr == vm.ErrInsufficientBalance {
-	//			return nil, 0, false, vmerr
-	//		}
-	//	}*/
-	//
-	//	// TODO: just for test, fee per transaction
-	//	fee := new(big.Int).Div(st.msg.Value(), new(big.Int).SetUint64(1000))
-	//	if fee.Cmp(new(big.Int).SetUint64(1)) < 0 {
-	//		fee.SetUint64(1)
-	//	}
-	//	st.statedb.AddBalance(st.coinBase, fee)
-	//
-	//	st.statedb.SubBalance(sender, fee.Add(fee,st.value))
-	//
-	//	return ret, false, err
-	//
-	//}
+	contractCreation := msg.To() == nil
+
+	// Snapshot !!!!!!!!!!!!!!!!!
+	snapshot := st.statedb.Snapshot()
+	results := interpreter.ActionResults{}
+	contractAddr := types.Address{}
+	if contractCreation {
+		results, contractAddr, err = interpreter.Create(sender, st.statedb, st.actions)
+	} else {
+		// TODO:
+		logger.Debugf("Just process simple transaction.")
+
+	}
+
+	if err != nil {
+		st.statedb.RevertToSnapshot(snapshot)
+		return nil, true, err
+	}
+
+	for _, result := range results {
+		storgageKey := append(contractAddr.Bytes(), result.Key...)
+
+		//1, collect results for block producer future write level db
+		st.Cache.Cache[string(storgageKey)] = interpreter.MemDatabase{
+			contractAddr,
+			storgageKey,
+			result.Val}
+
+		//2. make log for receipt
+		//todo here need vm ctx
+		log := MakeLog(contractAddr,results, 0)
+		st.statedb.AddLog(log)
+
+		//3, change statedb storage
+		storgageKeyHash := common.Hash(storgageKey)
+		storgageValHash := common.Hash(result.Val)
+		st.statedb.SetState(contractAddr, storgageKeyHash, storgageValHash)
+	}
+
+	return ret, false, err
 
 }
