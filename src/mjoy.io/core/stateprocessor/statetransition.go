@@ -25,6 +25,7 @@ import (
 	"mjoy.io/core/state"
 	"mjoy.io/core"
 	"mjoy.io/core/transaction"
+	"mjoy.io/core/interpreter"
 )
 
 /*
@@ -48,6 +49,7 @@ type StateTransition struct {
 	actions     []transaction.Action
 	statedb    *state.StateDB
 	coinBase   types.Address
+	Cache      *DbCache
 }
 
 // Message represents a message sent to a contract.
@@ -60,19 +62,20 @@ type Message interface {
 }
 
 // NewStateTransition initialises and returns a new state transition object.
-func NewStateTransition(statedb *state.StateDB, msg Message, coinBase types.Address) *StateTransition {
+func NewStateTransition(statedb *state.StateDB, msg Message, coinBase types.Address, cache *DbCache) *StateTransition {
 	return &StateTransition{
 		msg:      msg,
-		actions:msg.Actions(),
+		actions:  msg.Actions(),
 		statedb:  statedb,
 		coinBase: coinBase,
+		Cache : cache,
 	}
 }
 
 // ApplyMessage computes the new state by applying the given message
 // against the old state within the environment.
-func ApplyMessage(statedb *state.StateDB, msg Message, coinBase types.Address) ([]byte, bool, error) {
-	return NewStateTransition(statedb, msg, coinBase).TransitionDb()
+func ApplyMessage(statedb *state.StateDB, msg Message, coinBase types.Address, cache *DbCache) ([]byte, bool, error) {
+	return NewStateTransition(statedb, msg, coinBase, cache).TransitionDb()
 }
 
 func (st *StateTransition) from() types.Address {
@@ -123,69 +126,32 @@ func (st *StateTransition) TransitionDb() (ret []byte, failed bool, err error) {
 		return
 	}
 
-	return  []byte{1,2,3},true , nil
+	//return  []byte{1,2,3},true , nil
+	msg := st.msg
+	sender := st.from() // err checked in preCheck
 
-	//if false{
-	//
-	//	msg := st.msg
-	//	sender := st.from() // err checked in preCheck
-	//
-	//	contractCreation := msg.To() == nil
-	//
-	//
-	//	// Snapshot !!!!!!!!!!!!!!!!!
-	//	revid := st.statedb.Snapshot()
-	//	if contractCreation {
-	//		// TODO:
-	//
-	//		// RevertToSnapshot !!!!!!!!!!!!!!!!!
-	//		st.statedb.RevertToSnapshot(revid)
-	//		logger.Warnf("Not support create contraction.")
-	//		return nil, true, fmt.Errorf("Not support create contraction.")
-	//	} else {
-	//		// TODO:
-	//		logger.Debugf("Just process simple transaction.")
-	//
-	//		// Increment the nonce for the next transaction
-	//		st.statedb.SetNonce(sender, st.statedb.GetNonce(sender)+1)
-	//		// skip, direct success
-	//
-	//		// TODO: for test
-	//		{
-	//			fee := new(big.Int).Div(st.msg.Value(), new(big.Int).SetUint64(1000))
-	//			if fee.Cmp(new(big.Int).SetUint64(1)) < 0 {
-	//				fee.SetUint64(1)
-	//			}
-	//			if st.statedb.GetBalance(sender).Cmp(fee.Add(fee, st.value)) < 0 {
-	//				// RevertToSnapshot !!!!!!!!!!!!!!!!!
-	//				st.statedb.RevertToSnapshot(revid)
-	//				return nil, true, fmt.Errorf("Insufficient balance(addr: %x).", sender)
-	//			}
-	//
-	//			st.statedb.AddBalance(*msg.To(), st.value)
-	//		}
-	//	}
-	//	/*if vmerr != nil {
-	//		logger.Debug("VM returned with error", "err", vmerr)
-	//		// The only possible consensus-error would be if there wasn't
-	//		// sufficient balance to make the transfer happen. The first
-	//		// balance transfer may never fail.
-	//		if vmerr == vm.ErrInsufficientBalance {
-	//			return nil, 0, false, vmerr
-	//		}
-	//	}*/
-	//
-	//	// TODO: just for test, fee per transaction
-	//	fee := new(big.Int).Div(st.msg.Value(), new(big.Int).SetUint64(1000))
-	//	if fee.Cmp(new(big.Int).SetUint64(1)) < 0 {
-	//		fee.SetUint64(1)
-	//	}
-	//	st.statedb.AddBalance(st.coinBase, fee)
-	//
-	//	st.statedb.SubBalance(sender, fee.Add(fee,st.value))
-	//
-	//	return ret, false, err
-	//
-	//}
+	contractCreation := msg.To() == nil
+
+	// Snapshot !!!!!!!!!!!!!!!!!
+	snapshot := st.statedb.Snapshot()
+	results := interpreter.ActionResults{}
+	if contractCreation {
+		results, _, err = interpreter.Create(sender, st.statedb, st.actions)
+	} else {
+		// TODO:
+		logger.Debugf("Just process simple transaction.")
+
+	}
+
+	if err != nil {
+		st.statedb.RevertToSnapshot(snapshot)
+		return nil, true, err
+	}
+
+	for _, result := range results {
+		st.Cache.Cache[string(result.Key)] = interpreter.MemDatabase{result.Key, result.Val}
+	}
+
+	return ret, false, err
 
 }

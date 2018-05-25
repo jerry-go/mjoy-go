@@ -22,5 +22,6 @@ package params
 
 const (
 	MaximumExtraDataSize  uint64 = 32    // Maximum size extra data may be after Genesis.
-	EpochDuration    uint64 = 30000 // Duration between proof-of-stack epochs
+	EpochDuration    uint64 = 30000 	 // Duration between proof-of-stack epochs
+	MaxCodeSize 	= 32768 			 // Maximum bytecode to permit for a contract
 )

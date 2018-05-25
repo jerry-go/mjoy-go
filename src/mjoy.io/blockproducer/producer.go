@@ -39,6 +39,7 @@ import (
 	"mjoy.io/core/stateprocessor"
 	"mjoy.io/core/blockchain"
 	"gopkg.in/fatih/set.v0"
+	"mjoy.io/core/interpreter"
 )
 
 const (
@@ -72,6 +73,7 @@ type Work struct {
 	signer transaction.Signer
 
 	state     *state.StateDB // apply state changes here
+	dbCache   *stateprocessor.DbCache
 	ancestors *set.Set       // ancestor set
 	family    *set.Set       // family set
 	tcount    int            // tx count in cycle
@@ -305,13 +307,13 @@ func (self *producer) wait() {
 			for _, log := range work.state.Logs() {
 				log.BlockHash = block.Hash()
 			}
-			stat, err := self.chain.WriteBlockAndState(block, work.receipts, work.state)
+			stat, err := self.chain.WriteBlockAndState(block, work.receipts, work.state, work.dbCache)
 			if err != nil {
 				logger.Error("Failed writing block to chain", "err", err)
 				continue
 			}
-			// check if canon block and write transactions
 
+			// check if canon block and write transactions
 			if stat == blockchain.CanonStatTy {
 				// implicit by posting ChainHeadEvent
 				mustCommitNewWork = false
@@ -361,6 +363,7 @@ func (self *producer) makeCurrent(parent *block.Block, header *block.Header) err
 		config:    self.config,
 		signer:    transaction.NewMSigner(self.config.ChainId),
 		state:     state,
+		dbCache:   &stateprocessor.DbCache{make(map[string]interpreter.MemDatabase)},
 		ancestors: set.New(),
 		family:    set.New(),
 		inter:      self.inter,
@@ -460,6 +463,8 @@ func (env *Work) commitTransactions(mux *event.TypeMux, txs *transaction.Transac
 
 	var coalescedLogs []*transaction.Log
 
+	dbcache := env.dbCache
+
 	for {
 
 		// Retrieve the next transaction and abort if all done
@@ -492,7 +497,7 @@ func (env *Work) commitTransactions(mux *event.TypeMux, txs *transaction.Transac
 		// Start executing the transaction
 		env.state.Prepare(tx.Hash(), types.Hash{}, env.tcount)
 
-		err1, logs := env.commitTransaction(tx, bc, coinbase )
+		err1, logs := env.commitTransaction(tx, bc, coinbase, dbcache)
 		switch err1 {
 		case core.ErrNonceTooLow:
 			// New head notification data race between the transaction pool and blockproducer, shift
@@ -538,10 +543,10 @@ func (env *Work) commitTransactions(mux *event.TypeMux, txs *transaction.Transac
 	}
 }
 
-func (env *Work) commitTransaction(tx *transaction.Transaction, bc *blockchain.BlockChain, coinbase types.Address) (error, []*transaction.Log) {
+func (env *Work) commitTransaction(tx *transaction.Transaction, bc *blockchain.BlockChain, coinbase types.Address, cache *stateprocessor.DbCache) (error, []*transaction.Log) {
 	snap := env.state.Snapshot()
 	//                                ApplyTransaction(this.config,&coinbase,this.state ,header,tx)
-	receipt, err := stateprocessor.ApplyTransaction(env.config, &coinbase,  env.state, env.header, tx)
+	receipt, err := stateprocessor.ApplyTransaction(env.config, &coinbase,  env.state, env.header, tx, cache)
 	if err != nil {
 		env.state.RevertToSnapshot(snap)
 		return err, nil

@@ -97,7 +97,7 @@ type Validator interface {
 // initial state is based. It should return the receipts generated
 // and return an error if any of the internal rules failed.
 type Processor interface {
-	Process(block *block.Block, statedb *state.StateDB) (transaction.Receipts, []*transaction.Log, error)
+	Process(block *block.Block, statedb *state.StateDB) (*stateprocessor.DbCache, transaction.Receipts, []*transaction.Log, error)
 }
 
 // BlockChain represents the canonical chain given a database with a genesis
@@ -778,9 +778,24 @@ func (bc *BlockChain) InsertReceiptChain(blockChain block.Blocks, receiptChain [
 	return 0, nil
 }
 
+func (bc *BlockChain) WriteCacheDb(cache *stateprocessor.DbCache) error {
+	batch := bc.chainDb.NewBatch()
 
+	for _, reult := range cache.Cache {
+		if err := batch.Put(reult.Key, reult.Val); err != nil {
+			logger.Critical("Failed to store CacheDb value", "err", err)
+			return err
+		}
+	}
+
+	if err := batch.Write(); err != nil {
+		return err
+	}
+
+	return nil
+}
 // WriteBlock writes the block to the chain.
-func (bc *BlockChain) WriteBlockAndState(block *block.Block, receipts []*transaction.Receipt, state *state.StateDB) (status WriteStatus, err error) {
+func (bc *BlockChain) WriteBlockAndState(block *block.Block, receipts []*transaction.Receipt, state *state.StateDB, cache *stateprocessor.DbCache) (status WriteStatus, err error) {
 	bc.wg.Add(1)
 	defer bc.wg.Done()
 
@@ -826,6 +841,14 @@ func (bc *BlockChain) WriteBlockAndState(block *block.Block, receipts []*transac
 	} else {
 		status = SideStatTy
 	}
+
+	for _, reult := range cache.Cache {
+		if err := batch.Put(reult.Key, reult.Val); err != nil {
+			logger.Critical("Failed to store CacheDb value", "err", err)
+			return NonStatTy, err
+		}
+	}
+
 	if err := batch.Write(); err != nil {
 		return NonStatTy, err
 	}
@@ -947,7 +970,7 @@ func (bc *BlockChain) insertChain(chain block.Blocks) (int, []interface{}, []*tr
 			return i, events, coalescedLogs, err
 		}
 		// Process block using the parent state as reference point.
-		receipts, logs, err := bc.processor.Process(blk, state)
+		dbCache, receipts, logs, err := bc.processor.Process(blk, state)
 		if err != nil {
 			bc.reportBlock(blk, receipts, err)
 			return i, events, coalescedLogs, err
@@ -960,10 +983,12 @@ func (bc *BlockChain) insertChain(chain block.Blocks) (int, []interface{}, []*tr
 		}
 
 		// Write the block to the chain and get the status.
-		status, err := bc.WriteBlockAndState(blk, receipts, state)
+		status, err := bc.WriteBlockAndState(blk, receipts, state,dbCache)
 		if err != nil {
 			return i, events, coalescedLogs, err
 		}
+
+
 		switch status {
 		case CanonStatTy:
 			//logger.Debug("Inserted new block", "number", blk.Number().String(), "hash", blk.Hash().String(),
