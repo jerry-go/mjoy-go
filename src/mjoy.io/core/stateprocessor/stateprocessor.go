@@ -113,7 +113,7 @@ func ApplyTransaction(config *params.ChainConfig, author *types.Address, statedb
 	if author == nil {
 		author = &header.BlockProducer
 	}
-	_, failed, err := ApplyMessage(statedb, msg, *author, cache)
+	_, failed, err := ApplyMessage(statedb, msg, *author, cache, header)
 	if err != nil {
 		return nil, err
 	}
