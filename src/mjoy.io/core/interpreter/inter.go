@@ -90,7 +90,8 @@ func (this *Vms)SendWork(from types.Address , action transaction.Action)<-chan W
 	actions = append(actions , action)
 
 	w := NewWork(from , actions)
-	this.WorkingChan<-w
+	this.DealActions(w)
+	//this.WorkingChan<-w
 	return w.resultChan
 }
 

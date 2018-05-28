@@ -7,6 +7,7 @@ import (
 	"mjoy.io/core/sdk"
 	"encoding/json"
 	"mjoy.io/core/interpreter/intertypes"
+	"strconv"
 )
 
 
@@ -15,7 +16,7 @@ func TransferBalance(param map[string]interface{})([]intertypes.ActionResult , e
 	var fromAddress types.Address
 	var to string
 	var toAddress types.Address
-	var amount int64
+	var amount int
 
 
 	//get params
@@ -37,7 +38,8 @@ func TransferBalance(param map[string]interface{})([]intertypes.ActionResult , e
 
 	//amount
 	if amounti , ok := param["amount"];ok{
-		amount = amounti.(int64)
+		amount, _ = strconv.Atoi(amounti.(string))
+
 	}
 
 	//logicDeal
