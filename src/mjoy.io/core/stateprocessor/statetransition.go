@@ -160,16 +160,15 @@ func (st *StateTransition) TransitionDb() (ret []byte, failed bool, err error) {
 	snapshot := st.statedb.Snapshot()
 
 	resultMem := []*interpreter.MemDatabase{}
-	contractAddr := types.Address{}
+
 	if contractCreation {
-		results := interpreter.ActionResults{}
-		results, contractAddr, err = interpreter.Create(sender, st.statedb, st.actions)
+		results, _, err := interpreter.Create(sender, st.statedb, st.actions)
 		if err != nil {
 			st.statedb.RevertToSnapshot(snapshot)
 			return nil, true, err
 		}
 		for _, res := range results {
-			resM := &interpreter.MemDatabase{contractAddr, res.Key, res.Val}
+			resM := &interpreter.MemDatabase{*st.actions[0].Address, res.Key, res.Val}
 			resultMem = append(resultMem, resM)
 		}
 		// make log for receipt
@@ -197,7 +196,7 @@ func (st *StateTransition) TransitionDb() (ret []byte, failed bool, err error) {
 	}
 
 	for _, result := range resultMem {
-		storgageKey := append(contractAddr.Bytes(), result.Key...)
+		storgageKey := append(result.Address.Bytes(), result.Key...)
 		//1, collect results for block producer future write level db
 		st.Cache.Cache[string(storgageKey)] = interpreter.MemDatabase{
 			result.Address,
