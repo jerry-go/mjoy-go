@@ -81,7 +81,6 @@ type ActionSlice []Action
 
 type Txdata struct {
 	AccountNonce 	uint64         	`json:"nonce"   gencodec:"required"`
-	To    			*types.Address 	`json:"to"`
 	Actions     	ActionSlice     `json:"actions" gencodec:"required"`
 	// Signature values
 	V *types.BigInt                 `json:"v"       gencodec:"required"`
@@ -93,22 +92,21 @@ type Txdata struct {
 }
 
 //All actions is made by interpreter
-func NewTransaction(nonce uint64, to types.Address, actions ActionSlice) *Transaction {
-	return newTransaction(nonce, &to, actions)
+func NewTransaction(nonce uint64, actions ActionSlice) *Transaction {
+	return newTransaction(nonce, actions)
 }
 //All acions is made by interpreter
 func NewContractCreation(nonce uint64, actions ActionSlice) *Transaction {
-	return newTransaction(nonce, nil, actions)
+	return newTransaction(nonce, actions)
 }
 //the actions is right or not ,should be judged by interpreter,we have no right to do this
-func newTransaction(nonce uint64, to *types.Address, actions ActionSlice) *Transaction {
+func newTransaction(nonce uint64, actions ActionSlice) *Transaction {
 	if len(actions) < 0 {
 		return nil
 	}
 
 	d := Txdata{
 		AccountNonce: nonce,
-		To:    to,
 		Actions:	actions,
 		V:            new(types.BigInt),
 		R:            new(types.BigInt),
@@ -169,15 +167,6 @@ func (tx *Transaction) UnmarshalJSON(input []byte) error {
 func (tx *Transaction) Nonce() uint64      { return tx.Data.AccountNonce }
 func (tx *Transaction) CheckNonce() bool   { return true }
 
-// To returns the recipient address of the transaction.
-// It returns nil if the transaction is a contract creation.
-func (tx *Transaction) To() *types.Address {
-	if tx.Data.To == nil {
-		return nil
-	}
-	to := *tx.Data.To
-	return &to
-}
 
 // Hash hashes the Msgp encoding of tx.
 // It uniquely identifies the transaction.
@@ -229,7 +218,6 @@ func (tx *Transaction) AsMessage(s Signer) (Message, error) {
 	newActions = append(newActions , tx.Data.Actions...)
 	msg := Message{
 		nonce:      tx.Data.AccountNonce,
-		to:         tx.Data.To,
 		actions:    newActions,
 		checkNonce: true,
 	}
@@ -266,7 +254,7 @@ func (tx *Transaction) RawSignatureValues() (*big.Int, *big.Int, *big.Int) {
 
 //String just print Nonce and to,simple is best
 func (tx *Transaction) String() string {
-	return fmt.Sprintf("Nonce:%d , to:0x%x" , tx.Nonce() , tx.To())
+	return fmt.Sprintf("Nonce:%d" , tx.Nonce())
 }
 
 // Transactions is a Transaction slice type for basic sorting.
@@ -433,17 +421,15 @@ func (s TxByNonce) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
 //
 // NOTE: In a future PR this will be removed.
 type Message struct {
-	to         *types.Address
 	from       types.Address
 	nonce      uint64
 	actions    []Action
 	checkNonce bool
 }
 
-func NewMessage(from types.Address, to *types.Address, nonce uint64, actions ActionSlice, checkNonce bool) Message {
+func NewMessage(from types.Address, nonce uint64, actions ActionSlice, checkNonce bool) Message {
 	return Message{
 		from:       from,
-		to:         to,
 		nonce:      nonce,
 		actions:    actions,
 		checkNonce: checkNonce,
@@ -451,7 +437,6 @@ func NewMessage(from types.Address, to *types.Address, nonce uint64, actions Act
 }
 
 func (m Message) From() types.Address { return m.from }
-func (m Message) To() *types.Address  { return m.to }
 func (m Message) Nonce() uint64        { return m.nonce }
 func (m Message) Actions()[]Action      {return m.actions}
 func (m Message) CheckNonce() bool     { return m.checkNonce }

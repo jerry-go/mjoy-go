@@ -11,8 +11,7 @@ import (
 func (t Txdata) MarshalJSON() ([]byte, error) {
 	type Txdata struct {
 		AccountNonce	uint64		`json:"nonce"   gencodec:"required"`
-		To		*types.Address	`json:"to"  msgp:"nil"`
-		Actions		[]Action	`json:"actions"    gencodec:"required"`
+		Actions		ActionSlice	`json:"actions" gencodec:"required"`
 		V		*types.BigInt	`json:"v"       gencodec:"required"`
 		R		*types.BigInt	`json:"r"       gencodec:"required"`
 		S		*types.BigInt	`json:"s"       gencodec:"required"`
@@ -20,7 +19,6 @@ func (t Txdata) MarshalJSON() ([]byte, error) {
 	}
 	var enc Txdata
 	enc.AccountNonce = t.AccountNonce
-	enc.To = t.To
 	enc.Actions = t.Actions
 	enc.V = t.V
 	enc.R = t.R
@@ -32,8 +30,7 @@ func (t Txdata) MarshalJSON() ([]byte, error) {
 func (t *Txdata) UnmarshalJSON(input []byte) error {
 	type Txdata struct {
 		AccountNonce	*uint64		`json:"nonce"   gencodec:"required"`
-		To		*types.Address	`json:"to"  msgp:"nil"`
-		Actions		[]Action	`json:"actions"    gencodec:"required"`
+		Actions		ActionSlice	`json:"actions" gencodec:"required"`
 		V		*types.BigInt	`json:"v"       gencodec:"required"`
 		R		*types.BigInt	`json:"r"       gencodec:"required"`
 		S		*types.BigInt	`json:"s"       gencodec:"required"`
@@ -47,9 +44,6 @@ func (t *Txdata) UnmarshalJSON(input []byte) error {
 		return errors.New("missing required field 'nonce' for Txdata")
 	}
 	t.AccountNonce = *dec.AccountNonce
-	if dec.To != nil {
-		t.To = dec.To
-	}
 	if dec.Actions == nil {
 		return errors.New("missing required field 'actions' for Txdata")
 	}

@@ -27,9 +27,9 @@ import (
 	"mjoy.io/core/transaction"
 	"mjoy.io/common/types"
 	"mjoy.io/utils/bloom"
-	"fmt"
 	"mjoy.io/consensus"
 	"mjoy.io/core/interpreter"
+	"mjoy.io/utils/crypto"
 )
 
 type IChainForState interface {
@@ -125,12 +125,8 @@ func ApplyTransaction(config *params.ChainConfig, author *types.Address, statedb
 	receipt := transaction.NewReceipt(failed)
 	receipt.TxHash = tx.Hash()
 	// if the transaction created a contract, store the creation address in the receipt.
-	if msg.To() == nil {
-		// TODO:
-		logger.Warnf("Not support to create contract!\n")
-		return nil, fmt.Errorf("Not support to create contract!")
-
-		//receipt.ContractAddress = crypto.CreateAddress(vmenv.Context.Origin, tx.Nonce())
+	if len(tx.Data.Actions) == 2 && tx.Data.Actions[1].Address == nil {
+		receipt.ContractAddress = crypto.CreateAddress(msg.From(), tx.Nonce())
 	}
 	// Set the receipt logs and create a bloom for filtering
 	receipt.Logs = statedb.GetLogs(tx.Hash())

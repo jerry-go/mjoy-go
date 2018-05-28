@@ -159,13 +159,15 @@ func (s MSigner) SignatureValues(tx *Transaction, sig []byte) (R, S, V *big.Int,
 // Hash returns the hash to be signed by the sender.
 // It does not uniquely identify the transaction.
 func (s MSigner) Hash(tx *Transaction) types.Hash {
-	if nil == tx.Data.To {
-		tx.Data.To = &types.Address{}
+
+	for i ,action := range tx.Data.Actions {
+		if nil == action.Address{
+			tx.Data.Actions[i].Address = &types.Address{}
+		}
 	}
 
 	h, err := common.MsgpHash([]interface{}{
 		tx.Data.AccountNonce,
-		tx.Data.To,
 		tx.Data.Actions,
 		types.BigInt{*s.chainId}, uint(0), uint(0),
 	})

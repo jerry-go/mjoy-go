@@ -58,7 +58,6 @@ type StateTransition struct {
 // Message represents a message sent to a contract.
 type Message interface {
 	From() types.Address
-	To() *types.Address
 	Actions()[]transaction.Action
 	Nonce() uint64
 	CheckNonce() bool
@@ -88,22 +87,6 @@ func (st *StateTransition) from() types.Address {
 		st.statedb.CreateAccount(f)
 	}
 	return f
-}
-
-func (st *StateTransition) to() types.Address {
-	if st.msg == nil {
-		return types.Address{}
-	}
-	to := st.msg.To()
-	if to == nil {
-		return types.Address{} // contract creation
-	}
-
-	reference := *to
-	if !st.statedb.Exist(*to) {
-		st.statedb.CreateAccount(*to)
-	}
-	return reference
 }
 
 func (st *StateTransition) preCheck() error {

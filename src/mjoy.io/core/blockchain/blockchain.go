@@ -672,7 +672,7 @@ func SetReceiptsData(config *params.ChainConfig, block *block.Block, receipts tr
 		receipts[j].TxHash = transactions[j].Hash()
 
 		// The contract address can be derived from the transaction itself
-		if transactions[j].To() == nil {
+		if len(transactions[j].Data.Actions)==2 && transactions[j].Data.Actions[1].Address == nil {
 			// Deriving the signer is expensive, only do if it's actually needed
 			from, _ := transaction.Sender(signer, transactions[j])
 			receipts[j].ContractAddress = crypto.CreateAddress(from, transactions[j].Nonce())

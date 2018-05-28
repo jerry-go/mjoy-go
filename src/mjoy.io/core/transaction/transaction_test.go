@@ -26,7 +26,7 @@ func TestTransactionCreate(t *testing.T){
 		Params:data,
 	},}
 
-	tx := newTransaction(nonce , &address , actions)
+	tx := newTransaction(nonce  , actions)
 	_ = tx
 }
 
@@ -40,7 +40,7 @@ func TestTransactionNew(t *testing.T){
 		Params:data,
 	},}
 
-	tx := newTransaction(nonce , &testAddress , actions)
+	tx := newTransaction(nonce  , actions)
 
 	sig := NewMSigner(big.NewInt(1))
 
@@ -75,7 +75,7 @@ func TestAsMessageGenerate(t *testing.T){
 		Params:data,
 	},}
 	//new transaction
-	tx := newTransaction(nonce , &address , actions)
+	tx := newTransaction(nonce  , actions)
 	//create key
 	key , _ := crypto.GenerateKey()
 	//Sign tx
