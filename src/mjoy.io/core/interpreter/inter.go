@@ -84,7 +84,11 @@ func (this *Vms)DealAction(contractAddress types.Address , action transaction.Ac
 //Deal Work..........
 /********************************************************************/
 //SendWork is called when applytransaction
-func (this *Vms)SendWork(from types.Address , actions []transaction.Action)<-chan WorkResult{
+func (this *Vms)SendWork(from types.Address , action transaction.Action)<-chan WorkResult{
+
+	actions := []transaction.Action{}
+	actions = append(actions , action)
+
 	w := NewWork(from , actions)
 	this.WorkingChan<-w
 	return w.resultChan

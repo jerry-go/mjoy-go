@@ -10,11 +10,6 @@ import (
 )
 
 
-func CreateTransferBalance(){}
-
-
-
-
 func TransferBalance(param map[string]interface{})([]intertypes.ActionResult , error){
 	var from string
 	var fromAddress types.Address
@@ -65,14 +60,16 @@ func TransferBalance(param map[string]interface{})([]intertypes.ActionResult , e
 
 	//get receiver's Balance
 	dataTo := sdk.Sys_GetValue(BalanceTransferAddress , toAddress[:])
-	if nil == dataTo{
-		return nil , errors.New("TransferBalance:Do not find data:To")
-	}
-
 	balanceTo := new(BalanceValue)
-	err = json.Unmarshal(dataTo , balanceTo)
-	if err != nil{
-		return nil , errors.New(fmt.Sprintf("TransferBalance:Unmarshal json:%s" , err.Error()))
+
+	if nil == dataTo{
+		//return nil , errors.New("TransferBalance:Do not find data:To")
+		balanceTo.Amount = 0
+	}else{
+		err = json.Unmarshal(dataTo , balanceTo)
+		if err != nil{
+			return nil , errors.New(fmt.Sprintf("TransferBalance:Unmarshal json:%s" , err.Error()))
+		}
 	}
 
 	//balance modify
