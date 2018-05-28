@@ -7,11 +7,11 @@ import (
 	"mjoy.io/common/types"
 	"time"
 	"fmt"
+	"mjoy.io/core/interpreter/intertypes"
 )
 
 //Test addressd
-var FeeCutAddress = types.HexToAddress("0x0000000000000000000000000000000000000001")
-var BalanceTransferAddress  = types.HexToAddress("0x0000000000000000000000000000000000000002")
+var BalanceTransferAddress  = types.HexToAddress("0x0000000000000000000000000000000000000001")
 
 func NewVm()*Vms{
 	vm := new(Vms)
@@ -19,58 +19,65 @@ func NewVm()*Vms{
 	return vm
 }
 
-
 type Vms struct {
 	pInnerContractMaper *InnerContractManager
-	pOutDeference *OutDeference
 
 	lock sync.RWMutex   //working  mux
 	WorkingChan chan *Work    //work chan
+	exit        chan struct{}
+
 }
-
-
-
-
 
 
 func (this *Vms)init(){
 	//init workingChan
 	this.WorkingChan = make(chan *Work , 1000)
+	//exit chan
+	this.exit = make(chan struct{} , 1)
 	//init innerContractMapper
 	this.pInnerContractMaper = NewInnerContractManager()
-	//init outdeference
-	this.pOutDeference = NewOutDeference()
 
 }
-
-
-
-
-
 
 
 /********************************************************************/
 //Deal Actions..........
 /********************************************************************/
-//DealActons is a full work
+//DealActons is a full work,and return a workresult to caller,if get one err ,return
 func (this *Vms)DealActions(pWork *Work)error{
+	var workResult WorkResult
+	workResult.Err = nil
 	for _ , a := range pWork.actions{
-		err := this.DealAction(pWork.from,a , pWork.resultChan)
+		workResult.Results = make([]intertypes.ActionResult , 0 )
+		workResult.Err = nil
+
+		r , err := this.DealAction(pWork.contractAddress,a )
 		if err != nil{
-			wkResult := WorkResult{nil,nil}
-			pWork.resultChan <- wkResult  //return the err to the caller
+			//get a err,return
+			workResult.Results = nil
+			workResult.Err = err
+			pWork.resultChan <- workResult
 			return err
 		}
+
+		//get a result
+		workResult.Results = append(workResult.Results , r...)
+		pWork.resultChan <- workResult
 	}
+
 	return nil
 }
+
 //DealActions is a little part of full work
-func (this *Vms)DealAction(from types.Address , action transaction.Action ,c <-chan WorkResult)error{
-	if f,ok:=this.handlers[*action.Address];ok{
-		err := f(action.Params)
-		return err
+func (this *Vms)DealAction(contractAddress types.Address , action transaction.Action )([]intertypes.ActionResult , error){
+	if this.pInnerContractMaper.Exist(contractAddress){
+		results , err := this.pInnerContractMaper.DoFun(contractAddress , action.Params)
+		if err != nil {
+			return nil , err
+		}
+		return results , nil
 	}
-	return errors.New("No Dealing Callbaak")
+	return nil , errors.New("innerContract Not Exist....")
 }
 
 /********************************************************************/
@@ -95,9 +102,15 @@ func (this *Vms)GetPriority(from types.Address , actions []transaction.Action)in
 /********************************************************************/
 func (this *Vms)Run(){
 	go this.TestRun()
+
 	for{
-		newWork := <-this.WorkingChan
-		go this.DealActions(newWork)
+		select  {
+		case newWork := <-this.WorkingChan:
+			go this.DealActions(newWork)
+		case <-this.exit:
+			return
+
+		}
 	}
 }
 

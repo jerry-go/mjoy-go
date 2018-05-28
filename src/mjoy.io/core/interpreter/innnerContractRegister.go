@@ -4,7 +4,10 @@ All Innercontract implements should be added into InnerRegister slice.
 
 package interpreter
 
-import "mjoy.io/common/types"
+import (
+	"mjoy.io/common/types"
+	"mjoy.io/core/interpreter/balancetransfer"
+)
 
 type innerRegisterMap struct {
 	address types.Address
@@ -14,7 +17,6 @@ type innerRegisterMap struct {
 type InnersRegister []innerRegisterMap
 
 var allInnerRegister InnersRegister = InnersRegister{
-	{types.Address{} , nil},
-	{types.Address{} , nil},
+	{balancetransfer.BalanceTransferAddress , balancetransfer.NewContractBalancer()},
 }
 

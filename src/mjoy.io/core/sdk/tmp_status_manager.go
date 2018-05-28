@@ -46,7 +46,7 @@ func (this *TmpStatusManager)SetValue(contractAddress types.Address , key []byte
 	}
 
 	//step 2: make TmpKey
-	tmpKey := TmpKey{contractAddress:contractAddress , key:key}
+	tmpKey := TmpKey{contractAddress:contractAddress , key:types.BytesToAddress(key)}
 
 	//step 3:set value
 	statusNode.SetValue(tmpKey , value)
@@ -58,7 +58,7 @@ func (this *TmpStatusManager)GetValue(contractAddress types.Address , key []byte
 	this.mu.RLock()
 	defer this.mu.RUnlock()
 
-	tmpKey := TmpKey{contractAddress:contractAddress , key:key}
+	tmpKey := TmpKey{contractAddress:contractAddress , key:types.BytesToAddress(key)}
 
 
 	tmpNode := this.ExistContract(contractAddress)

@@ -7,7 +7,7 @@ import (
 
 type TmpKey struct {
 	contractAddress types.Address
-	key []byte
+	key types.Address
 	stateRoot types.Hash    //nothing or a last stateRoot
 }
 
@@ -17,7 +17,7 @@ func (this *TmpKey)MakeHashKey()(types.Hash , error){
 	keyHex = keyHex[:0]
 
 	keyHex = append(keyHex , this.contractAddress[:]...)
-	keyHex = append(keyHex , this.key...)
+	keyHex = append(keyHex , this.key[:]...)
 	keyHex = append(keyHex , this.stateRoot[:]...)
 
 

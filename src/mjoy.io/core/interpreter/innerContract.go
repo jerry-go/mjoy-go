@@ -8,11 +8,13 @@ import (
 	"sync"
 	"mjoy.io/common/types"
 	"math/big"
+	"mjoy.io/core/interpreter/intertypes"
 )
 
 //InnerContrancInterface
 type InnerContract interface {
-	DoFun(fName string , params interface{})([]ActionResult , error)
+	DoFun( params []byte)([]intertypes.ActionResult , error)
+
 }
 
 //InnerContranctMap is a innerContract controller,like check contract ,do a contract
@@ -64,9 +66,9 @@ func (this *InnerContractManager)Exist(address types.Address)bool{
 }
 
 //call a innerContract.Please call Exist ensure a innerContract is exist or not before this
-func (this *InnerContractManager)DoFun(address types.Address , fname string , params interface{})([]ActionResult ,  error){
+func (this *InnerContractManager)DoFun(address types.Address , params []byte)([]intertypes.ActionResult , error){
 	inner := this.Inners[address]
-	return inner.DoFun(fname , params)
+	return inner.DoFun(params)
 }
 
 

@@ -7,12 +7,9 @@ import (
 	"mjoy.io/utils/crypto"
 	"mjoy.io/core/state"
 	"mjoy.io/params"
+	"mjoy.io/core/interpreter/intertypes"
 )
 
-type ActionResult struct {
-	Key []byte
-	Val []byte
-}
 
 type MemDatabase struct {
 	Address types.Address
@@ -22,7 +19,7 @@ type MemDatabase struct {
 }
 
 
-type ActionResults []ActionResult
+type ActionResults []intertypes.ActionResult
 
 
 var (
@@ -36,7 +33,7 @@ type vms struct {}
 // deployed contract addresses (relevant after the account abstraction).
 var emptyCodeHash = crypto.Keccak256Hash(nil)
 
-func  Create(sender types.Address, stateDb *state.StateDB, actions transaction.ActionSlice) ( actionReuslts []ActionResult, contractAddr types.Address, err error) {
+func  Create(sender types.Address, stateDb *state.StateDB, actions transaction.ActionSlice) ( actionReuslts []intertypes.ActionResult, contractAddr types.Address, err error) {
 
 	// Ensure there's no existing contract already at the designated address
 
