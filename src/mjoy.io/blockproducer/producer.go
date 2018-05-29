@@ -40,6 +40,7 @@ import (
 	"mjoy.io/core/blockchain"
 	"gopkg.in/fatih/set.v0"
 	"mjoy.io/core/interpreter"
+	"mjoy.io/core/sdk"
 )
 
 const (
@@ -73,6 +74,7 @@ type Work struct {
 	signer transaction.Signer
 
 	state     *state.StateDB // apply state changes here
+	stateRootHash types.Hash
 	dbCache   *stateprocessor.DbCache
 	ancestors *set.Set       // ancestor set
 	family    *set.Set       // family set
@@ -363,6 +365,7 @@ func (self *producer) makeCurrent(parent *block.Block, header *block.Header) err
 		config:    self.config,
 		signer:    transaction.NewMSigner(self.config.ChainId),
 		state:     state,
+		stateRootHash: parent.Root(),
 		dbCache:   &stateprocessor.DbCache{make(map[string]interpreter.MemDatabase)},
 		ancestors: set.New(),
 		family:    set.New(),
@@ -442,8 +445,12 @@ func (self *producer) commitNewWork() {
 
 	//txs := transaction.NewTransactionsForProducing(self.current.signer, pending)
 	txs := transaction.NewTransactionsByPriorityAndNonce(self.current.signer , pending)
-	work.commitTransactions(self.mux, txs, self.chain, self.coinbase)
 
+	db,_ := database.OpenMemDB()
+	sdk.NewSdkManager(db)
+	sdk.PtrSdkManager.Prepare(work.stateRootHash)
+	work.commitTransactions(self.mux, txs, self.chain, self.coinbase)
+	sdk.PtrSdkManager.Down()
 
 	// Create the new block to seal with the consensus engine
 	if work.Block, err = self.engine.Finalize(self.chain, header, work.state, work.txs, work.receipts); err != nil {

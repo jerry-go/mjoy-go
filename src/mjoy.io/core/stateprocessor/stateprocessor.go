@@ -30,6 +30,8 @@ import (
 	"mjoy.io/consensus"
 	"mjoy.io/core/interpreter"
 	"mjoy.io/utils/crypto"
+	"mjoy.io/core/sdk"
+	"mjoy.io/utils/database"
 )
 
 type IChainForState interface {
@@ -65,7 +67,7 @@ func NewStateProcessor(config *params.ChainConfig, cs IChainForState, engine con
 //
 // Process returns the receipts and logs accumulated during the process.
 // If any of the transactions failed  it will return an error.
-func (p *StateProcessor) Process(block *block.Block, statedb *state.StateDB) (*DbCache, transaction.Receipts, []*transaction.Log, error) {
+func (p *StateProcessor) Process(block *block.Block, statedb *state.StateDB, stateRootHash types.Hash) (*DbCache, transaction.Receipts, []*transaction.Log, error) {
 	var (
 		receipts transaction.Receipts
 		header   = block.Header()
@@ -76,6 +78,9 @@ func (p *StateProcessor) Process(block *block.Block, statedb *state.StateDB) (*D
 		Cache: make(map[string]interpreter.MemDatabase),
 	}
 
+	db,_ := database.OpenMemDB()
+	sdk.NewSdkManager(db)
+	sdk.PtrSdkManager.Prepare(stateRootHash)
 	// Iterate over and process the individual transactions
 	for i, tx := range block.Transactions() {
 		statedb.Prepare(tx.Hash(), block.Hash(), i)
@@ -88,6 +93,7 @@ func (p *StateProcessor) Process(block *block.Block, statedb *state.StateDB) (*D
 		receipts = append(receipts, receipt)
 		allLogs = append(allLogs, receipt.Logs...)
 	}
+	sdk.PtrSdkManager.Down()
 
 	// TODO: need to be compeleted, now skip this step
 	// Finalize the block, applying any consensus engine specific extras (e.g. block rewards)
