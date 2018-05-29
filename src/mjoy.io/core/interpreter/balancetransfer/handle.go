@@ -126,6 +126,7 @@ func RewordBlockProducer(param map[string]interface{},sysparam *intertypes.Syste
 		balance.Amount += 5e+5
 	}
 
+	fmt.Println("RewordBlockProducer", balance.Amount)
 	bytesJosn , err := json.Marshal(balance)
 	if err != nil {
 		return nil , errors.New(fmt.Sprintf("TransferBalance:Marshal json:%s" , err.Error()))
