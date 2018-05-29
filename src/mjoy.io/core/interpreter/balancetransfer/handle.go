@@ -112,22 +112,19 @@ func RewordBlockProducer(param map[string]interface{},sysparam *intertypes.Syste
 	}else{
 		return nil ,errors.New(fmt.Sprintf("no producer"))
 	}
-	logger.Debug("Call rewordBlockProducer..........")
-	data := sdk.Sys_GetValue(sysparam.SdkHandler ,  BalanceTransferAddress , producer[:])
-	if nil == data{
-		logger.Errorf("sdkGetValue data == nil , producer:%x" , producer )
-		return nil , errors.New(fmt.Sprintf("TransferBalance:Do not find data:From:%x" , producer))
-	}
 
 	balance := new(BalanceValue)
-	err := json.Unmarshal(data , balance)
-	if err != nil {
-		return nil , errors.New(fmt.Sprintf("TransferBalance:Unmarshal json:%s" , err.Error()))
+	data := sdk.Sys_GetValue(sysparam.SdkHandler ,  BalanceTransferAddress , producer[:])
+	if nil == data{
+		//return nil , errors.New(fmt.Sprintf("TransferBalance:Do not find data:From:%x" , producer))
+		balance.Amount = 5e+5
+	} else {
+		err := json.Unmarshal(data , balance)
+		if err != nil {
+			return nil , errors.New(fmt.Sprintf("TransferBalance:Unmarshal json:%s" , err.Error()))
+		}
+		balance.Amount += 5e+5
 	}
-
-
-	balance.Amount += 5e+5
-
 
 	bytesJosn , err := json.Marshal(balance)
 	if err != nil {

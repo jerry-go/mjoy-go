@@ -43,6 +43,7 @@ import (
 	"mjoy.io/core/sdk"
 	"mjoy.io/core/interpreter/balancetransfer"
 	"mjoy.io/core/interpreter/intertypes"
+	"fmt"
 )
 
 const (
@@ -316,6 +317,8 @@ func (self *producer) wait() {
 				logger.Error("Failed writing block to chain", "err", err)
 				continue
 			}
+
+			fmt.Println(block)
 
 			// check if canon block and write transactions
 			if stat == blockchain.CanonStatTy {
