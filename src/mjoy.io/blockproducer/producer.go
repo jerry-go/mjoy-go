@@ -41,6 +41,7 @@ import (
 	"gopkg.in/fatih/set.v0"
 	"mjoy.io/core/interpreter"
 	"mjoy.io/core/sdk"
+	"mjoy.io/core/interpreter/balancetransfer"
 )
 
 const (
@@ -444,7 +445,11 @@ func (self *producer) commitNewWork() {
 
 
 	//txs := transaction.NewTransactionsForProducing(self.current.signer, pending)
-	txs := transaction.NewTransactionsByPriorityAndNonce(self.current.signer , pending)
+	actions := transaction.ActionSlice{}
+	action := transaction.Action{&types.Address{},balancetransfer.MakeActionParamsReword(header.BlockProducer)}
+	actions = append(actions, action)
+	txReword := transaction.NewTransaction(num.Uint64(), actions)
+	txs := transaction.NewTransactionsByPriorityAndNonce(self.current.signer , pending, txReword)
 
 	db,_ := database.OpenMemDB()
 	sdk.NewSdkManager(db)

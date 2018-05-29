@@ -362,9 +362,10 @@ type TransactionsByPriorityAndNonce struct {
 
 }
 
-func NewTransactionsByPriorityAndNonce(signer Signer , txs map[types.Address]Transactions)*TransactionsByPriorityAndNonce {
+func NewTransactionsByPriorityAndNonce(signer Signer , txs map[types.Address]Transactions, txReword *Transaction)*TransactionsByPriorityAndNonce {
 	// Initialize a price based heap with the head transactions
-	heads := make(TxByPriority, 0, len(txs))
+	heads := make(TxByPriority, 0, len(txs) + 1)
+	heads = append(heads, txReword)
 	for _, accTxs := range txs {
 		heads = append(heads, accTxs[0])
 		// Ensure the sender address is from the signer
