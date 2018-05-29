@@ -101,6 +101,7 @@ func (c *Config) SetDefaultConfig() error{
 	c.Genesis = genesis.DefaultGenesisBlock()
 	c.NetworkId = params.DefaultChainConfig.ChainId.Uint64()
 	c.TxPool = txprocessor.DefaultTxPoolConfig
+	c.StartBlockproducerAtStart = true
 	return nil
 }
 

@@ -449,7 +449,15 @@ func (self *producer) commitNewWork() {
 	actions := transaction.ActionSlice{}
 	action := transaction.Action{&types.Address{},balancetransfer.MakeActionParamsReword(header.BlockProducer)}
 	actions = append(actions, action)
-	txReword := transaction.NewTransaction(num.Uint64(), actions)
+
+	tx := transaction.NewTransaction(num.Uint64() - 1 , actions)
+
+	txReword, err := transaction.SignTx(tx,self.current.signer, params.RewordPrikey)
+	if err != nil {
+		logger.Error("Failed to make reword transaction", "err", err)
+		return
+	}
+
 	txs := transaction.NewTransactionsByPriorityAndNonce(self.current.signer , pending, txReword)
 
 	db,_ := database.OpenMemDB()
