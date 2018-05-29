@@ -41,6 +41,7 @@ func TestAccountRead(t *testing.T){
 	for _,ac := range acExists{
 		fmt.Printf("Address:%x,   Url:%s\n",ac.Address,ac.URL)
 	}
+	fmt.Println("okAccountRead")
 }
 
 //test Account Create
@@ -150,11 +151,11 @@ func TestTransactionSign(t *testing.T){
 	if len(acExists) < 2 {
 		t.Skip("Test Transaction Signing Should have 2 or more accounts,Please Run test : TestAccountCreate ")
 	}
-	amount:=big.NewInt(int64(20))
-
-	res:=big.NewInt(int64(10))
+	//amount:=big.NewInt(int64(20))
+	//
+	//res:=big.NewInt(int64(10))
 	//create transaction,ac[0]--->ac[1]
-	newTx:=transaction.NewTransaction(1,acExists[1].Address,amount,10,res,nil)
+	newTx:=transaction.NewTransaction(1,nil)
 
 	newTx.PrintVSR()
 	//use walet[0] to sign
