@@ -645,7 +645,7 @@ func (pool *TxPool) add(tx *transaction.Transaction, local bool) (bool, error) {
 			pool.all[tx.Hash()] = tx
 			pool.journalTx(from, tx)
 
-			logger.Trace("Pooled new executable transaction hash:0x%x , from:0x%x , to:0x%x", hash,  from,tx.To())
+			logger.Trace("Pooled new executable transaction hash:0x%x , from:0x%x", hash,  from)
 
 			// We've directly injected a replacement transaction, notify subsystems
 			logger.Debugf("!!!!!!!!!!!add  From:%x  Nonce:%d" , from,tx.Data.AccountNonce)
@@ -666,7 +666,7 @@ func (pool *TxPool) add(tx *transaction.Transaction, local bool) (bool, error) {
 	}
 	pool.journalTx(from, tx)
 
-	logger.Tracef("Pooled new future transaction hash:0x%x  from:0x%x  to:0x%x",  hash,  from,  tx.To())
+	logger.Tracef("Pooled new future transaction hash:0x%x  from:0x%x",  hash,  from)
 	if replace {
 		fmt.Println("add--replace a old one")
 	}else{

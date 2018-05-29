@@ -15,7 +15,7 @@ func TransferBalance(param map[string]interface{})([]intertypes.ActionResult , e
 	var fromAddress types.Address
 	var to string
 	var toAddress types.Address
-	var amount int64
+	var amount int
 
 
 	//get params
@@ -37,7 +37,7 @@ func TransferBalance(param map[string]interface{})([]intertypes.ActionResult , e
 
 	//amount
 	if amounti , ok := param["amount"];ok{
-		amount = int64(amounti.(float64))
+		amount = int(amounti.(float64))
 	}
 
 	//logicDeal

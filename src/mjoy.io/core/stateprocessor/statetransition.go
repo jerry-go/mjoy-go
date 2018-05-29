@@ -27,6 +27,7 @@ import (
 	"mjoy.io/core/transaction"
 	"mjoy.io/core/interpreter"
 	"mjoy.io/utils/crypto"
+	"mjoy.io/core/blockchain/block"
 )
 
 /*
@@ -51,32 +52,33 @@ type StateTransition struct {
 	statedb    *state.StateDB
 	coinBase   types.Address
 	Cache      *DbCache
+	header      *block.Header
 }
 
 // Message represents a message sent to a contract.
 type Message interface {
 	From() types.Address
-	To() *types.Address
 	Actions()[]transaction.Action
 	Nonce() uint64
 	CheckNonce() bool
 }
 
 // NewStateTransition initialises and returns a new state transition object.
-func NewStateTransition(statedb *state.StateDB, msg Message, coinBase types.Address, cache *DbCache) *StateTransition {
+func NewStateTransition(statedb *state.StateDB, msg Message, coinBase types.Address, cache *DbCache, header *block.Header) *StateTransition {
 	return &StateTransition{
 		msg:      msg,
 		actions:  msg.Actions(),
 		statedb:  statedb,
 		coinBase: coinBase,
 		Cache : cache,
+		header: header,
 	}
 }
 
 // ApplyMessage computes the new state by applying the given message
 // against the old state within the environment.
-func ApplyMessage(statedb *state.StateDB, msg Message, coinBase types.Address, cache *DbCache) ([]byte, bool, error) {
-	return NewStateTransition(statedb, msg, coinBase, cache).TransitionDb()
+func ApplyMessage(statedb *state.StateDB, msg Message, coinBase types.Address, cache *DbCache,header *block.Header) ([]byte, bool, error) {
+	return NewStateTransition(statedb, msg, coinBase, cache, header).TransitionDb()
 }
 
 func (st *StateTransition) from() types.Address {
@@ -85,22 +87,6 @@ func (st *StateTransition) from() types.Address {
 		st.statedb.CreateAccount(f)
 	}
 	return f
-}
-
-func (st *StateTransition) to() types.Address {
-	if st.msg == nil {
-		return types.Address{}
-	}
-	to := st.msg.To()
-	if to == nil {
-		return types.Address{} // contract creation
-	}
-
-	reference := *to
-	if !st.statedb.Exist(*to) {
-		st.statedb.CreateAccount(*to)
-	}
-	return reference
 }
 
 func (st *StateTransition) preCheck() error {
@@ -146,49 +132,65 @@ func (st *StateTransition) TransitionDb() (ret []byte, failed bool, err error) {
 		return
 	}
 
-	//return  []byte{1,2,3},true , nil
-	msg := st.msg
 	sender := st.from() // err checked in preCheck
 
-	contractCreation := msg.To() == nil
+	contractCreation := false
 
+	if len(st.actions) == 2 && st.actions[1].Address == nil{
+		contractCreation = true
+	}
 	// Snapshot !!!!!!!!!!!!!!!!!
 	snapshot := st.statedb.Snapshot()
-	results := interpreter.ActionResults{}
-	contractAddr := types.Address{}
+
+	resultMem := []*interpreter.MemDatabase{}
+
 	if contractCreation {
-		results, contractAddr, err = interpreter.Create(sender, st.statedb, st.actions)
+		results, _, err := interpreter.Create(sender, st.statedb, st.actions)
+		if err != nil {
+			st.statedb.RevertToSnapshot(snapshot)
+			return nil, true, err
+		}
+		for _, res := range results {
+			resM := &interpreter.MemDatabase{*st.actions[0].Address, res.Key, res.Val}
+			resultMem = append(resultMem, resM)
+		}
+		// make log for receipt
+		log := MakeLog(*st.actions[0].Address, results, st.header.Number.IntVal.Uint64())
+		st.statedb.AddLog(log)
 	} else {
-		// TODO:
-		logger.Debugf("Just process simple transaction.")
-
+		logger.Debugf("Just process actions transaction.")
+		vm := interpreter.NewVm()
+		for _,action := range st.actions {
+			//resulst := make(chan interpreter.WorkResult)
+			resulstChan := vm.SendWork(sender,action)
+			result := <-resulstChan
+			if result.Err != nil {
+				st.statedb.RevertToSnapshot(snapshot)
+				return nil, true, err
+			}
+			for _, res := range result.Results {
+				resM := &interpreter.MemDatabase{*action.Address, res.Key, res.Val}
+				resultMem = append(resultMem, resM)
+			}
+			// make log for receipt
+			log := MakeLog(*action.Address, result.Results, st.header.Number.IntVal.Uint64())
+			st.statedb.AddLog(log)
+		}
 	}
 
-	if err != nil {
-		st.statedb.RevertToSnapshot(snapshot)
-		return nil, true, err
-	}
-
-	for _, result := range results {
-		storgageKey := append(contractAddr.Bytes(), result.Key...)
-
+	for _, result := range resultMem {
+		storgageKey := append(result.Address.Bytes(), result.Key...)
 		//1, collect results for block producer future write level db
 		st.Cache.Cache[string(storgageKey)] = interpreter.MemDatabase{
-			contractAddr,
+			result.Address,
 			result.Key,
 			result.Val}
 
-		//2. make log for receipt
-		//todo here need vm ctx
-		log := MakeLog(contractAddr,results, 0)
-		st.statedb.AddLog(log)
-
-		//3, change statedb storage
+		//2, change statedb storage
 		storageKeyHash := crypto.Keccak256Hash(storgageKey)
 		storageValHash := crypto.Keccak256Hash(result.Val)
-		st.statedb.SetState(contractAddr, storageKeyHash, storageValHash)
+		st.statedb.SetState(result.Address, storageKeyHash, storageValHash)
 	}
 
 	return ret, false, err
-
 }

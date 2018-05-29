@@ -55,7 +55,14 @@ func  Create(sender types.Address, stateDb *state.StateDB, actions transaction.A
 		return nil, types.Address{}, ErrContractCodeSizeTooLong
 	}
 
-	//todo fee transfer
+	// fee transfer
+	vm := NewVm()
+	resulstChan := vm.SendWork(sender,actions[0])
+	result := <-resulstChan
+	if result.Err != nil {
+		stateDb.RevertToSnapshot(snapshot)
+		return nil, types.Address{}, err
+	}
 
 	//2. save contract code
 	if len(actions[1].Params) > params.MaxCodeSize {
@@ -64,5 +71,5 @@ func  Create(sender types.Address, stateDb *state.StateDB, actions transaction.A
 	}
 	stateDb.SetCode(contractAddr, actions[1].Params)
 
-	return ActionResults{}, contractAddr, nil
+	return result.Results, contractAddr, nil
 }

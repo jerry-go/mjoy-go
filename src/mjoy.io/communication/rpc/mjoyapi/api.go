@@ -140,10 +140,10 @@ func (s *PublicTxPoolAPI) Inspect() map[string]map[string]map[string]string {
 
 	// Define a formatter to flatten a transaction into a string
 	var format = func(tx *transaction.Transaction) string {
-		if to := tx.To(); to != nil {
+		//if to := tx.To(); to != nil {
 			//return fmt.Sprintf("%s: %v wei", tx.To().Hex(), tx.Value())
-			return "for test"
-		}
+			//return "for test"
+		//}
 		//return fmt.Sprintf("contract creation: %v wei", tx.Value())
 		return "for test"
 	}
@@ -856,7 +856,7 @@ func submitTransaction(ctx context.Context, b Backend, tx *transaction.Transacti
 	if err := b.SendTx(ctx, tx); err != nil {
 		return types.Hash{}, err
 	}
-	if tx.To() == nil {
+	if len(tx.Data.Actions)==2 && tx.Data.Actions[1].Address == nil {
 		signer := transaction.MakeSigner(b.ChainConfig(), b.CurrentBlock().Number())
 		from, err := transaction.Sender(signer, tx)
 		if err != nil {
@@ -865,7 +865,7 @@ func submitTransaction(ctx context.Context, b Backend, tx *transaction.Transacti
 		addr := crypto.CreateAddress(from, tx.Nonce())
 		logger.Info("Submitted contract creation", "fullhash", tx.Hash().Hex(), "contract", addr.Hex())
 	} else {
-		logger.Info("Submitted transaction", "fullhash", tx.Hash().Hex(), "recipient", tx.To().Hex())
+		logger.Info("Submitted transaction", "fullhash", tx.Hash().Hex(), "recipient")
 	}
 	return tx.Hash(), nil
 }
