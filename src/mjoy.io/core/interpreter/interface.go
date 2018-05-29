@@ -11,6 +11,8 @@ import (
 )
 
 
+
+
 type MemDatabase struct {
 	Address types.Address
 	Key 	[]byte
@@ -57,7 +59,8 @@ func  Create(sender types.Address, stateDb *state.StateDB, actions transaction.A
 
 	// fee transfer
 	vm := NewVm()
-	resulstChan := vm.SendWork(sender,actions[0])
+	//todo,fill sysparam
+	resulstChan := vm.SendWork(sender,actions[0] , nil)
 	result := <-resulstChan
 	if result.Err != nil {
 		stateDb.RevertToSnapshot(snapshot)

@@ -32,6 +32,7 @@ import (
 	"mjoy.io/utils/crypto"
 	"mjoy.io/core/sdk"
 	"mjoy.io/utils/database"
+	"mjoy.io/core/interpreter/intertypes"
 )
 
 type IChainForState interface {
@@ -79,12 +80,15 @@ func (p *StateProcessor) Process(block *block.Block, statedb *state.StateDB, sta
 	}
 
 	db,_ := database.OpenMemDB()
-	sdk.NewSdkManager(db)
-	sdk.PtrSdkManager.Prepare(stateRootHash)
+	sdkHandler := sdk.NewTmpStatusManager(stateRootHash , db)
+	//make sysparam
+	sysparam := intertypes.MakeSystemParams(sdkHandler)
+
+
 	// Iterate over and process the individual transactions
 	for i, tx := range block.Transactions() {
 		statedb.Prepare(tx.Hash(), block.Hash(), i)
-		receipt, err := ApplyTransaction(p.config, nil, statedb, header, tx, dbcache)
+		receipt, err := ApplyTransaction(p.config, nil, statedb, header, tx, dbcache , sysparam)
 		if err != nil {
 			logger.Errorf("ApplyTransacton Wrong.....:",err.Error())
 
@@ -93,7 +97,7 @@ func (p *StateProcessor) Process(block *block.Block, statedb *state.StateDB, sta
 		receipts = append(receipts, receipt)
 		allLogs = append(allLogs, receipt.Logs...)
 	}
-	sdk.PtrSdkManager.Down()
+
 
 	// TODO: need to be compeleted, now skip this step
 	// Finalize the block, applying any consensus engine specific extras (e.g. block rewards)
@@ -109,7 +113,7 @@ func (p *StateProcessor) Process(block *block.Block, statedb *state.StateDB, sta
 // and uses the input parameters for its environment. It returns the receipt
 // for the transaction and an error if the transaction failed,
 // indicating the block was invalid.
-func ApplyTransaction(config *params.ChainConfig, author *types.Address, statedb *state.StateDB, header *block.Header, tx *transaction.Transaction, cache *DbCache) (*transaction.Receipt, error) {
+func ApplyTransaction(config *params.ChainConfig, author *types.Address, statedb *state.StateDB, header *block.Header, tx *transaction.Transaction, cache *DbCache , sysparam *intertypes.SystemParams) (*transaction.Receipt, error) {
 	msg, err := tx.AsMessage(transaction.MakeSigner(config, &header.Number.IntVal))
 	if err != nil {
 		return nil, err
@@ -119,7 +123,7 @@ func ApplyTransaction(config *params.ChainConfig, author *types.Address, statedb
 	if author == nil {
 		author = &header.BlockProducer
 	}
-	_, failed, err := ApplyMessage(statedb, msg, *author, cache, header)
+	_, failed, err := ApplyMessage(statedb, msg, *author, cache, header,sysparam)
 	if err != nil {
 		return nil, err
 	}

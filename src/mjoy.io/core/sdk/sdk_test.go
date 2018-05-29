@@ -18,14 +18,13 @@ func TestDataStore(t *testing.T){
 		panic(err)
 	}
 
-	NewSdkManager(db)
-	PtrSdkManager.Prepare(types.Hash{})
+	sdkHandler := NewTmpStatusManager(types.Hash{} , db)
 	contractAddr := types.Address{}
 	contractAddr[0] = 1
 
 	accountAddr := types.Address{}
-	Sys_SetValue(contractAddr , accountAddr[:] , []byte{1,2,3,4,5})
-	r := Sys_GetValue(contractAddr , accountAddr[:] )
+	Sys_SetValue(sdkHandler , contractAddr , accountAddr[:] , []byte{1,2,3,4,5})
+	r := Sys_GetValue(sdkHandler , contractAddr , accountAddr[:] )
 	fmt.Println("r:" , r)
 }
 

@@ -12,7 +12,7 @@ import (
 var BalanceTransferAddress  = types.Address{}
 
 
-type DoFunc func(map[string]interface{})([]intertypes.ActionResult , error)
+type DoFunc func(map[string]interface{} ,  *intertypes.SystemParams)([]intertypes.ActionResult , error)
 
 type ContractBalancer struct {
 	funcMapper map[int]DoFunc
@@ -43,7 +43,7 @@ func ParseParms(param []byte)(map[string]interface{} , error){
 
 }
 
-func (this *ContractBalancer)DoFun( params []byte)([]intertypes.ActionResult , error){
+func (this *ContractBalancer)DoFun( params []byte,sysparam *intertypes.SystemParams)([]intertypes.ActionResult , error){
 	//unmarshal params
 	jsonParams , err := ParseParms(params)
 	if err != nil {
@@ -60,7 +60,7 @@ func (this *ContractBalancer)DoFun( params []byte)([]intertypes.ActionResult , e
 	}
 
 	if doFunc,ok := this.funcMapper[int(funcId)];ok {
-		return doFunc(jsonParams)
+		return doFunc(jsonParams , sysparam)
 	}
 
 	return nil , errors.New(fmt.Sprintf("ContractBalancer: no Func Id:%d find in map" , funcId))

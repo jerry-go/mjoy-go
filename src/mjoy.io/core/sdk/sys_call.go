@@ -5,20 +5,20 @@ import (
 	"errors"
 )
 
-func Sys_GetValue(contractAddress types.Address , key []byte)[]byte{
+func Sys_GetValue(handlePtr *TmpStatusManager , contractAddress types.Address , key []byte)[]byte{
 	//nil check
-	if nil == PtrSdkManager.pStatusManager {
+	if nil == handlePtr {
 		return nil
 	}
-	return PtrSdkManager.pStatusManager.GetValue(contractAddress , key)
+	return handlePtr.GetValue(contractAddress , key)
 }
 
-func Sys_SetValue(contractAddress types.Address , key []byte , value []byte)error{
+func Sys_SetValue(handlePtr *TmpStatusManager ,contractAddress types.Address , key []byte , value []byte)error{
 	//nil check
-	if nil == PtrSdkManager.pStatusManager {
+	if nil == handlePtr {
 		return errors.New("ptr")
 	}
 
-	return PtrSdkManager.pStatusManager.SetValue(contractAddress , key , value)
+	return handlePtr.SetValue(contractAddress , key , value)
 }
 

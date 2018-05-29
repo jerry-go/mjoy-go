@@ -10,7 +10,7 @@ import (
 )
 
 
-func TransferBalance(param map[string]interface{})([]intertypes.ActionResult , error){
+func TransferBalance(param map[string]interface{},sysparam *intertypes.SystemParams)([]intertypes.ActionResult , error){
 	var from string
 	var fromAddress types.Address
 	var to string
@@ -42,7 +42,7 @@ func TransferBalance(param map[string]interface{})([]intertypes.ActionResult , e
 
 	//logicDeal
 	//get sender's Balance
-	dataFrom := sdk.Sys_GetValue(BalanceTransferAddress , fromAddress[:])
+	dataFrom := sdk.Sys_GetValue(sysparam.SdkHandler ,  BalanceTransferAddress , fromAddress[:])
 	if nil == dataFrom{
 		return nil , errors.New(fmt.Sprintf("TransferBalance:Do not find data:From:%x" , fromAddress))
 	}
@@ -59,7 +59,7 @@ func TransferBalance(param map[string]interface{})([]intertypes.ActionResult , e
 	}
 
 	//get receiver's Balance
-	dataTo := sdk.Sys_GetValue(BalanceTransferAddress , toAddress[:])
+	dataTo := sdk.Sys_GetValue(sysparam.SdkHandler ,  BalanceTransferAddress , toAddress[:])
 	balanceTo := new(BalanceValue)
 
 	if nil == dataTo{
@@ -86,11 +86,11 @@ func TransferBalance(param map[string]interface{})([]intertypes.ActionResult , e
 	if err != nil {
 		return nil , errors.New(fmt.Sprintf("TransferBalance:Marshal json:%s" , err.Error()))
 	}
-	if err = sdk.Sys_SetValue(BalanceTransferAddress , fromAddress[:] , bytesFrom);err != nil{
+	if err = sdk.Sys_SetValue(sysparam.SdkHandler ,  BalanceTransferAddress , fromAddress[:] , bytesFrom);err != nil{
 		return nil , errors.New(fmt.Sprintf("TransferBalance:Set From :%s" , err.Error()))
 	}
 
-	if err = sdk.Sys_SetValue(BalanceTransferAddress , toAddress[:] , bytesTo);err != nil{
+	if err = sdk.Sys_SetValue(sysparam.SdkHandler ,  BalanceTransferAddress , toAddress[:] , bytesTo);err != nil{
 		return nil , errors.New(fmt.Sprintf("TransferBalance:Set To :%s" , err.Error()))
 	}
 
@@ -103,7 +103,7 @@ func TransferBalance(param map[string]interface{})([]intertypes.ActionResult , e
 	return results , nil
 }
 
-func RewordBlockProducer(param map[string]interface{})([]intertypes.ActionResult , error){
+func RewordBlockProducer(param map[string]interface{},sysparam *intertypes.SystemParams)([]intertypes.ActionResult , error){
 
 	var producer types.Address
 	if fromi,ok := param["producer"];ok{
@@ -113,7 +113,7 @@ func RewordBlockProducer(param map[string]interface{})([]intertypes.ActionResult
 		return nil ,errors.New(fmt.Sprintf("no producer"))
 	}
 
-	data := sdk.Sys_GetValue(BalanceTransferAddress , producer[:])
+	data := sdk.Sys_GetValue(sysparam.SdkHandler ,  BalanceTransferAddress , producer[:])
 	if nil == data{
 		return nil , errors.New(fmt.Sprintf("TransferBalance:Do not find data:From:%x" , producer))
 	}
@@ -133,7 +133,7 @@ func RewordBlockProducer(param map[string]interface{})([]intertypes.ActionResult
 		return nil , errors.New(fmt.Sprintf("TransferBalance:Marshal json:%s" , err.Error()))
 	}
 
-	if err = sdk.Sys_SetValue(BalanceTransferAddress , producer[:] , bytesJosn);err != nil{
+	if err = sdk.Sys_SetValue(sysparam.SdkHandler ,  BalanceTransferAddress , producer[:] , bytesJosn);err != nil{
 		return nil , errors.New(fmt.Sprintf("TransferBalance:Set From :%s" , err.Error()))
 	}
 

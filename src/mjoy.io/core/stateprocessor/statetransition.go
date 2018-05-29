@@ -28,6 +28,7 @@ import (
 	"mjoy.io/core/interpreter"
 	"mjoy.io/utils/crypto"
 	"mjoy.io/core/blockchain/block"
+	"mjoy.io/core/interpreter/intertypes"
 )
 
 /*
@@ -64,7 +65,7 @@ type Message interface {
 }
 
 // NewStateTransition initialises and returns a new state transition object.
-func NewStateTransition(statedb *state.StateDB, msg Message, coinBase types.Address, cache *DbCache, header *block.Header) *StateTransition {
+func NewStateTransition(statedb *state.StateDB, msg Message, coinBase types.Address, cache *DbCache, header *block.Header ) *StateTransition {
 	return &StateTransition{
 		msg:      msg,
 		actions:  msg.Actions(),
@@ -77,8 +78,8 @@ func NewStateTransition(statedb *state.StateDB, msg Message, coinBase types.Addr
 
 // ApplyMessage computes the new state by applying the given message
 // against the old state within the environment.
-func ApplyMessage(statedb *state.StateDB, msg Message, coinBase types.Address, cache *DbCache,header *block.Header) ([]byte, bool, error) {
-	return NewStateTransition(statedb, msg, coinBase, cache, header).TransitionDb()
+func ApplyMessage(statedb *state.StateDB, msg Message, coinBase types.Address, cache *DbCache,header *block.Header , sysparam *intertypes.SystemParams) ([]byte, bool, error) {
+	return NewStateTransition(statedb, msg, coinBase, cache, header).TransitionDb(sysparam)
 }
 
 func (st *StateTransition) from() types.Address {
@@ -127,7 +128,7 @@ func MakeLog(address types.Address, results interpreter.ActionResults, blockNumb
 // TransitionDb will transition the state by applying the current message and
 // returning the result. It returns an error if it
 // failed. An error indicates a consensus issue.
-func (st *StateTransition) TransitionDb() (ret []byte, failed bool, err error) {
+func (st *StateTransition) TransitionDb(sysparam *intertypes.SystemParams) (ret []byte, failed bool, err error) {
 	if err = st.preCheck(); err != nil {
 		return
 	}
@@ -162,7 +163,7 @@ func (st *StateTransition) TransitionDb() (ret []byte, failed bool, err error) {
 		vm := interpreter.NewVm()
 		for _,action := range st.actions {
 			//resulst := make(chan interpreter.WorkResult)
-			resulstChan := vm.SendWork(sender,action)
+			resulstChan := vm.SendWork(sender,action , sysparam)
 			result := <-resulstChan
 			if result.Err != nil {
 				st.statedb.RevertToSnapshot(snapshot)

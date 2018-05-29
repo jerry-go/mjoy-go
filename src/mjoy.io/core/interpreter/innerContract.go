@@ -14,7 +14,7 @@ import (
 
 //InnerContrancInterface
 type InnerContract interface {
-	DoFun( params []byte)([]intertypes.ActionResult , error)
+	DoFun( params []byte , sysparam *intertypes.SystemParams)([]intertypes.ActionResult , error)
 
 }
 
@@ -69,9 +69,9 @@ func (this *InnerContractManager)Exist(address types.Address)bool{
 }
 
 //call a innerContract.Please call Exist ensure a innerContract is exist or not before this
-func (this *InnerContractManager)DoFun(address types.Address , params []byte)([]intertypes.ActionResult , error){
+func (this *InnerContractManager)DoFun(address types.Address , params []byte,sysparam *intertypes.SystemParams)([]intertypes.ActionResult , error){
 	inner := this.Inners[address]
-	return inner.DoFun(params)
+	return inner.DoFun(params,sysparam)
 }
 
 

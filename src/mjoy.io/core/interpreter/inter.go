@@ -53,7 +53,7 @@ func (this *Vms)DealActions(pWork *Work)error{
 		workResult.Results = make([]intertypes.ActionResult , 0 )
 		workResult.Err = nil
 
-		r , err := this.DealAction(pWork.contractAddress,a )
+		r , err := this.DealAction(pWork.contractAddress,a ,pWork.sysParams)
 		if err != nil{
 			//get a err,return
 			workResult.Results = nil
@@ -71,9 +71,9 @@ func (this *Vms)DealActions(pWork *Work)error{
 }
 
 //DealActions is a little part of full work
-func (this *Vms)DealAction(contractAddress types.Address , action transaction.Action )([]intertypes.ActionResult , error){
+func (this *Vms)DealAction(contractAddress types.Address , action transaction.Action ,sysparam *intertypes.SystemParams)([]intertypes.ActionResult , error){
 	if this.pInnerContractMaper.Exist(contractAddress){
-		results , err := this.pInnerContractMaper.DoFun(contractAddress , action.Params)
+		results , err := this.pInnerContractMaper.DoFun(contractAddress , action.Params , sysparam)
 		if err != nil {
 			return nil , err
 		}
@@ -86,12 +86,12 @@ func (this *Vms)DealAction(contractAddress types.Address , action transaction.Ac
 //Deal Work..........
 /********************************************************************/
 //SendWork is called when applytransaction
-func (this *Vms)SendWork(from types.Address , action transaction.Action)<-chan WorkResult{
+func (this *Vms)SendWork(from types.Address , action transaction.Action , sysParam *intertypes.SystemParams)<-chan WorkResult{
 
 	actions := []transaction.Action{}
 	actions = append(actions , action)
 	fmt.Println("SendWork actions Len:" , len(actions))
-	w := NewWork(*action.Address , actions)
+	w := NewWork(*action.Address , actions , sysParam)
 	this.WorkingChan<-w
 	fmt.Println("SendWork.....")
 	return w.resultChan

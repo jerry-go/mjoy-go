@@ -42,6 +42,7 @@ import (
 	"mjoy.io/core/interpreter"
 	"mjoy.io/core/sdk"
 	"mjoy.io/core/interpreter/balancetransfer"
+	"mjoy.io/core/interpreter/intertypes"
 )
 
 const (
@@ -452,10 +453,11 @@ func (self *producer) commitNewWork() {
 	txs := transaction.NewTransactionsByPriorityAndNonce(self.current.signer , pending, txReword)
 
 	db,_ := database.OpenMemDB()
-	sdk.NewSdkManager(db)
-	sdk.PtrSdkManager.Prepare(work.stateRootHash)
-	work.commitTransactions(self.mux, txs, self.chain, self.coinbase)
-	sdk.PtrSdkManager.Down()
+
+	sdkHandler := sdk.NewTmpStatusManager(work.stateRootHash , db)
+	sysparam := intertypes.MakeSystemParams(sdkHandler)
+	work.commitTransactions(self.mux, txs, self.chain, self.coinbase , sysparam)
+
 
 	// Create the new block to seal with the consensus engine
 	if work.Block, err = self.engine.Finalize(self.chain, header, work.state, work.txs, work.receipts); err != nil {
@@ -471,7 +473,7 @@ func (self *producer) commitNewWork() {
 	self.push(work)
 }
 
-func (env *Work) commitTransactions(mux *event.TypeMux, txs *transaction.TransactionsByPriorityAndNonce, bc *blockchain.BlockChain, coinbase types.Address) {
+func (env *Work) commitTransactions(mux *event.TypeMux, txs *transaction.TransactionsByPriorityAndNonce, bc *blockchain.BlockChain, coinbase types.Address , sysparam *intertypes.SystemParams) {
 
 	var coalescedLogs []*transaction.Log
 
@@ -509,7 +511,7 @@ func (env *Work) commitTransactions(mux *event.TypeMux, txs *transaction.Transac
 		// Start executing the transaction
 		env.state.Prepare(tx.Hash(), types.Hash{}, env.tcount)
 
-		err, logs := env.commitTransaction(tx, bc, coinbase, dbcache)
+		err, logs := env.commitTransaction(tx, bc, coinbase, dbcache , sysparam)
 		switch err {
 		case core.ErrNonceTooLow:
 			// New head notification data race between the transaction pool and blockproducer, shift
@@ -555,10 +557,10 @@ func (env *Work) commitTransactions(mux *event.TypeMux, txs *transaction.Transac
 	}
 }
 
-func (env *Work) commitTransaction(tx *transaction.Transaction, bc *blockchain.BlockChain, coinbase types.Address, cache *stateprocessor.DbCache) (error, []*transaction.Log) {
+func (env *Work) commitTransaction(tx *transaction.Transaction, bc *blockchain.BlockChain, coinbase types.Address, cache *stateprocessor.DbCache , sysparam *intertypes.SystemParams) (error, []*transaction.Log) {
 	snap := env.state.Snapshot()
 	//                                ApplyTransaction(this.config,&coinbase,this.state ,header,tx)
-	receipt, err := stateprocessor.ApplyTransaction(env.config, &coinbase,  env.state, env.header, tx, cache)
+	receipt, err := stateprocessor.ApplyTransaction(env.config, &coinbase,  env.state, env.header, tx, cache , sysparam)
 	if err != nil {
 		env.state.RevertToSnapshot(snap)
 		return err, nil
