@@ -152,7 +152,7 @@ func TestInterDbNoDataBefore(t *testing.T){
 
 
 	//create system params
-	sysparam := intertypes.MakeSystemParams(sdkHandler)
+	sysparam := intertypes.MakeSystemParams(sdkHandler , pNewVm)
 	rChan := pNewVm.SendWork(types.Address{} , action , sysparam)
 	rw := <-rChan
 	fmt.Println("get A result")

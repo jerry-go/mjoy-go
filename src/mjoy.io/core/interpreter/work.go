@@ -6,17 +6,14 @@ import (
 	"mjoy.io/core/interpreter/intertypes"
 )
 
-type WorkResult struct {
-	Err error
-	Results []intertypes.ActionResult
-}
+
 
 
 type Work struct {
 	actions []transaction.Action
 	contractAddress types.Address
 	sysParams *intertypes.SystemParams
-	resultChan chan WorkResult
+	resultChan chan intertypes.WorkResult
 }
 
 func NewWork(contractAddress types.Address , actions []transaction.Action  , sysParams *intertypes.SystemParams)*Work{
@@ -27,7 +24,7 @@ func NewWork(contractAddress types.Address , actions []transaction.Action  , sys
 	w.actions= make([]transaction.Action , len(actions))
 	w.sysParams = sysParams
 	copy(w.actions , actions)
-	w.resultChan = make(chan WorkResult , 1)
+	w.resultChan = make(chan intertypes.WorkResult , 1)
 	return w
 }
 

@@ -40,7 +40,6 @@ import (
 	"mjoy.io/core/blockchain"
 	"mjoy.io/core/txprocessor"
 	"mjoy.io/core/transaction"
-	"mjoy.io/core/interpreter"
 	"mjoy.io/core/interpreter/intertypes"
 )
 
@@ -54,7 +53,7 @@ type Backend interface {
 }
 //Interpreter
 type Interpreter interface {
-	SendWork(from types.Address , action transaction.Action , systemparam *intertypes.SystemParams)<-chan interpreter.WorkResult
+	SendWork(from types.Address , action transaction.Action , systemparam *intertypes.SystemParams)<-chan intertypes.WorkResult
 }
 // Blockproducer creates blocks and searches for proof-of-work values.
 type Blockproducer struct {

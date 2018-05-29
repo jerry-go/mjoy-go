@@ -464,7 +464,8 @@ func (self *producer) commitNewWork() {
 	txs := transaction.NewTransactionsByPriorityAndNonce(self.current.signer , pending, txReword)
 
 	sdkHandler := sdk.NewTmpStatusManager(work.stateRootHash , self.chain.GetDb())
-	sysparam := intertypes.MakeSystemParams(sdkHandler)
+	vmHandler := interpreter.NewVm()
+	sysparam := intertypes.MakeSystemParams(sdkHandler,vmHandler)
 	work.commitTransactions(self.mux, txs, self.chain, self.coinbase , sysparam)
 
 

@@ -179,13 +179,7 @@ func New(ctx *node.ServiceContext) (*Mjoy, error) {
 	if mjoy.protocolManager, err = NewProtocolManager(mjoy.chainConfig, config.SyncMode, config.NetworkId, mjoy.eventMux, mjoy.txPool, mjoy.engine, mjoy.blockchain, chainDb); err != nil {
 		return nil, err
 	}
-	//step 1:init interpreter
-	//init interpreter
-	mjoy.interVm = interpreter.NewVm()
-	//start interpreter
-	go mjoy.interVm.Run()
 
-	//step 2:init miner
 	//Init miner
 	mjoy.blockproducer = blockproducer.New(mjoy,mjoy.interVm,mjoy.chainConfig,mjoy.EventMux() , mjoy.engine)
 

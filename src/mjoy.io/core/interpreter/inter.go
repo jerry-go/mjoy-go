@@ -46,7 +46,7 @@ func (this *Vms)init(){
 /********************************************************************/
 //DealActons is a full work,and return a workresult to caller,if get one err ,return
 func (this *Vms)DealActions(pWork *Work)error{
-	var workResult WorkResult
+	var workResult intertypes.WorkResult
 	fmt.Println("DealActions........")
 	workResult.Err = nil
 	for _ , a := range pWork.actions{
@@ -86,7 +86,7 @@ func (this *Vms)DealAction(contractAddress types.Address , action transaction.Ac
 //Deal Work..........
 /********************************************************************/
 //SendWork is called when applytransaction
-func (this *Vms)SendWork(from types.Address , action transaction.Action , sysParam *intertypes.SystemParams)<-chan WorkResult{
+func (this *Vms)SendWork(from types.Address , action transaction.Action , sysParam *intertypes.SystemParams)<-chan intertypes.WorkResult{
 
 	actions := []transaction.Action{}
 	actions = append(actions , action)

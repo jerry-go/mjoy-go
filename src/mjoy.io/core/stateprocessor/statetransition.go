@@ -161,10 +161,10 @@ func (st *StateTransition) TransitionDb(sysparam *intertypes.SystemParams) (ret 
 	} else {
 		logger.Debugf("Just process actions transaction.")
 		st.statedb.SetNonce(sender, st.statedb.GetNonce(sender) +1 )
-		vm := interpreter.NewVm()
 		for _,action := range st.actions {
 			//resulst := make(chan interpreter.WorkResult)
-			resulstChan := vm.SendWork(sender,action , sysparam)
+			resulstChan :=sysparam.VmHandler.SendWork(sender,action,sysparam)
+
 			result := <-resulstChan
 			if result.Err != nil {
 				st.statedb.RevertToSnapshot(snapshot)

@@ -80,8 +80,10 @@ func (p *StateProcessor) Process(block *block.Block, statedb *state.StateDB, sta
 	}
 
 	sdkHandler := sdk.NewTmpStatusManager(stateRootHash , db)
+	vmHandler := interpreter.NewVm()
 	//make sysparam
-	sysparam := intertypes.MakeSystemParams(sdkHandler)
+
+	sysparam := intertypes.MakeSystemParams(sdkHandler , vmHandler)
 
 
 	// Iterate over and process the individual transactions
