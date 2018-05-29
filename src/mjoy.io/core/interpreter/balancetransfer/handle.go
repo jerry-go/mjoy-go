@@ -112,9 +112,10 @@ func RewordBlockProducer(param map[string]interface{},sysparam *intertypes.Syste
 	}else{
 		return nil ,errors.New(fmt.Sprintf("no producer"))
 	}
-
+	logger.Debug("Call rewordBlockProducer..........")
 	data := sdk.Sys_GetValue(sysparam.SdkHandler ,  BalanceTransferAddress , producer[:])
 	if nil == data{
+		logger.Errorf("sdkGetValue data == nil , producer:%x" , producer )
 		return nil , errors.New(fmt.Sprintf("TransferBalance:Do not find data:From:%x" , producer))
 	}
 
