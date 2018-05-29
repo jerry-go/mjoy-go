@@ -524,12 +524,12 @@ func (env *Work) commitTransactions(mux *event.TypeMux, txs *transaction.Transac
 		switch err {
 		case core.ErrNonceTooLow:
 			// New head notification data race between the transaction pool and blockproducer, shift
-			logger.Trace("Skipping transaction with low nonce", "sender", from, "nonce", tx.Nonce())
+			logger.Info("Skipping transaction with low nonce", "sender", from, "nonce", tx.Nonce())
 			txs.Shift()
 
 		case core.ErrNonceTooHigh:
 			// Reorg notification data race between the transaction pool and blockproducer, skip account =
-			logger.Trace("Skipping account with hight nonce", "sender", from, "nonce", tx.Nonce())
+			logger.Info("Skipping account with hight nonce", "sender", from, "nonce", tx.Nonce())
 			txs.Pop()
 
 		case nil:

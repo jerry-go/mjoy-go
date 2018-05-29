@@ -68,7 +68,7 @@ func NewStateProcessor(config *params.ChainConfig, cs IChainForState, engine con
 //
 // Process returns the receipts and logs accumulated during the process.
 // If any of the transactions failed  it will return an error.
-func (p *StateProcessor) Process(block *block.Block, statedb *state.StateDB, stateRootHash types.Hash) (*DbCache, transaction.Receipts, []*transaction.Log, error) {
+func (p *StateProcessor) Process(block *block.Block, statedb *state.StateDB, stateRootHash types.Hash, db database.IDatabaseGetter) (*DbCache, transaction.Receipts, []*transaction.Log, error) {
 	var (
 		receipts transaction.Receipts
 		header   = block.Header()
@@ -79,7 +79,6 @@ func (p *StateProcessor) Process(block *block.Block, statedb *state.StateDB, sta
 		Cache: make(map[string]interpreter.MemDatabase),
 	}
 
-	db,_ := database.OpenMemDB()
 	sdkHandler := sdk.NewTmpStatusManager(stateRootHash , db)
 	//make sysparam
 	sysparam := intertypes.MakeSystemParams(sdkHandler)

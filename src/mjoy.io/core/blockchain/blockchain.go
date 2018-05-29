@@ -97,7 +97,7 @@ type Validator interface {
 // initial state is based. It should return the receipts generated
 // and return an error if any of the internal rules failed.
 type Processor interface {
-	Process(block *block.Block, statedb *state.StateDB, stateRootHash types.Hash) (*stateprocessor.DbCache, transaction.Receipts, []*transaction.Log, error)
+	Process(block *block.Block, statedb *state.StateDB, stateRootHash types.Hash, db database.IDatabaseGetter) (*stateprocessor.DbCache, transaction.Receipts, []*transaction.Log, error)
 }
 
 // BlockChain represents the canonical chain given a database with a genesis
@@ -971,7 +971,7 @@ func (bc *BlockChain) insertChain(chain block.Blocks) (int, []interface{}, []*tr
 			return i, events, coalescedLogs, err
 		}
 		// Process block using the parent state as reference point.
-		dbCache, receipts, logs, err := bc.processor.Process(blk, state, parent.Root())
+		dbCache, receipts, logs, err := bc.processor.Process(blk, state, parent.Root(), bc.chainDb)
 		if err != nil {
 			bc.reportBlock(blk, receipts, err)
 			return i, events, coalescedLogs, err
