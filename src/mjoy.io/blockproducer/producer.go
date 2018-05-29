@@ -463,9 +463,7 @@ func (self *producer) commitNewWork() {
 
 	txs := transaction.NewTransactionsByPriorityAndNonce(self.current.signer , pending, txReword)
 
-	db,_ := database.OpenMemDB()
-
-	sdkHandler := sdk.NewTmpStatusManager(work.stateRootHash , db)
+	sdkHandler := sdk.NewTmpStatusManager(work.stateRootHash , self.chain.GetDb())
 	sysparam := intertypes.MakeSystemParams(sdkHandler)
 	work.commitTransactions(self.mux, txs, self.chain, self.coinbase , sysparam)
 
