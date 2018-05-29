@@ -137,6 +137,10 @@ func (g *Genesis) configOrDefault(ghash types.Hash) *params.ChainConfig {
 func DefaultGenesisBlock() *Genesis {
 	return &Genesis{
 		Config:     params.DefaultChainConfig,
+		Alloc: map[types.Address]GenesisAccount{
+			// todo : here  just avoid stateobject deltete empty object bug when inner contract has no code field
+			types.Address{}: {Code: []byte{1,2,3,4,5}},
+		},
 	}
 }
 
