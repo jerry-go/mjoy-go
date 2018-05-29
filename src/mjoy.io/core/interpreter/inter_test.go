@@ -83,7 +83,7 @@ func makeTestData(){
 
 func makeActionParams()[]byte{
 	a := make(map[string]interface{})
-	a["funcId"] = 1
+	a["funcId"] = "0"
 
 	fromAddr := types.Address{}
 	fromAddr[2] = 1
@@ -96,6 +96,21 @@ func makeActionParams()[]byte{
 	a["amount"] = int64(10)
 
 	fmt.Println("type amount:" , reflect.TypeOf(a["amount"]))
+	r , err :=json.Marshal(a)
+	if err != nil {
+		return nil
+	}
+	return r
+}
+
+func makeActionParamsReword()[]byte{
+	a := make(map[string]interface{})
+	a["funcId"] = "1"
+
+	fromAddr := types.Address{}
+	fromAddr[2] = 1
+	a["producer"] = fromAddr.Hex()
+
 	r , err :=json.Marshal(a)
 	if err != nil {
 		return nil
@@ -122,6 +137,12 @@ func TestInterDbNoDataBefore(t *testing.T){
 	fmt.Println("resultsLen :" , len(rw.Results))
 	fmt.Println("err:" , rw.Err)
 	_ = rw
+	checkResultsData()
+
+	action.Params = makeActionParamsReword()
+	rChan = pNewVm.SendWork(types.Address{} , action)
+	rw = <-rChan
+	//time.Sleep(1*time.Second)
 	checkResultsData()
 
 }

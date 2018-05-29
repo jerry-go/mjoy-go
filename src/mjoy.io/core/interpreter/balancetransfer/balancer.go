@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"mjoy.io/common/types"
 	"mjoy.io/core/interpreter/intertypes"
+	"strconv"
 )
 
 var BalanceTransferAddress  = types.Address{}
@@ -27,6 +28,7 @@ func (this *ContractBalancer)init(){
 	//register call Back
 	this.funcMapper = make(map[int]DoFunc)
 	this.funcMapper[0] = TransferBalance
+	this.funcMapper[1] = RewordBlockProducer
 }
 
 
@@ -47,10 +49,14 @@ func (this *ContractBalancer)DoFun( params []byte)([]intertypes.ActionResult , e
 	if err != nil {
 		return nil,err
 	}
-	var funcId int64
+	var funcId int
 	if v,ok := jsonParams["funcId"];!ok{
-		funcId = v.(int64)
 		return nil , errors.New(fmt.Sprintf("ContractBalancer: Params not contain funcId" ))
+	} else {
+		funcId, err = strconv.Atoi(v.(string))
+		if err!= nil {
+			return nil , errors.New(fmt.Sprintf("ContractBalancer: Params  funcId format is not right" ))
+		}
 	}
 
 	if doFunc,ok := this.funcMapper[int(funcId)];ok {

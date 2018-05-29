@@ -103,6 +103,49 @@ func TransferBalance(param map[string]interface{})([]intertypes.ActionResult , e
 	return results , nil
 }
 
+func RewordBlockProducer(param map[string]interface{})([]intertypes.ActionResult , error){
+
+	var producer types.Address
+	if fromi,ok := param["producer"];ok{
+		producerStr := fromi.(string)
+		producer = types.HexToAddress(producerStr)
+	}else{
+		return nil ,errors.New(fmt.Sprintf("no producer"))
+	}
+
+	data := sdk.Sys_GetValue(BalanceTransferAddress , producer[:])
+	if nil == data{
+		return nil , errors.New(fmt.Sprintf("TransferBalance:Do not find data:From:%x" , producer))
+	}
+
+	balance := new(BalanceValue)
+	err := json.Unmarshal(data , balance)
+	if err != nil {
+		return nil , errors.New(fmt.Sprintf("TransferBalance:Unmarshal json:%s" , err.Error()))
+	}
+
+
+	balance.Amount += 5e+5
+
+
+	bytesJosn , err := json.Marshal(balance)
+	if err != nil {
+		return nil , errors.New(fmt.Sprintf("TransferBalance:Marshal json:%s" , err.Error()))
+	}
+
+	if err = sdk.Sys_SetValue(BalanceTransferAddress , producer[:] , bytesJosn);err != nil{
+		return nil , errors.New(fmt.Sprintf("TransferBalance:Set From :%s" , err.Error()))
+	}
+
+	//make a result
+	results := make([]intertypes.ActionResult , 1)
+	results = results[:0]
+	results = append(results , intertypes.ActionResult{Key:producer[:] , Val:bytesJosn})
+
+	return results , nil
+
+}
+
 
 
 
