@@ -32,6 +32,7 @@ import (
 	"bytes"
 	"github.com/tinylib/msgp/msgp"
 	"container/heap"
+	"mjoy.io/common/types/util/hex"
 )
 
 //go:generate msgp
@@ -254,7 +255,38 @@ func (tx *Transaction) RawSignatureValues() (*big.Int, *big.Int, *big.Int) {
 
 //String just print Nonce and to,simple is best
 func (tx *Transaction) String() string {
-	return fmt.Sprintf("Nonce:%d" , tx.Nonce())
+	var from string
+	if tx.Data.V != nil {
+		signer := deriveSigner(&tx.Data.V.IntVal)
+		if f , err := Sender(signer , tx);err != nil {
+			from = "[invalid sender: invalid sig]"
+		}else{
+			from = fmt.Sprintf("%x", f[:])
+		}
+	} else {
+		from = "[invalid sender: nil V field]"
+	}
+
+
+	rStr := fmt.Sprintf(`
+	TX(%x)
+	From:       (%s)
+	ActionLen:  (%d)
+	Nonce:      (%d)
+	V:          (%v)
+	S:          (%v)
+	R:          (%v)
+	` ,
+	tx.Hash(),
+	from,
+	len(tx.Data.Actions),
+	tx.Nonce(),
+	(*hex.Big)(&tx.Data.V.IntVal),
+	(*hex.Big)(&tx.Data.S.IntVal),
+	(*hex.Big)(&tx.Data.R.IntVal),
+		)
+
+	return rStr
 }
 
 // Transactions is a Transaction slice type for basic sorting.
