@@ -22,7 +22,7 @@ func TransferBalance(param map[string]interface{})([]intertypes.ActionResult , e
 	//from
 	if fromi,ok := param["from"];ok{
 		from = fromi.(string)
-		fromAddress = types.StringToAddress(from)
+		fromAddress = types.HexToAddress(from)
 	}else{
 		return nil ,errors.New(fmt.Sprintf("TransferBalance:param no index:from"))
 	}
@@ -30,21 +30,21 @@ func TransferBalance(param map[string]interface{})([]intertypes.ActionResult , e
 	//to
 	if toi , ok := param["to"];ok{
 		to = toi.(string)
-		toAddress = types.StringToAddress(to)
+		toAddress = types.HexToAddress(to)
 	}else {
 		return nil , errors.New(fmt.Sprintf("TransferBalance:param no index:to"))
 	}
 
 	//amount
 	if amounti , ok := param["amount"];ok{
-		amount = amounti.(int64)
+		amount = int64(amounti.(float64))
 	}
 
 	//logicDeal
 	//get sender's Balance
 	dataFrom := sdk.Sys_GetValue(BalanceTransferAddress , fromAddress[:])
 	if nil == dataFrom{
-		return nil , errors.New("TransferBalance:Do not find data:From")
+		return nil , errors.New(fmt.Sprintf("TransferBalance:Do not find data:From:%x" , fromAddress))
 	}
 
 	balanceFrom := new(BalanceValue)
@@ -96,6 +96,7 @@ func TransferBalance(param map[string]interface{})([]intertypes.ActionResult , e
 
 	//make a result
 	results := make([]intertypes.ActionResult , 2)
+	results = results[:0]
 	results = append(results , intertypes.ActionResult{Key:fromAddress[:] , Val:bytesFrom})
 	results = append(results , intertypes.ActionResult{Key:toAddress[:] , Val:bytesTo})
 

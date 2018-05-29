@@ -8,7 +8,7 @@ import (
 	"mjoy.io/core/interpreter/intertypes"
 )
 
-var BalanceTransferAddress  = types.StringToAddress("0x0000000000000000000000000000000000000001")
+var BalanceTransferAddress  = types.Address{}
 
 
 type DoFunc func(map[string]interface{})([]intertypes.ActionResult , error)

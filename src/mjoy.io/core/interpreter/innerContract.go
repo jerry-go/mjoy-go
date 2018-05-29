@@ -9,6 +9,7 @@ import (
 	"mjoy.io/common/types"
 	"math/big"
 	"mjoy.io/core/interpreter/intertypes"
+	"fmt"
 )
 
 //InnerContrancInterface
@@ -47,9 +48,11 @@ func (this *InnerContractManager)register(){
 	}
 
 	for _ , obj := range allInnerRegister {
-		if obj.address != zeroAddress{
-			this.Inners[obj.address] = obj.inner
-		}
+		fmt.Println("registerAddr :" , obj.address.Hex())
+		this.Inners[obj.address] = obj.inner
+		//if obj.address != zeroAddress{
+		//	this.Inners[obj.address] = obj.inner
+		//}
 	}
 }
 

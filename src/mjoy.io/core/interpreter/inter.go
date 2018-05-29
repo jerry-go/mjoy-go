@@ -36,6 +36,7 @@ func (this *Vms)init(){
 	this.exit = make(chan struct{} , 1)
 	//init innerContractMapper
 	this.pInnerContractMaper = NewInnerContractManager()
+	go this.Run()
 
 }
 
@@ -46,6 +47,7 @@ func (this *Vms)init(){
 //DealActons is a full work,and return a workresult to caller,if get one err ,return
 func (this *Vms)DealActions(pWork *Work)error{
 	var workResult WorkResult
+	fmt.Println("DealActions........")
 	workResult.Err = nil
 	for _ , a := range pWork.actions{
 		workResult.Results = make([]intertypes.ActionResult , 0 )
@@ -88,9 +90,10 @@ func (this *Vms)SendWork(from types.Address , action transaction.Action)<-chan W
 
 	actions := []transaction.Action{}
 	actions = append(actions , action)
-
-	w := NewWork(from , actions)
+	fmt.Println("SendWork actions Len:" , len(actions))
+	w := NewWork(*action.Address , actions)
 	this.WorkingChan<-w
+	fmt.Println("SendWork.....")
 	return w.resultChan
 }
 
@@ -105,7 +108,7 @@ func (this *Vms)GetPriority(from types.Address , actions []transaction.Action)in
 //cycle Dealing
 /********************************************************************/
 func (this *Vms)Run(){
-	go this.TestRun()
+	//go this.TestRun()
 
 	for{
 		select  {
