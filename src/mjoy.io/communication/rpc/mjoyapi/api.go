@@ -357,6 +357,7 @@ func (s *PrivateAccountAPI) SendTransaction(ctx context.Context, args SendTxArgs
 	if err != nil {
 		return types.Hash{}, err
 	}
+	signed.SetPriority(10)
 	return submitTransaction(ctx, s.b, signed)
 }
 
