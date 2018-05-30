@@ -18,7 +18,7 @@ func TransferBalance(param map[string]interface{},sysparam *intertypes.SystemPar
 	var toAddress types.Address
 	var amount int
 
-
+	logger.Debug(">>>>>>>>StartTransferBalanceDeal.............................................")
 	//get params
 	//from
 	if fromi,ok := param["from"];ok{
@@ -53,7 +53,7 @@ func TransferBalance(param map[string]interface{},sysparam *intertypes.SystemPar
 	if err != nil {
 		return nil , errors.New(fmt.Sprintf("TransferBalance:Unmarshal json:%s" , err.Error()))
 	}
-	fmt.Printf("Sender Address:%s   Balance:%d\n" , from , balanceFrom.Amount)
+	fmt.Printf(".........................................Sender Address:%s   Balance:%d\n" , from , balanceFrom.Amount)
 	//balance value check
 	if balanceFrom.Amount < amount{
 		return nil , errors.New(fmt.Sprintf("TransferBalance:has %d , but want %d" , balanceFrom.Amount , amount))
@@ -74,7 +74,7 @@ func TransferBalance(param map[string]interface{},sysparam *intertypes.SystemPar
 		}
 	}
 
-	fmt.Printf("Receiver Address:%s   Balance:%d\n" , to , balanceTo.Amount)
+	fmt.Printf("..........................Receiver Address:%s   Balance:%d\n" , to , balanceTo.Amount)
 	//balance modify
 	balanceFrom.Amount -= amount
 	balanceTo.Amount += amount
@@ -100,6 +100,15 @@ func TransferBalance(param map[string]interface{},sysparam *intertypes.SystemPar
 	newdataTo := sdk.Sys_GetValue(sysparam.SdkHandler ,  BalanceTransferAddress , toAddress[:])
 	if newdataTo == nil {
 		logger.Error("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!newDataTo == nil")
+	}else{
+		newbalanceTo := new(BalanceValue)
+		err  := json.Unmarshal(newdataTo , newbalanceTo)
+		if err != nil {
+			logger.Errorf("!!!!!!!!!!!!!!!!!!!NewBalanceTo Unmarshal Err:%s" ,  err.Error())
+		}else{
+			fmt.Printf("...........>>>>>>...............New Receiver Address:%s   Balance:%d\n" , to , newbalanceTo.Amount)
+		}
+
 	}
 
 	//make a result

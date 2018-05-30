@@ -407,7 +407,9 @@ func (self *producer) addTestTransactions(num *big.Int){
 	actions := transaction.ActionSlice{}
 	actions = append(actions , action)
 	//make tx
-	tx := transaction.NewTransaction(num.Uint64() - 1 , actions)
+	nc := self.mjoy.TxPool().State().GetNonce(w0.Accounts()[0].Address)
+
+	tx := transaction.NewTransaction(nc , actions)
 	//sign tx
 	txSign , err := w0.SignTxWithPassphrase(w0.Accounts()[0] , "123" ,tx , self.config.ChainId)
 	if err != nil {

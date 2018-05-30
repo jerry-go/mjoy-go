@@ -63,7 +63,10 @@ func (this *TmpStatusManager)GetValue(contractAddress types.Address , key []byte
 
 	tmpNode := this.ExistContract(contractAddress)
 	if tmpNode != nil {
-		return tmpNode.ExistValue(tmpKey)
+		dataExist :=  tmpNode.ExistValue(tmpKey)
+		if dataExist != nil {
+			return dataExist
+		}
 	}
 
 	//get data from database, should add the last root
@@ -72,8 +75,6 @@ func (this *TmpStatusManager)GetValue(contractAddress types.Address , key []byte
 	if err != nil{
 		return nil
 	}
-
-
 
 	//if not find in memery,check in the LDB
 	data , err := this.db.Get(hashKey[:])
