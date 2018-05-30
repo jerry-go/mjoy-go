@@ -4,6 +4,8 @@ import (
 	"mjoy.io/common/types"
 	"sync"
 	"mjoy.io/utils/database"
+	"mjoy.io/core/state"
+	"mjoy.io/utils/crypto"
 )
 
 /*
@@ -20,14 +22,14 @@ you can call a system function in sdk
 type TmpStatusManager struct {
 	mu sync.RWMutex
 	db database.IDatabaseGetter
-	LastRoot types.Hash
+	state *state.StateDB
 	TmpConTracts map[types.Address]*TmpStatusNode
 }
 
-func NewTmpStatusManager(root types.Hash , db database.IDatabaseGetter)*TmpStatusManager{
+func NewTmpStatusManager(db database.IDatabaseGetter, state *state.StateDB)*TmpStatusManager{
 	t := new(TmpStatusManager)
-	t.LastRoot = root
 	t.db = db
+	t.state = state
 	t.TmpConTracts = make(map[types.Address]*TmpStatusNode)
 
 	return t
@@ -60,7 +62,6 @@ func (this *TmpStatusManager)GetValue(contractAddress types.Address , key []byte
 
 	tmpKey := TmpKey{contractAddress:contractAddress , key:types.BytesToAddress(key)}
 
-
 	tmpNode := this.ExistContract(contractAddress)
 	if tmpNode != nil {
 		dataExist :=  tmpNode.ExistValue(tmpKey)
@@ -69,17 +70,13 @@ func (this *TmpStatusManager)GetValue(contractAddress types.Address , key []byte
 		}
 	}
 
-	//get data from database, should add the last root
-	tmpKey.stateRoot = this.LastRoot
-	hashKey , err := tmpKey.MakeHashKey()
-	if err != nil{
-		return nil
-	}
+	stateKey := crypto.Keccak256Hash(append(contractAddress.Bytes(), key...))
+	LevelDbKey := this.state.GetState(contractAddress, stateKey)
 
 	//if not find in memery,check in the LDB
-	data , err := this.db.Get(hashKey[:])
+	data , err := this.db.Get(LevelDbKey[:])
 	if err != nil{
-		logger.Error("db.Get(hashKey):" , err.Error())
+		logger.Error("db.Get(hashKey):" , err.Error(),"key:", LevelDbKey.String(),"stateKey:", stateKey.String())
 		return nil
 	}
 	return data

@@ -474,7 +474,7 @@ func (self *producer) commitNewWork() {
 	work := self.current
 
 	//add test tx
-	self.addTestTransactions(num)
+	//self.addTestTransactions(num)
 	pending, err := self.mjoy.TxPool().Pending()
 	if err != nil {
 		logger.Error("Failed to fetch pending transactions", "err", err)
@@ -498,7 +498,7 @@ func (self *producer) commitNewWork() {
 	txReword.Priority = big.NewInt(10)
 	txs := transaction.NewTransactionsByPriorityAndNonce(self.current.signer , pending, txReword)
 
-	sdkHandler := sdk.NewTmpStatusManager(work.stateRootHash , self.chain.GetDb())
+	sdkHandler := sdk.NewTmpStatusManager(self.chain.GetDb(), work.state)
 	vmHandler := interpreter.NewVm()
 	sysparam := intertypes.MakeSystemParams(sdkHandler,vmHandler)
 	work.commitTransactions(self.mux, txs, self.chain, self.coinbase , sysparam)

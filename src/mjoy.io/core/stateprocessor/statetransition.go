@@ -182,16 +182,17 @@ func (st *StateTransition) TransitionDb(sysparam *intertypes.SystemParams) (ret 
 
 	for _, result := range resultMem {
 		storgageKey := append(result.Address.Bytes(), result.Key...)
-		//1, collect results for block producer future write level db
-		st.Cache.Cache[string(storgageKey)] = interpreter.MemDatabase{
-			result.Address,
-			result.Key,
-			result.Val}
 
-		//2, change statedb storage
+		//1, change statedb storage
 		storageKeyHash := crypto.Keccak256Hash(storgageKey)
 		storageValHash := crypto.Keccak256Hash(result.Val)
 		st.statedb.SetState(result.Address, storageKeyHash, storageValHash)
+
+		//2, collect results for block producer future write level db
+		st.Cache.Cache[string(storgageKey)] = interpreter.MemDatabase{
+			result.Address,
+			storageValHash.Bytes(),
+			result.Val}
 	}
 
 	return ret, false, err
