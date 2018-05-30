@@ -77,6 +77,19 @@ type Action struct {
 	Params 		[]byte			`json:"params"  gencodec:"required"`
 }
 
+func MakeAction(address types.Address , params []byte)Action{
+	a := Action{}
+	newAddress := types.Address{}
+	newAddress = address
+	a.Address = &newAddress
+
+	pslice := make([]byte , 0 , len(params))
+	pslice = append(pslice , params...)
+	a.Params = pslice
+	return a
+}
+
+
 //ActionSlice just for msgp.For other memery logic deal,we just need use '[]Action'
 type ActionSlice []Action
 
@@ -249,6 +262,11 @@ func (tx *Transaction) WithSignature(signer Signer, sig []byte) (*Transaction, e
 func (tx *Transaction)GetPriority()*big.Int{
 	return big.NewInt(tx.Priority.Int64())
 }
+
+func (tx *Transaction)SetPriority(priority int){
+	tx.Priority = big.NewInt(int64(priority))
+}
+
 func (tx *Transaction) RawSignatureValues() (*big.Int, *big.Int, *big.Int) {
 	return &tx.Data.V.IntVal, &tx.Data.R.IntVal, &tx.Data.S.IntVal
 }

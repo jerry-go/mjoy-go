@@ -4,6 +4,7 @@ import (
 	"testing"
 	"encoding/json"
 	"fmt"
+	"mjoy.io/common/types"
 )
 
 type Para struct {
@@ -30,3 +31,5 @@ func TestJosnInterface(t *testing.T) {
 	fmt.Println(paraUnmarshal,err)
 
 }
+
+

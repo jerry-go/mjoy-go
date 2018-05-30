@@ -7,6 +7,7 @@ import (
 	"mjoy.io/core/sdk"
 	"encoding/json"
 	"mjoy.io/core/interpreter/intertypes"
+	"strconv"
 )
 
 
@@ -37,7 +38,7 @@ func TransferBalance(param map[string]interface{},sysparam *intertypes.SystemPar
 
 	//amount
 	if amounti , ok := param["amount"];ok{
-		amount = int(amounti.(float64))
+		amount,_ = strconv.Atoi(amounti.(string))
 	}
 
 	//logicDeal
@@ -52,7 +53,7 @@ func TransferBalance(param map[string]interface{},sysparam *intertypes.SystemPar
 	if err != nil {
 		return nil , errors.New(fmt.Sprintf("TransferBalance:Unmarshal json:%s" , err.Error()))
 	}
-
+	fmt.Printf("Sender Address:%s   Balance:%d\n" , from , balanceFrom.Amount)
 	//balance value check
 	if balanceFrom.Amount < amount{
 		return nil , errors.New(fmt.Sprintf("TransferBalance:has %d , but want %d" , balanceFrom.Amount , amount))
@@ -64,6 +65,7 @@ func TransferBalance(param map[string]interface{},sysparam *intertypes.SystemPar
 
 	if nil == dataTo{
 		//return nil , errors.New("TransferBalance:Do not find data:To")
+		logger.Warnf("DataTo %s  dataTo==nil,mean no balance before!!!!" , toAddress.Hex())
 		balanceTo.Amount = 0
 	}else{
 		err = json.Unmarshal(dataTo , balanceTo)
@@ -72,6 +74,7 @@ func TransferBalance(param map[string]interface{},sysparam *intertypes.SystemPar
 		}
 	}
 
+	fmt.Printf("Receiver Address:%s   Balance:%d\n" , to , balanceTo.Amount)
 	//balance modify
 	balanceFrom.Amount -= amount
 	balanceTo.Amount += amount
@@ -92,6 +95,11 @@ func TransferBalance(param map[string]interface{},sysparam *intertypes.SystemPar
 
 	if err = sdk.Sys_SetValue(sysparam.SdkHandler ,  BalanceTransferAddress , toAddress[:] , bytesTo);err != nil{
 		return nil , errors.New(fmt.Sprintf("TransferBalance:Set To :%s" , err.Error()))
+	}
+
+	newdataTo := sdk.Sys_GetValue(sysparam.SdkHandler ,  BalanceTransferAddress , toAddress[:])
+	if newdataTo == nil {
+		logger.Error("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!newDataTo == nil")
 	}
 
 	//make a result

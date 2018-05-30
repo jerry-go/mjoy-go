@@ -391,6 +391,38 @@ func (self *producer) makeCurrent(parent *block.Block, header *block.Header) err
 	return nil
 }
 
+func (self *producer) addTestTransactions(num *big.Int){
+	//make action
+	//get account 0 = coinbase
+	wallets := self.mjoy.AccountManager().Wallets()
+	if len(wallets) < 2 {
+		return
+	}
+	w0 := wallets[0]
+	w1 := wallets[1]
+	//make params
+	param := balancetransfer.MakaBalanceTransferParam(w0.Accounts()[0].Address , w1.Accounts()[0].Address , 1000)
+	//make action
+	action := transaction.MakeAction(balancetransfer.BalanceTransferAddress , param)
+	actions := transaction.ActionSlice{}
+	actions = append(actions , action)
+	//make tx
+	tx := transaction.NewTransaction(num.Uint64() - 1 , actions)
+	//sign tx
+	txSign , err := w0.SignTxWithPassphrase(w0.Accounts()[0] , "123" ,tx , self.config.ChainId)
+	if err != nil {
+		logger.Errorf("w0.SignTxWithPassphrase err :" , err.Error())
+		return
+	}
+	pvm := interpreter.NewVm()
+	priority := pvm.GetPriority(types.Address{} , txSign.Data.Actions)
+	txSign.SetPriority(priority)
+	//add txSign to txpool
+	self.mjoy.TxPool().AddRemote(txSign)
+
+
+}
+
 func (self *producer) commitNewWork() {
 	self.mu.Lock()
 	defer self.mu.Unlock()
@@ -439,7 +471,8 @@ func (self *producer) commitNewWork() {
 	// Create the current work task and check any fork transitions needed
 	work := self.current
 
-
+	//add test tx
+	self.addTestTransactions(num)
 	pending, err := self.mjoy.TxPool().Pending()
 	if err != nil {
 		logger.Error("Failed to fetch pending transactions", "err", err)
@@ -460,7 +493,7 @@ func (self *producer) commitNewWork() {
 		logger.Error("Failed to make reword transaction", "err", err)
 		return
 	}
-
+	txReword.Priority = big.NewInt(10)
 	txs := transaction.NewTransactionsByPriorityAndNonce(self.current.signer , pending, txReword)
 
 	sdkHandler := sdk.NewTmpStatusManager(work.stateRootHash , self.chain.GetDb())

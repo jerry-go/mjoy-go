@@ -3,6 +3,7 @@ package balancetransfer
 import (
 	"encoding/json"
 	"mjoy.io/common/types"
+	"fmt"
 )
 
 //here for test,do not add msgp
@@ -25,4 +26,19 @@ func MakeActionParamsReword(producer types.Address)[]byte{
 }
 
 
+//for inner test
+func MakaBalanceTransferParam(from , to types.Address , amount int)[]byte{
+	a := make(map[string]interface{})
+
+	a["funcId"] = "0"
+	a["from"] = from.Hex()
+	a["to"] = to.Hex()
+	a["amount"] = fmt.Sprintf("%d" , amount)
+
+	r , err :=json.Marshal(a)
+	if err != nil {
+		return nil
+	}
+	return r
+}
 
