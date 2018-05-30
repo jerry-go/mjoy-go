@@ -92,8 +92,12 @@ func (this *Vms)SendWork(from types.Address , action transaction.Action , sysPar
 	actions = append(actions , action)
 	fmt.Println("SendWork actions Len:" , len(actions))
 	w := NewWork(*action.Address , actions , sysParam)
-	this.WorkingChan<-w
+	//this.WorkingChan<-w
+
+	go this.DealActions(w)
+
 	fmt.Println("SendWork.....")
+
 	return w.resultChan
 }
 
