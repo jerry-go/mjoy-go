@@ -36,7 +36,7 @@ func (this *Vms)init(){
 	this.exit = make(chan struct{} , 1)
 	//init innerContractMapper
 	this.pInnerContractMaper = NewInnerContractManager()
-	go this.Run()
+	//go this.Run()
 
 }
 

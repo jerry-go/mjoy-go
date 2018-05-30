@@ -805,24 +805,21 @@ func (s *PublicTransactionPoolAPI) sign(addr types.Address, tx *transaction.Tran
 	return wallet.SignTx(account, tx, chainID)
 }
 
+type SendTxAction struct {
+	Address		*types.Address    `json:"address"`
+	Params 		*hex.Bytes       `json:"params"`
+}
+
 // SendTxArgs represents the arguments to sumbit a new transaction into the transaction pool.
 type SendTxArgs struct {
 	From     types.Address  `json:"from"`
-	To       *types.Address `json:"to"`
-	Value    *hex.Big       `json:"value"`
 	Nonce    *hex.Uint64    `json:"nonce"`
-	// We accept "data" and "input" for backwards-compatibility reasons. "input" is the
-	// newer name and should be preferred by clients.
-	Data  *hex.Bytes 	    `json:"data"`
-	Input *hex.Bytes 	    `json:"input"`
+
+	Actions  []SendTxAction    `json:"actions"`
 }
 
 // setDefaults is a helper function that fills in default values for unspecified tx fields.
 func (args *SendTxArgs) setDefaults(ctx context.Context, b Backend) error {
-
-	if args.Value == nil {
-		args.Value = new(hex.Big)
-	}
 	if args.Nonce == nil {
 		nonce, err := b.GetPoolNonce(ctx, args.From)
 		if err != nil {
@@ -830,23 +827,20 @@ func (args *SendTxArgs) setDefaults(ctx context.Context, b Backend) error {
 		}
 		args.Nonce = (*hex.Uint64)(&nonce)
 	}
-	if args.Data != nil && args.Input != nil && !bytes.Equal(*args.Data, *args.Input) {
-		return errors.New(`Both "data" and "input" are set and not equal. Please use "input" to pass transaction call data.`)
+	if len(args.Actions) == 0 {
+		return errors.New("no actions in transaction !!")
 	}
+
 	return nil
 }
 
 func (args *SendTxArgs) toTransaction() *transaction.Transaction {
-	//var input []byte
-	//if args.Data != nil {
-	//	input = *args.Data
-	//} else if args.Input != nil {
-	//	input = *args.Input
-	//}
-	//if args.To == nil {
-	//	return transaction.NewContractCreation(uint64(*args.Nonce), (*big.Int)(args.Value), 0, nil, input)
-	//}
-	//return transaction.NewTransaction(uint64(*args.Nonce), *args.To, (*big.Int)(args.Value), 0, nil, input)
+	actions := []transaction.Action{}
+	for _, argAction := range args.Actions {
+		action := transaction.Action{argAction.Address, *argAction.Params}
+		actions = append(actions, action)
+	}
+	return transaction.NewTransaction(uint64(*args.Nonce), actions)
 
 	return nil
 }
