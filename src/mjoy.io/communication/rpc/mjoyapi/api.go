@@ -447,6 +447,21 @@ func (s *PublicBlockChainAPI) GetNum() int {
 	return 20
 }
 
+// GetStoragePara returns the storage parameters of certain contract
+// The detail parameter is defined by contact interpreter
+func (s *PublicBlockChainAPI) GetStorageParameter(ctx context.Context, address types.Address, blockNr rpc.BlockNumber) ([]byte, error) {
+	state, _, err := s.b.StateAndHeaderByNumber(ctx, blockNr)
+	if state == nil || err != nil {
+		return nil, err
+	}
+
+	//sdkHandler := sdk.NewTmpStatusManager(s.b.ChainDb(), state, types.Address{})
+	//vmHandler := interpreter.NewVm()
+	//sysparam := intertypes.MakeSystemParams(sdkHandler, vmHandler)
+	//b := state.GetBalance(address)
+	return nil, state.Error()
+}
+
 // GetBlockByNumber returns the requested block. When blockNr is -1 the chain head is returned. When fullTx is true all
 // transactions in the block are returned in full detail, otherwise only the transaction hash is returned.
 func (s *PublicBlockChainAPI) GetBlockByNumber(ctx context.Context, blockNr rpc.BlockNumber, fullTx bool) (map[string]interface{}, error) {
@@ -496,11 +511,20 @@ func (s *PublicBlockChainAPI) GetStorageAt(ctx context.Context, address types.Ad
 	return res[:], state.Error()
 }
 
+type ConsensusDataHex struct {
+	Id      string         `json:"id"`
+	Para    *hex.Bytes     `json:"data"`
+}
+
 // rpcOutputBlock converts the given block to the RPC output which depends on fullTx. If inclTx is true transactions are
 // returned. When fullTx is true the returned block contains full transaction details, otherwise it will only contain
 // transaction hashes.
 func (s *PublicBlockChainAPI) rpcOutputBlock(b *block.Block, inclTx bool, fullTx bool) (map[string]interface{}, error) {
 	head := b.Header() // copies the header once
+
+	hexbyte := make(hex.Bytes, len(head.ConsensusData.Para))
+	copy(hexbyte, head.ConsensusData.Para)
+	cHex := ConsensusDataHex{head.ConsensusData.Id, &hexbyte}
 	fields := map[string]interface{}{
 		"number":           	(*hex.Big)(&head.Number.IntVal),
 		"hash":             	b.Hash(),
@@ -508,8 +532,7 @@ func (s *PublicBlockChainAPI) rpcOutputBlock(b *block.Block, inclTx bool, fullTx
 		"logsBloom":        	head.Bloom,
 		"stateRoot":        	head.StateRootHash,
 		"blockproducer":    	head.BlockProducer,
-		"consensusData.id":     head.ConsensusData.Id,
-		"consensusData.para":	head.ConsensusData.Para,
+		"consensusData":     	cHex,
 		"size":             	hex.Uint64(uint64(b.Size())),
 		"timestamp":        	(*hex.Big)(&head.Time.IntVal),
 		"transactionsRoot": 	head.TxRootHash,
@@ -517,7 +540,6 @@ func (s *PublicBlockChainAPI) rpcOutputBlock(b *block.Block, inclTx bool, fullTx
 		"R":                	(*hex.Big)(&head.R.IntVal),
 		"S":                	(*hex.Big)(&head.S.IntVal),
 		"V":                	(*hex.Big)(&head.V.IntVal),
-
 	}
 
 	if inclTx {
@@ -564,45 +586,50 @@ func (s *PublicBlockChainAPI)Forking(ctx context.Context , rate uint64)(uint64){
 
 // RPCTransaction represents a transaction that will serialize to the RPC representation of a transaction
 type RPCTransaction struct {
-	BlockHash        types.Hash     `json:"blockHash"`
-	BlockNumber      *hex.Big       `json:"blockNumber"`
-	From             types.Address  `json:"from"`
-	Hash             types.Hash     `json:"hash"`
-	Input            hex.Bytes      `json:"input"`
-	Nonce            hex.Uint64     `json:"nonce"`
-	To               *types.Address `json:"to"`
-	TransactionIndex hex.Uint       `json:"transactionIndex"`
-	Value            *hex.Big       `json:"value"`
-	V                *hex.Big       `json:"v"`
-	R                *hex.Big       `json:"r"`
-	S                *hex.Big       `json:"s"`
+	BlockHash        types.Hash     		 	`json:"blockHash"`
+	BlockNumber      *hex.Big       			`json:"blockNumber"`
+	From             types.Address  			`json:"from"`
+	Hash             types.Hash     			`json:"hash"`
+	Nonce            hex.Uint64     			`json:"nonce"`
+	TransactionIndex hex.Uint       			`json:"transactionIndex"`
+	Actions          []*SendTxAction			`json:"actions"`
+	V                *hex.Big       			`json:"v"`
+	R                *hex.Big       			`json:"r"`
+	S                *hex.Big       			`json:"s"`
 }
 
 // newRPCTransaction returns a transaction that will serialize to the RPC
 // representation, with the given location metadata set (if available).
 func newRPCTransaction(tx *transaction.Transaction, blockHash types.Hash, blockNumber uint64, index uint64) *RPCTransaction {
-	//var signer transaction.Signer = transaction.NewMSigner(tx.ChainId())
-	//
-	//from, _ := transaction.Sender(signer, tx)
-	//v, r, s := tx.RawSignatureValues()
-	//
-	//result := &RPCTransaction{
-	//	From:     from,
-	//	Hash:     tx.Hash(),
-	//	Input:    hex.Bytes(util.CopyBytes(tx.Data.Payload)),
-	//	Nonce:    hex.Uint64(tx.Nonce()),
-	//	To:       tx.To(),
-	//	Value:    (*hex.Big)(tx.Value()),
-	//	V:        (*hex.Big)(v),
-	//	R:        (*hex.Big)(r),
-	//	S:        (*hex.Big)(s),
-	//}
-	//if blockHash != (types.Hash{}) {
-	//	result.BlockHash = blockHash
-	//	result.BlockNumber = (*hex.Big)(new(big.Int).SetUint64(blockNumber))
-	//	result.TransactionIndex = hex.Uint(index)
-	//}
-	//return result
+	var signer transaction.Signer = transaction.NewMSigner(tx.ChainId())
+
+	from, _ := transaction.Sender(signer, tx)
+	v, r, s := tx.RawSignatureValues()
+
+	actions := []*SendTxAction{}
+
+	for _, action := range tx.Data.Actions {
+		hexbyte := make(hex.Bytes, len(action.Params))
+		copy(hexbyte, action.Params)
+		actionSend := &SendTxAction{action.Address, &hexbyte}
+		actions = append(actions, actionSend)
+	}
+
+	result := &RPCTransaction{
+		From:     from,
+		Hash:     tx.Hash(),
+		Nonce:    hex.Uint64(tx.Nonce()),
+		V:        (*hex.Big)(v),
+		R:        (*hex.Big)(r),
+		S:        (*hex.Big)(s),
+		Actions:  actions,
+	}
+	if blockHash != (types.Hash{}) {
+		result.BlockHash = blockHash
+		result.BlockNumber = (*hex.Big)(new(big.Int).SetUint64(blockNumber))
+		result.TransactionIndex = hex.Uint(index)
+	}
+	return result
 
 	return nil
 }
