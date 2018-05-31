@@ -79,11 +79,11 @@ func (p *StateProcessor) Process(block *block.Block, statedb *state.StateDB, db 
 		Cache: make(map[string]interpreter.MemDatabase),
 	}
 
-	sdkHandler := sdk.NewTmpStatusManager(db, statedb)
+	sdkHandler := sdk.NewTmpStatusManager(db, statedb , block.Coinbase())
 	vmHandler := interpreter.NewVm()
 	//make sysparam
 
-	sysparam := intertypes.MakeSystemParams(sdkHandler , vmHandler)
+	sysparam := intertypes.MakeSystemParams(sdkHandler , vmHandler )
 
 
 	// Iterate over and process the individual transactions

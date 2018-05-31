@@ -498,9 +498,9 @@ func (self *producer) commitNewWork() {
 	txReword.Priority = big.NewInt(10)
 	txs := transaction.NewTransactionsByPriorityAndNonce(self.current.signer , pending, txReword)
 
-	sdkHandler := sdk.NewTmpStatusManager(self.chain.GetDb(), work.state)
+	sdkHandler := sdk.NewTmpStatusManager(self.chain.GetDb(), work.state,self.coinbase)
 	vmHandler := interpreter.NewVm()
-	sysparam := intertypes.MakeSystemParams(sdkHandler,vmHandler)
+	sysparam := intertypes.MakeSystemParams(sdkHandler,vmHandler )
 	work.commitTransactions(self.mux, txs, self.chain, self.coinbase , sysparam)
 
 

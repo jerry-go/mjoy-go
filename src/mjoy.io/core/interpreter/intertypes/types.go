@@ -26,7 +26,7 @@ type SystemParams struct {
 	VmHandler VmInterface
 }
 
-func MakeSystemParams(sdkHandler *sdk.TmpStatusManager , vmHandler VmInterface)*SystemParams{
+func MakeSystemParams(sdkHandler *sdk.TmpStatusManager , vmHandler VmInterface )*SystemParams{
 	s := new(SystemParams)
 	s.SdkHandler = sdkHandler
 	s.VmHandler = vmHandler

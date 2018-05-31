@@ -8,6 +8,7 @@ import (
 	"time"
 	"fmt"
 	"mjoy.io/core/interpreter/intertypes"
+	"mjoy.io/core/interpreter/balancetransfer"
 )
 
 //Test addressd
@@ -104,7 +105,11 @@ func (this *Vms)SendWork(from types.Address , action transaction.Action , sysPar
 //will uesed by txpool
 func (this *Vms)GetPriority(from types.Address , actions []transaction.Action)int{
 	//some calculation for priority
-	return 10
+	priority , err :=balancetransfer.CheckFee(*actions[0].Address , actions[0].Params)
+	if err != nil {
+		logger.Errorf("Get Err When call GetPriority:" , err.Error())
+	}
+	return priority
 }
 
 

@@ -9,6 +9,12 @@ import (
 	"strconv"
 )
 
+const(
+	TransferBalance_FunId = iota
+	RewordBlockProducer_FunId
+	TransferFee_FunId
+)
+
 var BalanceTransferAddress  = types.Address{}
 
 
@@ -27,8 +33,9 @@ func NewContractBalancer()*ContractBalancer{
 func (this *ContractBalancer)init(){
 	//register call Back
 	this.funcMapper = make(map[int]DoFunc)
-	this.funcMapper[0] = TransferBalance
-	this.funcMapper[1] = RewordBlockProducer
+	this.funcMapper[TransferBalance_FunId] = TransferBalance        //user's balance transfer
+	this.funcMapper[RewordBlockProducer_FunId] = RewordBlockProducer    //reword for coinbase
+	this.funcMapper[TransferFee_FunId] = TransferFee            //transaction fee cut
 }
 
 
@@ -42,6 +49,7 @@ func ParseParms(param []byte)(map[string]interface{} , error){
 	return pResult , nil
 
 }
+
 
 func (this *ContractBalancer)DoFun( params []byte,sysparam *intertypes.SystemParams)([]intertypes.ActionResult , error){
 	//unmarshal params

@@ -23,13 +23,15 @@ type TmpStatusManager struct {
 	mu sync.RWMutex
 	db database.IDatabaseGetter
 	state *state.StateDB
+	coinBase types.Address
 	TmpConTracts map[types.Address]*TmpStatusNode
 }
 
-func NewTmpStatusManager(db database.IDatabaseGetter, state *state.StateDB)*TmpStatusManager{
+func NewTmpStatusManager(db database.IDatabaseGetter, state *state.StateDB , coinbase types.Address)*TmpStatusManager{
 	t := new(TmpStatusManager)
 	t.db = db
 	t.state = state
+	t.coinBase = coinbase
 	t.TmpConTracts = make(map[types.Address]*TmpStatusNode)
 
 	return t
@@ -99,7 +101,3 @@ func (this *TmpStatusManager)CreateStatusNode(contractAddress types.Address)*Tmp
 	this.TmpConTracts[contractAddress] = node
 	return node
 }
-
-
-
-
