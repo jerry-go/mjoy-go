@@ -416,9 +416,7 @@ func (self *producer) addTestTransactions(num *big.Int){
 		logger.Errorf("w0.SignTxWithPassphrase err :" , err.Error())
 		return
 	}
-	pvm := interpreter.NewVm()
-	priority := pvm.GetPriority(types.Address{} , txSign.Data.Actions)
-	txSign.SetPriority(priority)
+
 	//add txSign to txpool
 	self.mjoy.TxPool().AddRemote(txSign)
 

@@ -102,15 +102,7 @@ func (this *Vms)SendWork(from types.Address , action transaction.Action , sysPar
 	return w.resultChan
 }
 
-//will uesed by txpool
-func (this *Vms)GetPriority(from types.Address , actions []transaction.Action)int{
-	//some calculation for priority
-	priority , err :=balancetransfer.CheckFee(*actions[0].Address , actions[0].Params)
-	if err != nil {
-		logger.Errorf("Get Err When call GetPriority:" , err.Error())
-	}
-	return priority
-}
+
 
 
 /********************************************************************/
@@ -139,7 +131,15 @@ func (this *Vms)TestRun(){
 }
 
 
-
+//will uesed by txpool
+func GetPriority(from types.Address , actions []transaction.Action)int{
+	//some calculation for priority
+	priority , err :=balancetransfer.CheckFee(*actions[0].Address , actions[0].Params)
+	if err != nil {
+		logger.Errorf("Get Err When call GetPriority:" , err.Error())
+	}
+	return priority
+}
 
 
 

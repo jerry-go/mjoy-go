@@ -27,7 +27,6 @@ import (
 	"mjoy.io/common/types"
 	"github.com/tinylib/msgp/msgp"
 	"mjoy.io/core/transaction"
-	"mjoy.io/core/interpreter"
 )
 
 // errNoActiveJournal is returned if a transaction is attempted to be inserted
@@ -95,9 +94,7 @@ func (journal *txJournal) load(add func(*transaction.Transaction) error) error {
 		// Import the transaction and bump the appropriate progress counters
 		total++
 		tx.PrintDataInfo()
-		pvm := interpreter.NewVm()
-		priority := pvm.GetPriority(types.Address{} , tx.Data.Actions)
-		tx.SetPriority(priority)
+
 		if err = add(tx); err != nil {
 			logger.Debug("Failed to add journaled transaction", "err", err)
 			dropped++

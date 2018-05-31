@@ -37,6 +37,7 @@ import (
 	"gopkg.in/karalabe/cookiejar.v2/collections/prque"
 	"mjoy.io/core/transaction"
 	"math/big"
+	"mjoy.io/core/interpreter"
 )
 
 const (
@@ -593,6 +594,11 @@ func (pool *TxPool) validateTx(tx *transaction.Transaction, local bool) error {
 // whitelisted
 func (pool *TxPool) add(tx *transaction.Transaction, local bool) (bool, error) {
 	//!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+	//get Priority
+	priority := interpreter.GetPriority(types.Address{} , tx.Data.Actions)
+	tx.SetPriority(priority)
+
 	// If the transaction is already known, discard it
 	hash := tx.Hash()
 	if pool.all[hash] != nil {
