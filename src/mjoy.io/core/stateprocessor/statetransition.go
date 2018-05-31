@@ -167,6 +167,7 @@ func (st *StateTransition) TransitionDb(sysparam *intertypes.SystemParams) (ret 
 
 			result := <-resulstChan
 			if result.Err != nil {
+				logger.Error("action fail.", result.Err)
 				st.statedb.RevertToSnapshot(snapshot)
 				return nil, true, err
 			}

@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"mjoy.io/core/interpreter/intertypes"
 	"strconv"
+	"bytes"
 )
 
 func TransferFee(param map[string]interface{} , sysparam *intertypes.SystemParams)([]intertypes.ActionResult , error){
@@ -149,6 +150,11 @@ func TransferBalance(param map[string]interface{},sysparam *intertypes.SystemPar
 		amount,_ = strconv.Atoi(amounti.(string))
 	}
 
+	if bytes.Equal(fromAddress[:],toAddress[:]) {
+		fmt.Println("sender address is equal to receipt address!!",fromAddress.Hex())
+		return nil, nil
+	}
+
 	//logicDeal
 	//get sender's Balance
 	dataFrom := sdk.Sys_GetValue(sysparam.SdkHandler ,  BalanceTransferAddress , fromAddress[:])
@@ -216,7 +222,6 @@ func TransferBalance(param map[string]interface{},sysparam *intertypes.SystemPar
 		}else{
 			fmt.Printf("...........>>>>>>...............New Receiver Address:%s   Balance:%d\n" , to , newbalanceTo.Amount)
 		}
-
 	}
 
 	//make a result
