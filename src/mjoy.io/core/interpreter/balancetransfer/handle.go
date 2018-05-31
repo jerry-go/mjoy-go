@@ -11,6 +11,72 @@ import (
 	"bytes"
 )
 
+
+
+
+func GetBalance(param map[string]interface{} , sysparam *intertypes.SystemParams)([]intertypes.ActionResult , error){
+
+
+	logger.Info(">>>>>>>>GetBalance.............................................")
+	allRequestAddress := []string{}
+	//get params
+
+	if addressesInterface , ok := param["addresses"];!ok{
+		//errDeal
+		return nil , errors.New("GetBalance:No requests....")
+	}else{
+		sliceInterface,ok := addressesInterface.([]interface{})
+		if !ok {
+			return nil,errors.New("requests's type not map[string]interface{}")
+		}
+
+		for _ , v := range sliceInterface {
+			addr , ok := v.(string)
+			if !ok{
+				return nil , errors.New("sliceInterface element is not string ")
+			}
+			allRequestAddress = append(allRequestAddress , addr)
+
+		}
+	}
+
+	balanceCheckResult := new(AccountsBalance)
+
+	for _ , v := range allRequestAddress {
+		//check Balance
+		dataCheck := sdk.Sys_GetValue(sysparam.SdkHandler ,  BalanceTransferAddress , types.HexToAddress(v).Bytes())
+		if nil == dataCheck{
+			balanceCheckResult.All = append(balanceCheckResult.All , AccountBalance{v , 0})
+			continue
+		}
+
+		balanceCheckVal := new(BalanceValue)
+		err := json.Unmarshal(dataCheck , balanceCheckVal)
+		if err != nil {
+			balanceCheckResult.All = append(balanceCheckResult.All , AccountBalance{v , 0})
+			continue
+		}else{
+			balanceCheckResult.All = append(balanceCheckResult.All , AccountBalance{v ,balanceCheckVal.Amount })
+		}
+
+	}
+	//make a result
+	results := make([]intertypes.ActionResult ,0, 1)
+	//Marshal balanceCheckResult to []byte
+	resultBytes  , err := json.Marshal(balanceCheckResult)
+	//fill result
+	if err != nil || resultBytes == nil {
+
+		return nil , errors.New(fmt.Sprintf("GetBalance Last Marshal Err:%s" , err.Error()))
+	}
+	//right
+	results = append(results , intertypes.ActionResult{nil , resultBytes})
+	return results , nil
+
+}
+
+
+
 func TransferFee(param map[string]interface{} , sysparam *intertypes.SystemParams)([]intertypes.ActionResult , error){
 	var from string
 	var fromAddress types.Address

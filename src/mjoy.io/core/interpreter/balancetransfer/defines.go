@@ -12,6 +12,18 @@ type BalanceValue struct {
 }
 
 
+
+//Balance Check Result
+type AccountBalance struct {
+	Address string   `json:"address"`
+	Amount int              `json:"amount"`
+}
+
+type AccountsBalance struct {
+	All []AccountBalance    `json:"all"`
+}
+
+
 func MakeActionParamsReword(producer types.Address)[]byte{
 	a := make(map[string]interface{})
 	a["funcId"] = "1"

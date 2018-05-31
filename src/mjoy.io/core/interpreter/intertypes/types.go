@@ -6,6 +6,7 @@ import (
 	"mjoy.io/core/transaction"
 )
 
+//working result
 type ActionResult struct {
 	Key []byte
 	Val []byte
@@ -15,9 +16,17 @@ type WorkResult struct {
 	Err error
 	Results []ActionResult
 }
+//GetResult
+type GetResult struct {
+	Err error
+	Var []byte  //json result
+}
+
+
 
 type VmInterface interface {
 	SendWork( types.Address ,  transaction.Action ,  *SystemParams)<-chan WorkResult
+	GetStorage(address types.Address , action transaction.Action , params *SystemParams)GetResult
 }
 
 //SystemParams contain all system running params
@@ -32,3 +41,5 @@ func MakeSystemParams(sdkHandler *sdk.TmpStatusManager , vmHandler VmInterface )
 	s.VmHandler = vmHandler
 	return s
 }
+
+

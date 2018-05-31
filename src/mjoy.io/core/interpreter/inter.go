@@ -102,7 +102,24 @@ func (this *Vms)SendWork(from types.Address , action transaction.Action , sysPar
 	return w.resultChan
 }
 
+func (this *Vms)GetStorage(address types.Address , action transaction.Action , sysParam *intertypes.SystemParams)intertypes.GetResult{
+	actions := []transaction.Action{}
+	actions = append(actions , action)
+	fmt.Println("SendWork actions Len:" , len(actions))
+	w := NewWork(*action.Address , actions , sysParam)
+	//this.WorkingChan<-w
 
+	go this.DealActions(w)
+	wRslt := <-w.resultChan
+	getRslt := intertypes.GetResult{}
+	getRslt.Err = wRslt.Err
+	if getRslt.Err != nil {
+		getRslt.Var = nil
+	}else{
+		getRslt.Var = wRslt.Results[0].Val
+	}
+	return getRslt
+}
 
 
 /********************************************************************/

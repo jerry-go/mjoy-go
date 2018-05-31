@@ -7,7 +7,7 @@ import (
 )
 
 
-
+//a operate work
 
 type Work struct {
 	actions []transaction.Action
@@ -27,7 +27,6 @@ func NewWork(contractAddress types.Address , actions []transaction.Action  , sys
 	w.resultChan = make(chan intertypes.WorkResult , 1)
 	return w
 }
-
 
 
 
