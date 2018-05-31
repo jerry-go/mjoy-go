@@ -41,7 +41,7 @@ var (
 	canonicalSeed = 1
 	forkSeed      = 2
 )
-var defaultChainConfig = params.DefaultChainConfig
+var defaultChainConfig = params.TestChainConfig
 // BlockGen creates blocks for testing.
 // See GenerateChain for a detailed explanation.
 type BlockGen struct {
@@ -171,7 +171,7 @@ func GenerateChain(config *params.ChainConfig, parent *block.Block, engine conse
 
 		if b.engine != nil {
 			//b.header.StateHash = statedb.IntermediateRoot()
-			block, _ := b.engine.Finalize(b.chainReader, b.header, statedb, b.txs, b.receipts)
+			block, _ := b.engine.Finalize(b.chainReader, b.header, statedb, b.txs, b.receipts, true)
 			//b.header.StateHash = statedb.IntermediateRoot()
 			//block.B_header.StateHash = statedb.IntermediateRoot(true)
 			// Write state changes to db

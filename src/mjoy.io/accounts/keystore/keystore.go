@@ -41,6 +41,7 @@ import (
 	"mjoy.io/utils/crypto"
 	"mjoy.io/utils/event"
 	"mjoy.io/core/transaction"
+	"mjoy.io/core/blockchain/block"
 )
 
 var (
@@ -289,6 +290,30 @@ func (ks *KeyStore) SignTx(a accounts.Account, tx *transaction.Transaction, chai
 	return nil,ErrChainId
 }
 
+func (ks *KeyStore) SignHeader( h *block.Header,chainID *big.Int) (*block.Header, error) {
+	// Look up the key to sign with and abort if it cannot be found
+	ks.mu.RLock()
+	defer ks.mu.RUnlock()
+
+	if len(ks.wallets) < 0 {
+		return nil , errors.New("no wallets in keystore")
+	}
+
+	mjoyBaseAccouts := ks.wallets[0]
+	if len(mjoyBaseAccouts.Accounts()) < 0 {
+		return nil , errors.New("no accounts in wallet")
+	}
+	a := mjoyBaseAccouts.Accounts()[0]
+
+
+	unlockedKey, found := ks.unlocked[a.Address]
+	if !found {
+		return nil, ErrLocked
+	}
+
+	return block.SignHeader(h , block.NewBlockSigner(chainID),unlockedKey.PrivateKey)
+}
+
 // SignHashWithPassphrase signs hash if the private key matching the given address
 // can be decrypted with the given passphrase. The produced signature is in the
 // [R || S || V] format where V is 0 or 1.
@@ -299,6 +324,15 @@ func (ks *KeyStore) SignHashWithPassphrase(a accounts.Account, passphrase string
 	}
 	defer zeroKey(key.PrivateKey)
 	return crypto.Sign(hash, key.PrivateKey)
+}
+
+func (ks *KeyStore) GetKeyWithPassphrase(a accounts.Account, auth string) ( *ecdsa.PrivateKey, error) {
+	a, err := ks.Find(a)
+	if err != nil {
+		return nil, err
+	}
+	key, err := ks.storage.GetKey(a.Address, a.URL.Path, auth)
+	return key.PrivateKey, err
 }
 
 // SignTxWithPassphrase signs the transaction if the private key matching the

@@ -9,15 +9,31 @@ import (
 	"errors"
 	"mjoy.io/common"
 	"runtime"
+	"crypto/ecdsa"
 )
 
+
 type Engine_basic struct {
+	//todo: need interpreter information
+
+	//key for sign header
+	prv *ecdsa.PrivateKey
 }
 
 var (
 	ErrBlockTime     = errors.New("timestamp less than or equal parent's timestamp")
 	ErrSignature     = errors.New("signature is not right")
 )
+
+func NewBasicEngine(prv *ecdsa.PrivateKey)  (*Engine_basic){
+	return &Engine_basic{
+		prv,
+	}
+}
+
+func (basic *Engine_basic)SetKey(prv *ecdsa.PrivateKey)  {
+	basic.prv = prv
+}
 
 func (basic *Engine_basic) Author(chain ChainReader, header *block.Header) (types.Address, error) {
 	singner := block.NewBlockSigner(chain.Config().ChainId)
@@ -34,6 +50,39 @@ func (basic *Engine_basic) VerifyHeader(chain ChainReader, header *block.Header,
 	parent := chain.GetHeader(header.ParentHash, number-1)
 	if parent == nil {
 		return ErrUnknownAncestor
+	}
+
+	// Verify that the block number is parent's +1
+	if diff := new(big.Int).Sub(&header.Number.IntVal, &parent.Number.IntVal); diff.Cmp(common.Big1) != 0 {
+		return ErrInvalidNumber
+	}
+
+	//verify time
+	if header.Time.IntVal.Cmp(&parent.Time.IntVal) <= 0 {
+		return ErrBlockTime
+	}
+
+	//verify ConsensusData
+	if seal {
+		if err := basic.VerifySeal(chain, header); err != nil {
+			return err
+		}
+	}
+
+	//verify signature
+	singner := block.NewBlockSigner(chain.Config().ChainId)
+	if _, err := singner.Sender(header); err!=nil{
+		return ErrSignature
+	}
+
+	return nil
+}
+
+func (basic *Engine_basic) verifyHeader(chain ChainReader, header, parent *block.Header, seal bool) error {
+	//if the header is known, verify success
+	number := header.Number.IntVal.Uint64()
+	if chain.GetHeader(header.Hash(), number) != nil {
+		return nil
 	}
 
 	// Verify that the block number is parent's +1
@@ -68,7 +117,7 @@ func (basic *Engine_basic) verifyHeaderWorker(chain ChainReader, headers []*bloc
 	if chain.GetHeader(headers[index].Hash(), headers[index].Number.IntVal.Uint64()) != nil {
 		return nil // known block
 	}
-	return basic.VerifyHeader(chain, headers[index], seals[index])
+	return basic.verifyHeader(chain, headers[index], parent,seals[index])
 }
 
 // VerifyHeaders is similar to VerifyHeader, but verifies a batch of headers
@@ -125,6 +174,8 @@ func (basic *Engine_basic) VerifyHeaders(chain ChainReader, headers []*block.Hea
 	return abort, errorsOut
 }
 
+
+//todo this need interpreter process ConsensusData
 func (basic *Engine_basic) VerifySeal(chain ChainReader, header *block.Header) error {
 	return nil
 }
@@ -133,13 +184,31 @@ func (basic *Engine_basic) Prepare(chain ChainReader, header *block.Header) erro
 	return nil
 }
 
-func (basic *Engine_basic) Finalize(chain ChainReader, header *block.Header, state *state.StateDB, txs []*transaction.Transaction, receipts []*transaction.Receipt) (*block.Block, error) {
+
+//todo this need interpreter process
+//interpreter need change state
+func (basic *Engine_basic) Finalize(chain ChainReader, header *block.Header, state *state.StateDB, txs []*transaction.Transaction, receipts []*transaction.Receipt, sign bool) (*block.Block, error) {
 	//reward := big.NewInt(5e+18)
 	//state.AddBalance(header.BlockProducer, reward)
 	header.StateRootHash = state.IntermediateRoot()
-	return block.NewBlock(header, txs, receipts), nil
+
+	//sign header
+	if sign {
+		if basic.prv == nil {
+			return nil, errors.New("No key found fo sign header")
+		}
+		signHeader, err := block.SignHeader(header, block.NewBlockSigner(chain.Config().ChainId), basic.prv)
+		if err != nil {
+			return nil, err
+		}
+		return block.NewBlock(signHeader, txs, receipts), nil
+	} else {
+		return block.NewBlock(header, txs, receipts), nil
+	}
+
 }
 
+//todo fill header ConsensusData
 func (basic *Engine_basic) Seal(chain ChainReader, block *block.Block, stop <-chan struct{}) (*block.Block, error){
 	header := block.Header()
 	return block.WithSeal(header), nil

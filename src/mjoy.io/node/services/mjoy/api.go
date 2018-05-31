@@ -74,7 +74,7 @@ func NewPrivateBlockproducerAPI(e *Mjoy) *PrivateBlockproducerAPI {
 // of workers started is equal to the number of logical CPUs that are usable by
 // this process. If producing is already running, this method adjust the number of
 // threads allowed to use.
-func (api *PrivateBlockproducerAPI) Start(threads *int) error {
+func (api *PrivateBlockproducerAPI) Start(threads *int, password string) error {
 	// Set the number of threads if the seal engine supports it
 	if threads == nil {
 		threads = new(int)
@@ -94,7 +94,7 @@ func (api *PrivateBlockproducerAPI) Start(threads *int) error {
 		api.e.lock.RLock()
 		api.e.lock.RUnlock()
 
-		return api.e.StartProducing(true)
+		return api.e.StartProducing(true, password)
 	}
 	return nil
 }

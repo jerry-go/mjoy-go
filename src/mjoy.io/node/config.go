@@ -151,7 +151,7 @@ func (c *Config) SetDefaultConfig() (error){
 	c.KeyStoreDir = defaults.DefaultKeystore
 	c.HTTPHost = defaults.DefaultHttpHost
 	c.HTTPPort = defaults.DefaultHttpPort
-	c.HTTPModules = append(c.HTTPModules,"mjoy","personal","txpool")
+	c.HTTPModules = append(c.HTTPModules,"mjoy","personal","txpool", "blockproducer")
 
 	c.P2P.MaxPeers = 10
 	c.P2P.Name = defaults.DefaultNodeName

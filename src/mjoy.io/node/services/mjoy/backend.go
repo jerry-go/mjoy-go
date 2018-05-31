@@ -49,6 +49,8 @@ import (
 	"mjoy.io/blockproducer"
 	"mjoy.io/communication/rpc/mjoyapi"
 	"mjoy.io/mjoyd/config"
+	"mjoy.io/accounts/keystore"
+	"crypto/ecdsa"
 	"mjoy.io/core/interpreter"
 )
 
@@ -139,7 +141,6 @@ func New(ctx *node.ServiceContext) (*Mjoy, error) {
 		chainConfig:    chainConfig,
 		eventMux:       ctx.EventMux,
 		accountManager: ctx.AccountManager,
-		engine:         CreateConsensusEngine(ctx, 0, chainConfig, chainDb),
 		shutdownChan:   make(chan bool),
 		stopDbUpgrade:  stopDbUpgrade,
 		networkId:      config.NetworkId,
@@ -149,7 +150,7 @@ func New(ctx *node.ServiceContext) (*Mjoy, error) {
 	}
 
 	logger.Info("Initialising Mjoy protocol", "versions", ProtocolVersions, "network", config.NetworkId)
-
+	mjoy.engine = CreateConsensusEngine(mjoy)
 	if !config.SkipBcVersionCheck {
 		bcVersion := blockchain.GetBlockChainVersion(chainDb)
 		if bcVersion != blockchain.BlockChainVersion && bcVersion != 0 {
@@ -208,10 +209,16 @@ func CreateDB(ctx *node.ServiceContext, config *Config, name string) (database.I
 }
 
 // CreateConsensusEngine creates the required type of consensus engine instance for an Mjoy service
-func CreateConsensusEngine(ctx *node.ServiceContext, configNoUse interface{}, chainConfig *params.ChainConfig, db database.IDatabase) consensus.Engine {
-
-	engine := new(consensus.Engine_empty)
+func CreateConsensusEngine(mjoy *Mjoy) consensus.Engine {
+	engine := consensus.NewBasicEngine(nil)
 	return engine
+}
+
+func (s *Mjoy) SetEngineKey(pri *ecdsa.PrivateKey) {
+	switch v := s.engine.(type) {
+	case *consensus.Engine_basic:
+		v.SetKey(pri)
+	}
 }
 
 // APIs returns the collection of RPC services the mjoy package offers.
@@ -243,14 +250,8 @@ func (s *Mjoy) ResetWithGenesisBlock(gb *block.Block) {
 	s.blockchain.ResetWithGenesisBlock(gb)
 }
 
-func (s *Mjoy) Coinbase() (eb types.Address, err error) {
-	s.lock.RLock()
-	coinbase := s.coinbase
-	s.lock.RUnlock()
+func (s *Mjoy) Coinbase() (eb accounts.Account, err error) {
 
-	if coinbase != (types.Address{}) {
-		return coinbase, nil
-	}
 	if wallets := s.AccountManager().Wallets(); len(wallets) > 0 {
 		if accounts := wallets[0].Accounts(); len(accounts) > 0 {
 			coinbase := accounts[0].Address
@@ -260,10 +261,10 @@ func (s *Mjoy) Coinbase() (eb types.Address, err error) {
 			s.lock.Unlock()
 
 			logger.Infof("Coinbase automatically configured address:0x%x\n" , coinbase)
-			return coinbase, nil
+			return accounts[0], nil
 		}
 	}
-	return types.Address{}, fmt.Errorf("Coinbase must be explicitly specified")
+	return accounts.Account{}, fmt.Errorf("Coinbase must be explicitly specified")
 }
 
 // set in js console via admin interface or wrapper from cli flags
@@ -272,15 +273,24 @@ func (self *Mjoy) SetCoinbase(coinbase types.Address) {
 	self.coinbase = coinbase
 	self.lock.Unlock()
 
-	//self.blockproducer.SetCoinbase(coinbase)
+	self.blockproducer.SetCoinbase(coinbase)
 }
 
-func (s *Mjoy) StartProducing(local bool) error {
+func (s *Mjoy) StartProducing(local bool, password string) error {
 	eb, err := s.Coinbase()
 	if err != nil {
 		logger.Error("Cannot start producing without coinbase", "err", err)
 		return fmt.Errorf("coinbase missing: %v", err)
 	}
+
+	//get key
+	ks := s.AccountManager().Backends(keystore.KeyStoreType)[0].(*keystore.KeyStore)
+	key, err := ks.GetKeyWithPassphrase(eb, password)
+	if err != nil {
+		logger.Error("Cannot start producing without coinbase, get sign key err ", "err", err)
+		return fmt.Errorf("get sign key err: %v", err)
+	}
+	s.SetEngineKey(key)
 
 	if local {
 		// If local (CPU) producing is started, we can disable the transaction rejection
@@ -289,9 +299,7 @@ func (s *Mjoy) StartProducing(local bool) error {
 		// will ensure that private networks work in single blockproducer mode too.
 		atomic.StoreUint32(&s.protocolManager.acceptTxs, 1)
 	}
-	//go s.interVm.Run()
-	_ = eb
-	go s.blockproducer.Start(eb)
+	go s.blockproducer.Start(eb.Address)
 	return nil
 }
 
@@ -339,14 +347,14 @@ func (s *Mjoy) Start(srvr *p2p.Server) error {
 		s.lesServer.Start(srvr)
 	}
 
-	eb , err := s.Coinbase()
+	_ , err := s.Coinbase()
 	if err != nil{
 		fmt.Println("[Warn]No CoinBase Do Not Start Producing Block!!!!!!!!!!!!!!!!!s")
 	}
 	//when start mjoy service,not start blockproducer,except the cmd order we should start it
 	if s.config.StartBlockproducerAtStart{
 		fmt.Println("Start Blockproducer At Service Start.......................")
-		s.blockproducer.Start(eb)
+		//s.blockproducer.Start(eb)
 	}else {
 		fmt.Println("Not Start Blockproducer At Service Start........................")
 	}
