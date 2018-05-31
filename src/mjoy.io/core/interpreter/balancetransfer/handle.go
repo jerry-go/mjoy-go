@@ -14,18 +14,17 @@ import (
 func TransferFee(param map[string]interface{} , sysparam *intertypes.SystemParams)([]intertypes.ActionResult , error){
 	var from string
 	var fromAddress types.Address
-	var to string
 	var toAddress types.Address
 	var feeAmount int
 
-	logger.Debug(">>>>>>>>StartTransferBalanceDeal.............................................")
+	logger.Info(">>>>>>>>TransferFee.............................................")
 	//get params
 	//from
 	if fromi,ok := param["from"];ok{
 		from = fromi.(string)
 		fromAddress = types.HexToAddress(from)
 	}else{
-		return nil ,errors.New(fmt.Sprintf("TransferBalance:param no index:from"))
+		return nil ,errors.New(fmt.Sprintf("TransferFee:param no index:from"))
 	}
 
 	//to
@@ -41,22 +40,27 @@ func TransferFee(param map[string]interface{} , sysparam *intertypes.SystemParam
 		feeAmount,_ = strconv.Atoi(amounti.(string))
 	}
 
+	if bytes.Equal(fromAddress[:],toAddress[:]) {
+		fmt.Println("TransferFee sender address is equal to receipt address!!",fromAddress.Hex())
+		return nil, nil
+	}
+
 	//logicDeal
 	//get sender's Balance
 	dataFrom := sdk.Sys_GetValue(sysparam.SdkHandler ,  BalanceTransferAddress , fromAddress[:])
 	if nil == dataFrom{
-		return nil , errors.New(fmt.Sprintf("TransferBalance:Do not find data:From:%x" , fromAddress))
+		return nil , errors.New(fmt.Sprintf("TransferFee:Do not find data:From:%x" , fromAddress))
 	}
 
 	balanceFrom := new(BalanceValue)
 	err := json.Unmarshal(dataFrom , balanceFrom)
 	if err != nil {
-		return nil , errors.New(fmt.Sprintf("TransferBalance:Unmarshal json:%s" , err.Error()))
+		return nil , errors.New(fmt.Sprintf("TransferFee:Unmarshal json:%s" , err.Error()))
 	}
-	fmt.Printf(".........................................Sender Address:%s   Balance:%d\n" , from , balanceFrom.Amount)
+	fmt.Printf("....................TransferFee.....................Sender Address:%s   Balance:%d\n" , from , balanceFrom.Amount)
 	//balance value check
 	if balanceFrom.Amount < feeAmount{
-		return nil , errors.New(fmt.Sprintf("TransferBalance:has %d , but want %d" , balanceFrom.Amount , feeAmount))
+		return nil , errors.New(fmt.Sprintf("TransferFee:has %d , but want %d" , balanceFrom.Amount , feeAmount))
 	}
 
 	//get receiver's Balance
@@ -70,11 +74,11 @@ func TransferFee(param map[string]interface{} , sysparam *intertypes.SystemParam
 	}else{
 		err = json.Unmarshal(dataTo , balanceTo)
 		if err != nil{
-			return nil , errors.New(fmt.Sprintf("TransferBalance:Unmarshal json:%s" , err.Error()))
+			return nil , errors.New(fmt.Sprintf("TransferFee:Unmarshal json:%s" , err.Error()))
 		}
 	}
 
-	fmt.Printf("..........................Receiver Address:%s   Balance:%d\n" , to , balanceTo.Amount)
+	fmt.Printf("...........TransferFee...............Receiver Address:%s   Balance:%d\n" , toAddress.Hex() , balanceTo.Amount)
 	//balance modify
 	balanceFrom.Amount -= feeAmount
 	balanceTo.Amount += feeAmount
@@ -106,7 +110,7 @@ func TransferFee(param map[string]interface{} , sysparam *intertypes.SystemParam
 		if err != nil {
 			logger.Errorf("!!!!!!!!!!!!!!!!!!!NewBalanceTo Unmarshal Err:%s" ,  err.Error())
 		}else{
-			fmt.Printf("...........>>>>>>...............New Receiver Address:%s   Balance:%d\n" , to , newbalanceTo.Amount)
+			fmt.Printf("...........>>>>>>...TransferFee............New Receiver Address:%s   Balance:%d\n" , toAddress.Hex() , newbalanceTo.Amount)
 		}
 
 	}
@@ -127,7 +131,7 @@ func TransferBalance(param map[string]interface{},sysparam *intertypes.SystemPar
 	var toAddress types.Address
 	var amount int
 
-	logger.Debug(">>>>>>>>StartTransferBalanceDeal.............................................")
+	logger.Info(">>>>>>>>StartTransferBalanceDeal.............................................")
 	//get params
 	//from
 	if fromi,ok := param["from"];ok{
