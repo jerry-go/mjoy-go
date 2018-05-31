@@ -626,7 +626,6 @@ func (pool *TxPool) add(tx *transaction.Transaction, local bool) (bool, error) {
 			pool.removeTx(tx.Hash())
 		}
 
-
 		return false,fmt.Errorf("pool.all > config.GlobalQueue")
 	}
 	// If the transaction is replacing an already pending one, do directly
