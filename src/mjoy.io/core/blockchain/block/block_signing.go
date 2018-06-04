@@ -45,7 +45,7 @@ func SignHeader(h *Header, s Signer, prv *ecdsa.PrivateKey) (*Header, error) {
 	return h.WithSignature(s, sig)
 }
 
-// SignHeader signs the header using the given signer and private key
+// SignHeaderInner signs the header(modify R S V) using the given signer and private key
 func SignHeaderInner(h *Header, s Signer, prv *ecdsa.PrivateKey) (error) {
 	hash := s.Hash(h)
 	sig, err := crypto.Sign(hash[:], prv)
@@ -109,7 +109,6 @@ func (s BlockSigner) Sender(h *Header) (types.Address, error) {
 	} else{
 		V = V.Sub(&h.V.IntVal, common.Big27)
 	}
-	logger.Error("hash no sig",h.Number.IntVal.Uint64() ,h.HashNoSig().String())
 	address, err :=  recoverPlain(h.HashNoSig(), &h.R.IntVal, &h.S.IntVal, V, true)
 	h.BlockProducer = address
 	return address, err

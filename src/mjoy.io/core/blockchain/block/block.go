@@ -200,7 +200,7 @@ func (h *Header) WithSignature(signer Signer, sig []byte) (*Header, error) {
 	return cpy, nil
 }
 
-// WithSignature returns a new header with the given signature.
+// AddSignature returns modify the  header( R, S, V) with the given signature.
 func (h *Header) AddSignature(signer Signer, sig []byte) ( error) {
 	r, s, v, err := signer.SignatureValues(h, sig)
 	if err != nil {
