@@ -37,7 +37,10 @@ func TestHeaderSignatureRamdomkey(t *testing.T) {
 func TestHeaderSigantureFixkey(t *testing.T) {
 	conData :=make([]byte,10)
 	conData[4] =7
-	header := &Header{Number:types.NewBigInt(*big.NewInt(333)), Time:types.NewBigInt(*big.NewInt(1212121)), ConsensusData:ConsensusData{"test",conData}}
+	BlockProducer := types.Address{}
+	BlockProducer[10] =1
+
+	header := &Header{Number:types.NewBigInt(*big.NewInt(333)), Time:types.NewBigInt(*big.NewInt(1212121)),BlockProducer:BlockProducer,ConsensusData:ConsensusData{"test",conData}}
 	chainId := big.NewInt(101)
 	singner := NewBlockSigner(chainId)
 
@@ -46,7 +49,7 @@ func TestHeaderSigantureFixkey(t *testing.T) {
 		address = crypto.PubkeyToAddress(key.PublicKey)
 	)
 
-	fmt.Println(header)
+	//fmt.Println(header)
 
 	signHeaer, err := SignHeader(header, singner, key)
 	if err != nil {

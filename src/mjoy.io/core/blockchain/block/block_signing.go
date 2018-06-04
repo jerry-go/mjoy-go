@@ -87,10 +87,10 @@ func (s BlockSigner) Sender(h *Header) (types.Address, error) {
 		return types.Address{}, ErrInvalidChainId
 	}
 
-	empty := types.Address{}
-	if h.BlockProducer != empty {
-		return h.BlockProducer, nil
-	}
+	//empty := types.Address{}
+	//if h.BlockProducer != empty {
+	//	return h.BlockProducer, nil
+	//}
 
     V := &big.Int{}
 	if s.chainId.Sign() != 0 {
@@ -99,6 +99,7 @@ func (s BlockSigner) Sender(h *Header) (types.Address, error) {
 	} else{
 		V = V.Sub(&h.V.IntVal, common.Big27)
 	}
+	logger.Error("hash no sig",h.Number.IntVal.Uint64() ,h.HashNoSig().String())
 	address, err :=  recoverPlain(h.HashNoSig(), &h.R.IntVal, &h.S.IntVal, V, true)
 	h.BlockProducer = address
 	return address, err

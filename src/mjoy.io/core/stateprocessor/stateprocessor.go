@@ -33,6 +33,7 @@ import (
 	"mjoy.io/core/sdk"
 	"mjoy.io/utils/database"
 	"mjoy.io/core/interpreter/intertypes"
+	"fmt"
 )
 
 type IChainForState interface {
@@ -85,6 +86,8 @@ func (p *StateProcessor) Process(blk *block.Block, statedb *state.StateDB, db da
 		logger.Error("Process: block signature is not right", err)
 		return  nil, nil, nil, err
 	}
+
+	fmt.Println(header)
 	logger.Error("Process: coinbase", coinbase.Hex())
 
 	sdkHandler := sdk.NewTmpStatusManager(db, statedb , coinbase)
