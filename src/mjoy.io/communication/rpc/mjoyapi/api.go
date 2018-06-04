@@ -42,7 +42,6 @@ import (
 	"mjoy.io/core/sdk"
 	"mjoy.io/core/interpreter"
 	"mjoy.io/core/interpreter/intertypes"
-	"mjoy.io/core/interpreter/balancetransfer"
 )
 
 
@@ -453,7 +452,7 @@ func (s *PublicBlockChainAPI) GetNum() int {
 
 // GetStoragePara returns the storage parameters of certain contract
 // The detail parameter is defined by contact interpreter
-func (s *PublicBlockChainAPI) GetStorageParameter(ctx context.Context, address types.Address, blockNr rpc.BlockNumber) ([]byte, error) {
+func (s *PublicBlockChainAPI) GetStorageParameter(ctx context.Context, actionArg SendTxAction,blockNr rpc.BlockNumber) (hex.Bytes, error) {
 	state, _, err := s.b.StateAndHeaderByNumber(ctx, blockNr)
 	if state == nil || err != nil {
 		return nil, err
@@ -464,23 +463,20 @@ func (s *PublicBlockChainAPI) GetStorageParameter(ctx context.Context, address t
 	sysparam := intertypes.MakeSystemParams(sdkHandler, vmHandler)
 	//package param
 	action := transaction.Action{}
-	contranctAddress := balancetransfer.BalanceTransferAddress
-	action.Address =&contranctAddress
+	action.Address = actionArg.Address
+	action.Params = *actionArg.Params
 
-	str := `{"funcId":"3","addresses":["`
-	str += address.Hex()
-	str += `"]}`
-
-	param := []byte(str)
-	action.Params = param
-
-	getResult := vmHandler.GetStorage(types.Address{} , action,sysparam)
+	getResult := vmHandler.GetStorage(types.Address{} , action, sysparam)
 	if getResult.Err != nil {
 		return nil , getResult.Err
 	}
 
 	fmt.Println("getResult:" , string(getResult.Var))
-	return getResult.Var , nil
+
+	hexbyte := make(hex.Bytes, len(getResult.Var))
+	copy(hexbyte, getResult.Var)
+
+	return hexbyte , nil
 
 	//b := state.GetBalance(address)
 	//return nil, state.Error()
