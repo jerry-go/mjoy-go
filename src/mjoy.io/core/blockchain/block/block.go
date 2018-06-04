@@ -200,6 +200,16 @@ func (h *Header) WithSignature(signer Signer, sig []byte) (*Header, error) {
 	return cpy, nil
 }
 
+// WithSignature returns a new header with the given signature.
+func (h *Header) AddSignature(signer Signer, sig []byte) ( error) {
+	r, s, v, err := signer.SignatureValues(h, sig)
+	if err != nil {
+		return err
+	}
+	h.R, h.S, h.V = &types.BigInt{*r}, &types.BigInt{*s}, &types.BigInt{*v}
+	return  nil
+}
+
 func (b *Block) Transactions() transaction.Transactions { return b.B_body.Transactions }
 
 func (b *Block) Transaction(hash types.Hash) *transaction.Transaction {

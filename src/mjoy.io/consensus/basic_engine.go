@@ -197,11 +197,13 @@ func (basic *Engine_basic) Finalize(chain ChainReader, header *block.Header, sta
 		if basic.prv == nil {
 			return nil, errors.New("No key found fo sign header")
 		}
-		signHeader, err := block.SignHeader(header, block.NewBlockSigner(chain.Config().ChainId), basic.prv)
+		blk := block.NewBlock(header, txs, receipts)
+
+		err := block.SignHeaderInner(blk.B_header, block.NewBlockSigner(chain.Config().ChainId), basic.prv)
 		if err != nil {
 			return nil, err
 		}
-		return block.NewBlock(signHeader, txs, receipts), nil
+		return blk, nil
 	} else {
 		return block.NewBlock(header, txs, receipts), nil
 	}

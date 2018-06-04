@@ -45,6 +45,16 @@ func SignHeader(h *Header, s Signer, prv *ecdsa.PrivateKey) (*Header, error) {
 	return h.WithSignature(s, sig)
 }
 
+// SignHeader signs the header using the given signer and private key
+func SignHeaderInner(h *Header, s Signer, prv *ecdsa.PrivateKey) (error) {
+	hash := s.Hash(h)
+	sig, err := crypto.Sign(hash[:], prv)
+	if err != nil {
+		return err
+	}
+	return h.AddSignature(s, sig)
+}
+
 // Signer encapsulates transaction signature handling. Note that this interface is not a
 // stable API and may change at any time to accommodate new protocol rules.
 type Signer interface {
