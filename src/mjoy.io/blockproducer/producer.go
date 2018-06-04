@@ -161,7 +161,8 @@ func newProducer(config *params.ChainConfig, engine consensus.Engine, coinbase t
 	go producer.update()
 
 	go producer.wait()
-	producer.commitNewWork()
+
+	//producer.commitNewWork()
 
 	return producer
 }
@@ -424,6 +425,7 @@ func (self *producer) addTestTransactions(num *big.Int){
 }
 
 func (self *producer) commitNewWork() {
+
 	self.mu.Lock()
 	defer self.mu.Unlock()
 	self.currentMu.Lock()

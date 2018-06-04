@@ -13,6 +13,7 @@ const(
 	TransferBalance_FunId = iota
 	RewordBlockProducer_FunId
 	TransferFee_FunId
+	GetBalance_FunId
 )
 
 var BalanceTransferAddress  = types.Address{}
@@ -36,6 +37,7 @@ func (this *ContractBalancer)init(){
 	this.funcMapper[TransferBalance_FunId] = TransferBalance        //user's balance transfer
 	this.funcMapper[RewordBlockProducer_FunId] = RewordBlockProducer    //reword for coinbase
 	this.funcMapper[TransferFee_FunId] = TransferFee            //transaction fee cut
+	this.funcMapper[GetBalance_FunId] = GetBalance
 }
 
 

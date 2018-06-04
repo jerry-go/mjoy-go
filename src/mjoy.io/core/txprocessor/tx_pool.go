@@ -657,7 +657,7 @@ func (pool *TxPool) add(tx *transaction.Transaction, local bool) (bool, error) {
 			go pool.txFeed.Send(core.TxPreEvent{tx})
 
 		}
-		fmt.Println("add return here 1....")
+
 		return true, nil
 	}
 	// New transaction isn't replacing a pending one, push into queue
@@ -673,7 +673,8 @@ func (pool *TxPool) add(tx *transaction.Transaction, local bool) (bool, error) {
 
 	logger.Tracef("Pooled new future transaction hash:0x%x  from:0x%x",  hash,  from)
 	if replace {
-		fmt.Println("add--replace a old one")
+
+		logger.Debug("add-replace a old one")
 	}else{
 		//fmt.Println("add--a new one")
 	}

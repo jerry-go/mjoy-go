@@ -189,7 +189,7 @@ func (n *Node) Start() error {
 			return err
 		}
 		for _,p := range service.Protocols(){
-			fmt.Printf("!!!!!Constructor: Name:%s , Version:%d\n" , p.Name , p.Version)
+			logger.Debug("!!!!!Constructor: Name:%s , Version:%d\n" , p.Name , p.Version)
 		}
 		service.Protocols()
 		kind := reflect.TypeOf(service)
@@ -378,6 +378,7 @@ func (n *Node) stopIPC() {
 
 // startHTTP initializes and starts the HTTP RPC endpoint.
 func (n *Node) startHTTP(endpoint string, apis []rpc.API, modules []string, cors []string) error {
+
 	// Short circuit if the HTTP endpoint isn't being exposed
 	if endpoint == "" {
 		return nil
@@ -406,7 +407,7 @@ func (n *Node) startHTTP(endpoint string, apis []rpc.API, modules []string, cors
 		return err
 	}
 	go rpc.NewHTTPServer(cors, handler).Serve(listener)
-	logger.Info(fmt.Sprintf("HTTP endpoint opened: http://%s", endpoint))
+	logger.Info(fmt.Sprintf("<>HTTP endpoint opened: http://%s", endpoint))
 
 	// All listeners booted successfully
 	n.httpEndpoint = endpoint

@@ -39,6 +39,10 @@ import (
 	"mjoy.io/core/blockchain/block"
 	"github.com/tinylib/msgp/msgp"
 	"mjoy.io/core/blockchain"
+	"mjoy.io/core/sdk"
+	"mjoy.io/core/interpreter"
+	"mjoy.io/core/interpreter/intertypes"
+	"mjoy.io/core/interpreter/balancetransfer"
 )
 
 
@@ -454,12 +458,32 @@ func (s *PublicBlockChainAPI) GetStorageParameter(ctx context.Context, address t
 	if state == nil || err != nil {
 		return nil, err
 	}
+	fmt.Println("=====================================>")
+	sdkHandler := sdk.NewTmpStatusManager(s.b.ChainDb(), state, types.Address{})
+	vmHandler := interpreter.NewVm()
+	sysparam := intertypes.MakeSystemParams(sdkHandler, vmHandler)
+	//package param
+	action := transaction.Action{}
+	contranctAddress := balancetransfer.BalanceTransferAddress
+	action.Address =&contranctAddress
 
-	//sdkHandler := sdk.NewTmpStatusManager(s.b.ChainDb(), state, types.Address{})
-	//vmHandler := interpreter.NewVm()
-	//sysparam := intertypes.MakeSystemParams(sdkHandler, vmHandler)
+	str := `{"funcId":"3","addresses":["`
+	str += address.Hex()
+	str += `"]}`
+
+	param := []byte(str)
+	action.Params = param
+
+	getResult := vmHandler.GetStorage(types.Address{} , action,sysparam)
+	if getResult.Err != nil {
+		return nil , getResult.Err
+	}
+
+	fmt.Println("getResult:" , string(getResult.Var))
+	return getResult.Var , nil
+
 	//b := state.GetBalance(address)
-	return nil, state.Error()
+	//return nil, state.Error()
 }
 
 // GetBlockByNumber returns the requested block. When blockNr is -1 the chain head is returned. When fullTx is true all
