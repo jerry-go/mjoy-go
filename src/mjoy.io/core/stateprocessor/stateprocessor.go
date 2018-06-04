@@ -68,10 +68,10 @@ func NewStateProcessor(config *params.ChainConfig, cs IChainForState, engine con
 //
 // Process returns the receipts and logs accumulated during the process.
 // If any of the transactions failed  it will return an error.
-func (p *StateProcessor) Process(block *block.Block, statedb *state.StateDB, db database.IDatabaseGetter) (*DbCache, transaction.Receipts, []*transaction.Log, error) {
+func (p *StateProcessor) Process(blk *block.Block, statedb *state.StateDB, db database.IDatabaseGetter, config *params.ChainConfig) (*DbCache, transaction.Receipts, []*transaction.Log, error) {
 	var (
 		receipts transaction.Receipts
-		header   = block.Header()
+		header   = blk.Header()
 		allLogs  []*transaction.Log
 	)
 
@@ -79,7 +79,15 @@ func (p *StateProcessor) Process(block *block.Block, statedb *state.StateDB, db 
 		Cache: make(map[string]interpreter.MemDatabase),
 	}
 
-	sdkHandler := sdk.NewTmpStatusManager(db, statedb , block.Coinbase())
+	singner := block.NewBlockSigner(config.ChainId)
+	coinbase, err := singner.Sender(header)
+	if err != nil {
+		logger.Error("Process: block signature is not right", err)
+		return  nil, nil, nil, err
+	}
+	logger.Error("Process: coinbase", coinbase.Hex())
+
+	sdkHandler := sdk.NewTmpStatusManager(db, statedb , coinbase)
 	vmHandler := interpreter.NewVm()
 	//make sysparam
 
@@ -87,8 +95,8 @@ func (p *StateProcessor) Process(block *block.Block, statedb *state.StateDB, db 
 
 
 	// Iterate over and process the individual transactions
-	for i, tx := range block.Transactions() {
-		statedb.Prepare(tx.Hash(), block.Hash(), i)
+	for i, tx := range blk.Transactions() {
+		statedb.Prepare(tx.Hash(), blk.Hash(), i)
 		receipt, err := ApplyTransaction(p.config, nil, statedb, header, tx, dbcache , sysparam)
 		if err != nil {
 			logger.Errorf("ApplyTransacton Wrong.....:",err.Error())
@@ -103,7 +111,7 @@ func (p *StateProcessor) Process(block *block.Block, statedb *state.StateDB, db 
 	// TODO: need to be compeleted, now skip this step
 	// Finalize the block, applying any consensus engine specific extras (e.g. block rewards)
 	if p.engine != nil {
-		p.engine.Finalize(p.cs, header, statedb, block.Transactions(), receipts, false)
+		p.engine.Finalize(p.cs, header, statedb, blk.Transactions(), receipts, false)
 	}
 
 	return  dbcache, receipts, allLogs, nil

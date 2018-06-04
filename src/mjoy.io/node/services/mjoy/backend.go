@@ -117,7 +117,11 @@ type SetupGenesisResult struct {
 func New(ctx *node.ServiceContext) (*Mjoy, error) {
 	c := config.GetConfigInstance()
 	var config = &Config{}
-	c.Register("mjoy", config)
+	err := c.Register("mjoy", config)
+	if err != nil {
+		logger.Error("get config fail", "err", err)
+	}
+
 	if config.SyncMode == downloader.LightSync {
 		return nil, errors.New("can't run mjoy.Mjoy in light sync mode, use les.LightMjoy")
 	}

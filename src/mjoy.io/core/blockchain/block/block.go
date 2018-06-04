@@ -182,7 +182,7 @@ func (header *Header) HashNoSig() types.Hash {
 		header.ReceiptRootHash,
 		header.Bloom,
 		header.Number,
-		header.Number,
+		header.Time,
 		header.BlockProducer,
 		header.ConsensusData,
 	}
