@@ -17,7 +17,7 @@ import (
 func GetBalance(param map[string]interface{} , sysparam *intertypes.SystemParams)([]intertypes.ActionResult , error){
 
 
-	logger.Info(">>>>>>>>GetBalance.............................................")
+	logger.Trace("Start: GetBalance.")
 	allRequestAddress := []string{}
 	//get params
 
@@ -83,7 +83,7 @@ func TransferFee(param map[string]interface{} , sysparam *intertypes.SystemParam
 	var toAddress types.Address
 	var feeAmount int
 
-	logger.Info(">>>>>>>>TransferFee.............................................")
+	logger.Info("start: TransferFee.")
 	//get params
 	//from
 	if fromi,ok := param["from"];ok{
@@ -123,7 +123,7 @@ func TransferFee(param map[string]interface{} , sysparam *intertypes.SystemParam
 	if err != nil {
 		return nil , errors.New(fmt.Sprintf("TransferFee:Unmarshal json:%s" , err.Error()))
 	}
-	fmt.Printf("....................TransferFee.....................Sender Address:%s   Balance:%d\n" , from , balanceFrom.Amount)
+	fmt.Printf("TransferFee:Sender Address:%s   Balance:%d\n" , from , balanceFrom.Amount)
 	//balance value check
 	if balanceFrom.Amount < feeAmount{
 		return nil , errors.New(fmt.Sprintf("TransferFee:has %d , but want %d" , balanceFrom.Amount , feeAmount))
@@ -144,7 +144,7 @@ func TransferFee(param map[string]interface{} , sysparam *intertypes.SystemParam
 		}
 	}
 
-	fmt.Printf("...........TransferFee...............Receiver Address:%s   Balance:%d\n" , toAddress.Hex() , balanceTo.Amount)
+	fmt.Printf("TransferFee:Receiver Address:%s  Last Time Balance:%d\n" , toAddress.Hex() , balanceTo.Amount)
 	//balance modify
 	balanceFrom.Amount -= feeAmount
 	balanceTo.Amount += feeAmount
@@ -176,7 +176,7 @@ func TransferFee(param map[string]interface{} , sysparam *intertypes.SystemParam
 		if err != nil {
 			logger.Errorf("!!!!!!!!!!!!!!!!!!!NewBalanceTo Unmarshal Err:%s" ,  err.Error())
 		}else{
-			fmt.Printf("...........>>>>>>...TransferFee............New Receiver Address:%s   Balance:%d\n" , toAddress.Hex() , newbalanceTo.Amount)
+			fmt.Printf("TransferFee: New Receiver Address:%s  Now Balance:%d\n" , toAddress.Hex() , newbalanceTo.Amount)
 		}
 
 	}
@@ -197,7 +197,7 @@ func TransferBalance(param map[string]interface{},sysparam *intertypes.SystemPar
 	var toAddress types.Address
 	var amount int
 
-	logger.Info(">>>>>>>>StartTransferBalanceDeal.............................................")
+	logger.Info("Start: TransferBalanceDeal.")
 	//get params
 	//from
 	if fromi,ok := param["from"];ok{
@@ -221,7 +221,7 @@ func TransferBalance(param map[string]interface{},sysparam *intertypes.SystemPar
 	}
 
 	if bytes.Equal(fromAddress[:],toAddress[:]) {
-		fmt.Println("sender address is equal to receipt address!!",fromAddress.Hex())
+		logger.Tracef("sender address is equal to receipt address!!",fromAddress.Hex())
 		return nil, nil
 	}
 
@@ -237,7 +237,7 @@ func TransferBalance(param map[string]interface{},sysparam *intertypes.SystemPar
 	if err != nil {
 		return nil , errors.New(fmt.Sprintf("TransferBalance:Unmarshal json:%s" , err.Error()))
 	}
-	fmt.Printf(".........................................Sender Address:%s   Balance:%d\n" , from , balanceFrom.Amount)
+	logger.Tracef("Sender Address:%s   Balance:%d\n" , from , balanceFrom.Amount)
 	//balance value check
 	if balanceFrom.Amount < amount{
 		return nil , errors.New(fmt.Sprintf("TransferBalance:has %d , but want %d" , balanceFrom.Amount , amount))
@@ -258,7 +258,7 @@ func TransferBalance(param map[string]interface{},sysparam *intertypes.SystemPar
 		}
 	}
 
-	fmt.Printf("..........................Receiver Address:%s   Balance:%d\n" , to , balanceTo.Amount)
+	logger.Tracef("Receiver Address:%s Last Time  Balance:%d\n" , to , balanceTo.Amount)
 	//balance modify
 	balanceFrom.Amount -= amount
 	balanceTo.Amount += amount
@@ -290,7 +290,7 @@ func TransferBalance(param map[string]interface{},sysparam *intertypes.SystemPar
 		if err != nil {
 			logger.Errorf("!!!!!!!!!!!!!!!!!!!NewBalanceTo Unmarshal Err:%s" ,  err.Error())
 		}else{
-			fmt.Printf("...........>>>>>>...............New Receiver Address:%s   Balance:%d\n" , to , newbalanceTo.Amount)
+			logger.Tracef("New Receiver Address:%s  Now Balance:%d\n" , to , newbalanceTo.Amount)
 		}
 	}
 
