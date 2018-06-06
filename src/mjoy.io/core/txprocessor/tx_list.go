@@ -27,6 +27,8 @@ import (
 	"sort"
 
 	"mjoy.io/core/transaction"
+
+	"mjoy.io/common/types"
 )
 
 // nonceHeap is a heap.Interface implementation over 64bit unsigned integers for
@@ -226,7 +228,7 @@ type txList struct {
 	strict bool         // Whether nonces are strictly continuous or not
 	txs    *txSortedMap // Heap indexed sorted hash map of the transaction.Transactions
 
-	costcap *big.Int //  (reset only if exceeds balance)
+	priority *big.Int //  (reset only if exceeds balance)
 }
 
 // newTxList create a new transaction.Transaction list for maintaining nonce-indexable fast,
@@ -235,7 +237,7 @@ func newTxList(strict bool) *txList {
 	return &txList{
 		strict:  strict,
 		txs:     newTxSortedMap(),
-		costcap: new(big.Int),
+		priority: new(big.Int),
 	}
 }
 
@@ -254,16 +256,20 @@ func (l *txList) Add(tx *transaction.Transaction, rev uint64) (bool, *transactio
 	//already has
 	old := l.txs.Get(tx.Nonce())
 	if old != nil {
-		return true , old
+		//check priority
+		if old.Priority.Int64() >= tx.Priority.Int64() {
+			//Add false , because the old transaction's priority is higher than new
+			return false , nil
+		}
 	}
 	// Otherwise overwrite the old transaction.Transaction with the current one
 	//has not yet
 	l.txs.Put(tx)
-	if cost := tx.Cost(); l.costcap.Cmp(cost) < 0 {
-		l.costcap = cost
+	if priority := tx.GetPriority(); l.priority.Cmp(priority) < 0 {
+		l.priority = priority
 	}
 
-	return true, nil
+	return true, old
 }
 
 // Forward removes all transaction.Transactions from the list with a nonce lower than the
@@ -280,18 +286,18 @@ func (l *txList) Forward(threshold uint64) transaction.Transactions {
 //
 // This method uses the cached costcap  to quickly decide if there's even
 // a point in calculating all the costs or if the balance covers all.
-func (l *txList) Filter(costLimit *big.Int, reserve uint64) (transaction.Transactions, transaction.Transactions) {
+func (l *txList) Filter(priority *big.Int, reserve uint64) (transaction.Transactions, transaction.Transactions) {
 	// If all transaction.Transactions are below the threshold, short circuit
-	if l.costcap.Cmp(costLimit) <= 0  {
+	if l.priority.Cmp(priority) <= 0  {
 		return nil, nil
 	}
-	l.costcap = new(big.Int).Set(costLimit) // Lower the caps to the thresholds
+	l.priority = new(big.Int).Set(priority) // Lower the caps to the thresholds
 
 
 	// Filter out all the transaction.Transactions above the account's funds
 
 	removed := l.txs.Filter(func(tx *transaction.Transaction) bool {
-		return tx.Cost().Cmp(costLimit) > 0  })
+		return tx.GetPriority().Cmp(priority) > 0  })
 
 	// If the list was strict, filter anything above the lowest nonce
 	var invalids transaction.Transactions
@@ -360,4 +366,141 @@ func (l *txList) Flatten() transaction.Transactions {
 
 
 
+type priorityHeap	[]*transaction.Transaction
+
+func (h priorityHeap) Len() int           { return len(h) }
+
+func (h priorityHeap) Less(i, j int) bool { return h[i].GetPriority().Cmp(h[j].GetPriority()) < 0 }
+func (h priorityHeap) Swap(i, j int)      { h[i], h[j] = h[j], h[i] }
+
+func (h *priorityHeap)Push(x interface{}){
+	*h = append(*h , x.(*transaction.Transaction))
+}
+
+func (h *priorityHeap)Pop()interface{}{
+	old := *h
+	n := len(old)
+	x := old[n-1]
+	*h = old[0 : n-1]
+	return x
+}
+
+type txPriorityList struct{
+	all		*map[types.Hash]*transaction.Transaction
+	items 	*priorityHeap
+	stales	int
+}
+
+func newTxPriorityList(all *map[types.Hash]*transaction.Transaction)*txPriorityList{
+	return &txPriorityList{
+		all:	all,
+		items:	new(priorityHeap),
+	}
+}
+
+
+func (l *txPriorityList) Put(tx *transaction.Transaction) {
+	heap.Push(l.items, tx)
+}
+
+
+func (l *txPriorityList) Removed() {
+	// Bump the stale counter, but exit if still too low (< 25%)
+	l.stales++
+	if l.stales <= len(*l.items)/4 {
+		return
+	}
+
+	reheap := make(priorityHeap, 0, len(*l.all))
+
+	l.stales, l.items = 0, &reheap
+	for _, tx := range *l.all {
+		*l.items = append(*l.items, tx)
+	}
+	heap.Init(l.items)
+}
+
+
+func (l *txPriorityList) Cap(threshold *big.Int, local *accountSet) transaction.Transactions {
+	drop := make(transaction.Transactions, 0, 128)
+	save := make(transaction.Transactions, 0, 64)
+
+	for len(*l.items) > 0 {
+
+		tx := heap.Pop(l.items).(*transaction.Transaction)
+		if _, ok := (*l.all)[tx.Hash()]; !ok {
+			l.stales--
+			continue
+		}
+
+		if tx.GetPriority().Cmp(threshold) >= 0 {
+			save = append(save, tx)
+			break
+		}
+
+		if local.containsTx(tx) {
+			save = append(save, tx)
+		} else {
+			drop = append(drop, tx)
+		}
+	}
+
+	for _, tx := range save {
+		heap.Push(l.items, tx)
+	}
+	return drop
+}
+
+
+func (l *txPriorityList) Underpriority(tx *transaction.Transaction, local *accountSet) bool {
+
+	if local.containsTx(tx) {
+		return false
+	}
+
+	for len(*l.items) > 0 {
+		head := []*transaction.Transaction(*l.items)[0]
+
+		if _, ok := (*l.all)[head.Hash()]; !ok {
+			l.stales--
+			heap.Pop(l.items)
+			continue
+		}
+		break
+	}
+
+	if len(*l.items) == 0 {
+		logger.Error("Pricing query for empty pool") // This cannot happen, print to catch programming errors
+		return false
+	}
+	cheapest := []*transaction.Transaction(*l.items)[0]
+
+	return cheapest.GetPriority().Cmp(tx.GetPriority()) >= 0
+}
+
+
+func (l *txPriorityList) Discard(count int, local *accountSet) transaction.Transactions {
+	drop := make(transaction.Transactions, 0, count) // Remote underpriced transactions to drop
+	save := make(transaction.Transactions, 0, 64)    // Local underpriced transactions to keep
+
+	for len(*l.items) > 0 && count > 0 {
+
+		tx := heap.Pop(l.items).(*transaction.Transaction)
+		if _, ok := (*l.all)[tx.Hash()]; !ok {
+			l.stales--
+			continue
+		}
+
+		if local.containsTx(tx) {
+			save = append(save, tx)
+		} else {
+			drop = append(drop, tx)
+			count--
+		}
+	}
+	for _, tx := range save {
+		heap.Push(l.items, tx)
+	}
+	return drop
+}
 

@@ -38,11 +38,7 @@ var errGenesisNoConfig = errors.New("genesis has no chain configuration")
 // fork switch-over blocks through the chain configuration.
 type Genesis struct {
 	Config     *params.ChainConfig `json:"config"`
-	Nonce      uint64              `json:"nonce"`
 	Timestamp  uint64              `json:"timestamp"`
-	ExtraData  []byte              `json:"extraData"`
-	Mixhash    types.Hash          `json:"mixHash"`
-	Coinbase   types.Address       `json:"coinbase"`
 	Alloc      GenesisAlloc        `json:"alloc"`
 
 	// These fields are used for consensus tests. Please don't use them
@@ -57,7 +53,6 @@ type GenesisAlloc map[types.Address]GenesisAccount
 type GenesisAccount struct {
 	Code       []byte                      `json:"code,omitempty"`
 	Storage    map[types.Hash]types.Hash   `json:"storage,omitempty"`
-	Balance    *big.Int                    `json:"balance"`
 	Nonce      uint64                      `json:"nonce,omitempty"`
 }
 
@@ -142,7 +137,10 @@ func (g *Genesis) configOrDefault(ghash types.Hash) *params.ChainConfig {
 func DefaultGenesisBlock() *Genesis {
 	return &Genesis{
 		Config:     params.DefaultChainConfig,
-		Nonce:      666,
+		Alloc: map[types.Address]GenesisAccount{
+			// todo : here  just avoid stateobject deltete empty object bug when inner contract has no code field
+			types.Address{}: {Code: []byte{1,2,3,4,5}},
+		},
 	}
 }
 
@@ -152,7 +150,6 @@ func (g *Genesis) ToBlock() (*block.Block, *state.StateDB) {
 	db, _ := database.OpenMemDB()
 	statedb, _ := state.New(types.Hash{}, state.NewDatabase(db))
 	for addr, account := range g.Alloc {
-		statedb.AddBalance(addr, account.Balance)
 		statedb.SetCode(addr, account.Code)
 		statedb.SetNonce(addr, account.Nonce)
 		for key, value := range account.Storage {
@@ -161,14 +158,10 @@ func (g *Genesis) ToBlock() (*block.Block, *state.StateDB) {
 	}
 	root := statedb.IntermediateRoot()
 	head := &block.Header{
-		Number:     types.NewBigInt(*new(big.Int).SetUint64(g.Number)),
-		Nonce:      block.EncodeNonce(g.Nonce),
-		Time:       types.NewBigInt(*new(big.Int).SetUint64(g.Timestamp)),
-		ParentHash: g.ParentHash,
-		Extra:      g.ExtraData,
-		MixHash:    g.Mixhash,
-		Coinbase:   g.Coinbase,
-		StateHash:       root,
+		Number:     		types.NewBigInt(*new(big.Int).SetUint64(g.Number)),
+		Time:       		types.NewBigInt(*new(big.Int).SetUint64(g.Timestamp)),
+		ParentHash: 		g.ParentHash,
+		StateRootHash: 		root,
 	}
 
 	return block.NewBlock(head, nil, nil), statedb
@@ -219,6 +212,7 @@ func (g *Genesis) MustCommit(db database.IDatabase) *block.Block {
 }
 
 func GenesisBlockForTesting(db database.IDatabase, addr types.Address, balance *big.Int) *block.Block {
-	g := Genesis{Alloc: GenesisAlloc{addr: {Balance: balance}}}
+	//todo
+	g := Genesis{Alloc: GenesisAlloc{addr: {}}}
 	return g.MustCommit(db)
 }

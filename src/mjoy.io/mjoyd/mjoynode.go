@@ -132,7 +132,7 @@ func createMjoyNode(ctx *cli.Context)(*node.Node){
 			panic(fmt.Sprintf("mjoy.New Full Node:%v" , err))
 
 		}
-		fmt.Println("call the Constructor................")
+		logger.Debug("call the Constructor................")
 		return fullNode , nil
 	})
 

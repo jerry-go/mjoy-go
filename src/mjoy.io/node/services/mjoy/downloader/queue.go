@@ -438,7 +438,7 @@ func (q *queue) ReserveHeaders(p *peerConnection, count int) *fetchRequest {
 // returns a flag whether empty blocks were queued requiring processing.
 func (q *queue) ReserveBodies(p *peerConnection, count int) (*fetchRequest, bool, error) {
 	isNoop := func(header *block.Header) bool {
-		return header.TxHash == block.EmptyRootHash
+		return header.TxRootHash == block.EmptyRootHash
 	}
 	q.lock.Lock()
 	defer q.lock.Unlock()
@@ -451,7 +451,7 @@ func (q *queue) ReserveBodies(p *peerConnection, count int) (*fetchRequest, bool
 // also returns a flag whether empty receipts were queued requiring importing.
 func (q *queue) ReserveReceipts(p *peerConnection, count int) (*fetchRequest, bool, error) {
 	isNoop := func(header *block.Header) bool {
-		return header.ReceiptHash == block.EmptyRootHash
+		return header.ReceiptRootHash == block.EmptyRootHash
 	}
 	q.lock.Lock()
 	defer q.lock.Unlock()
@@ -761,7 +761,7 @@ func (q *queue) DeliverBodies(id string, txLists [][]*transaction.Transaction) (
 	defer q.lock.Unlock()
 
 	reconstruct := func(header *block.Header, index int, result *fetchResult) error {
-		if block.DeriveSha(transaction.Transactions(txLists[index])) != header.TxHash {
+		if block.DeriveSha(transaction.Transactions(txLists[index])) != header.TxRootHash {
 			return errInvalidBody
 		}
 		result.Transactions = txLists[index]
@@ -779,7 +779,7 @@ func (q *queue) DeliverReceipts(id string, receiptList [][]*transaction.Receipt)
 
 	reconstruct := func(header *block.Header, index int, result *fetchResult) error {
 
-		if block.DeriveSha(transaction.Receipts(receiptList[index])) != header.ReceiptHash {
+		if block.DeriveSha(transaction.Receipts(receiptList[index])) != header.ReceiptRootHash {
 			return errInvalidReceipt
 		}
 		result.Receipts = receiptList[index]

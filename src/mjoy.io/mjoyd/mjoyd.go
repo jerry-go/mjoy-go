@@ -107,6 +107,7 @@ func resyncBlockProc (ctx *cli.Context) error {
 	resyncBlock := ctx.GlobalBool(utils.ResyncBlockFlag.Name)
 	if resyncBlock {
 		c := config.GetConfigInstance()
+		c.SetPath(ctx.GlobalString(utils.ConfigFileFlag.Name))
 		conf := &node.Config{}
 		c.Register("node", conf)
 		defer c.Unregister("node")

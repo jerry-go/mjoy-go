@@ -6,7 +6,6 @@ package state
 
 import (
 	"github.com/tinylib/msgp/msgp"
-	"mjoy.io/common/types"
 )
 
 // DecodeMsg implements msgp.Decodable
@@ -30,22 +29,6 @@ func (z *Account) DecodeMsg(dc *msgp.Reader) (err error) {
 			if err != nil {
 				return
 			}
-		case "Balance":
-			if dc.IsNil() {
-				err = dc.ReadNil()
-				if err != nil {
-					return
-				}
-				z.Balance = nil
-			} else {
-				if z.Balance == nil {
-					z.Balance = new(types.BigInt)
-				}
-				err = z.Balance.DecodeMsg(dc)
-				if err != nil {
-					return
-				}
-			}
 		case "Root":
 			err = z.Root.DecodeMsg(dc)
 			if err != nil {
@@ -68,31 +51,15 @@ func (z *Account) DecodeMsg(dc *msgp.Reader) (err error) {
 
 // EncodeMsg implements msgp.Encodable
 func (z *Account) EncodeMsg(en *msgp.Writer) (err error) {
-	// map header, size 4
+	// map header, size 3
 	// write "Nonce"
-	err = en.Append(0x84, 0xa5, 0x4e, 0x6f, 0x6e, 0x63, 0x65)
+	err = en.Append(0x83, 0xa5, 0x4e, 0x6f, 0x6e, 0x63, 0x65)
 	if err != nil {
 		return
 	}
 	err = en.WriteUint64(z.Nonce)
 	if err != nil {
 		return
-	}
-	// write "Balance"
-	err = en.Append(0xa7, 0x42, 0x61, 0x6c, 0x61, 0x6e, 0x63, 0x65)
-	if err != nil {
-		return
-	}
-	if z.Balance == nil {
-		err = en.WriteNil()
-		if err != nil {
-			return
-		}
-	} else {
-		err = z.Balance.EncodeMsg(en)
-		if err != nil {
-			return
-		}
 	}
 	// write "Root"
 	err = en.Append(0xa4, 0x52, 0x6f, 0x6f, 0x74)
@@ -118,20 +85,10 @@ func (z *Account) EncodeMsg(en *msgp.Writer) (err error) {
 // MarshalMsg implements msgp.Marshaler
 func (z *Account) MarshalMsg(b []byte) (o []byte, err error) {
 	o = msgp.Require(b, z.Msgsize())
-	// map header, size 4
+	// map header, size 3
 	// string "Nonce"
-	o = append(o, 0x84, 0xa5, 0x4e, 0x6f, 0x6e, 0x63, 0x65)
+	o = append(o, 0x83, 0xa5, 0x4e, 0x6f, 0x6e, 0x63, 0x65)
 	o = msgp.AppendUint64(o, z.Nonce)
-	// string "Balance"
-	o = append(o, 0xa7, 0x42, 0x61, 0x6c, 0x61, 0x6e, 0x63, 0x65)
-	if z.Balance == nil {
-		o = msgp.AppendNil(o)
-	} else {
-		o, err = z.Balance.MarshalMsg(o)
-		if err != nil {
-			return
-		}
-	}
 	// string "Root"
 	o = append(o, 0xa4, 0x52, 0x6f, 0x6f, 0x74)
 	o, err = z.Root.MarshalMsg(o)
@@ -165,22 +122,6 @@ func (z *Account) UnmarshalMsg(bts []byte) (o []byte, err error) {
 			if err != nil {
 				return
 			}
-		case "Balance":
-			if msgp.IsNil(bts) {
-				bts, err = msgp.ReadNilBytes(bts)
-				if err != nil {
-					return
-				}
-				z.Balance = nil
-			} else {
-				if z.Balance == nil {
-					z.Balance = new(types.BigInt)
-				}
-				bts, err = z.Balance.UnmarshalMsg(bts)
-				if err != nil {
-					return
-				}
-			}
 		case "Root":
 			bts, err = z.Root.UnmarshalMsg(bts)
 			if err != nil {
@@ -204,13 +145,7 @@ func (z *Account) UnmarshalMsg(bts []byte) (o []byte, err error) {
 
 // Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
 func (z *Account) Msgsize() (s int) {
-	s = 1 + 6 + msgp.Uint64Size + 8
-	if z.Balance == nil {
-		s += msgp.NilSize
-	} else {
-		s += z.Balance.Msgsize()
-	}
-	s += 5 + z.Root.Msgsize() + 9 + msgp.BytesPrefixSize + len(z.CodeHash)
+	s = 1 + 6 + msgp.Uint64Size + 5 + z.Root.Msgsize() + 9 + msgp.BytesPrefixSize + len(z.CodeHash)
 	return
 }
 

@@ -21,7 +21,6 @@
 package state
 
 import (
-	"math/big"
 	"mjoy.io/common/types"
 )
 
@@ -42,14 +41,9 @@ type (
 	suicideChange struct {
 		account     *types.Address
 		prev        bool // whether account had already suicided
-		prevbalance *big.Int
 	}
 
 	// Changes to individual accounts.
-	balanceChange struct {
-		account *types.Address
-		prev    *big.Int
-	}
 	nonceChange struct {
 		account *types.Address
 		prev    uint64
@@ -93,7 +87,6 @@ func (ch suicideChange) undo(s *StateDB) {
 	obj := s.getStateObject(*ch.account)
 	if obj != nil {
 		obj.suicided = ch.prev
-		obj.setBalance(types.NewBigInt(*ch.prevbalance))
 	}
 }
 
@@ -106,10 +99,6 @@ func (ch touchChange) undo(s *StateDB) {
 			delete(s.stateObjectsDirty, *ch.account)
 		}
 	}
-}
-
-func (ch balanceChange) undo(s *StateDB) {
-	s.getStateObject(*ch.account).setBalance(types.NewBigInt(*ch.prev))
 }
 
 func (ch nonceChange) undo(s *StateDB) {

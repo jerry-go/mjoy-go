@@ -29,14 +29,12 @@ import (
 	"sync/atomic"
 	"math/big"
 	"time"
-	"mjoy.io/utils/crypto/sha3"
 	"sort"
-	"mjoy.io/common/types/util"
 	"mjoy.io/common"
 	"github.com/tinylib/msgp/msgp"
 	"fmt"
-	"errors"
 	"mjoy.io/utils/bloom"
+	"mjoy.io/common/types/util/hex"
 )
 
 type DerivableList interface {
@@ -56,63 +54,30 @@ func DeriveSha(list DerivableList) types.Hash {
 }
 
 //go:generate msgp
-// A BlockNonce is a 64-bit hash which proves (combined with the
-// mix-hash) that a sufficient amount of computation has been carried
-// out on a block.
-
-//msgp:shim BlockNonce as:interface{} using:toBytes/fromBytes mode:convert
-type BlockNonce [8]byte
-func toBytes(v BlockNonce) (interface{}, error) {
-	b := make([]byte, 8)
-	copy(b, v[:])
-	return b,nil
-}
-func fromBytes(s interface{}) (BlockNonce, error) {
-	var out [8]byte
-	if s == nil {
-		return out,errors.New("input nil")
-	}
-	buf, ok := s.([]byte)
-	if !ok {
-		return out,errors.New("input type is not []byte")
-	}
-	if len(buf) != 8{
-		return out,errors.New("input []byte len error")
-	}
-	copy(out[:],buf)
-	return out,nil
-}
 
 
-
-// EncodeNonce converts the given integer to a block nonce.
-func EncodeNonce(i uint64) BlockNonce {
-	var n BlockNonce
-	binary.BigEndian.PutUint64(n[:], i)
-	return n
-}
-
-// Uint64 returns the integer value of a block nonce.
-func (n BlockNonce) Uint64() uint64 {
-	return binary.BigEndian.Uint64(n[:])
+type ConsensusData struct{
+	Id     string
+	Para   []byte
 }
 
 // block header
-
-
-
 type Header struct {
-	ParentHash  types.Hash     		  `json:"parentHash" `
-	Coinbase   	types.Address  		  `json:"blockProducer" `
-	StateHash   types.Hash            `json:"stateRoot" `
-	TxHash      types.Hash            `json:"transactionsRoot" `
-	ReceiptHash types.Hash            `json:"receiptsRoot" `
-	Bloom       types.Bloom           `json:"logsBloom" `
-	Number      *types.BigInt         `json:"number" `
-	Time        *types.BigInt         `json:"timestamp" `
-	Extra       []byte                `json:"extraData" `
-	MixHash     types.Hash            `json:"mixHash" `
-	Nonce       BlockNonce            `json:"nonce" `
+	ParentHash  		types.Hash            `json:"parentHash" `
+	StateRootHash   	types.Hash            `json:"stateRoot" `
+	TxRootHash      	types.Hash            `json:"transactionsRoot" `
+	ReceiptRootHash 	types.Hash            `json:"receiptsRoot" `
+	Bloom       		types.Bloom           `json:"logsBloom" `
+	Number      		*types.BigInt         `json:"number" `
+	Time        		*types.BigInt         `json:"timestamp" `
+
+	//BlockProducer is not used in protocol.
+	BlockProducer   	types.Address         `json:"blockProducer" msg:"-"`
+	ConsensusData     	ConsensusData         `json:"consensusData" `
+	//Signature values
+	V                 	*types.BigInt         `json:"v"`
+	R                 	*types.BigInt         `json:"r"`
+	S                 	*types.BigInt         `json:"s"`
 }
 
 type Body struct {
@@ -132,23 +97,13 @@ type Block struct {
 	ReceivedFrom interface{}    `msg:"-"`
 }
 
-func (h *Header) Hash() (out types.Hash) {
-	var buf bytes.Buffer
-	err := msgp.Encode(&buf, h)
-	if err == nil{
-		return sh3Hash(buf.Bytes())
-	}else{
+func (h *Header) Hash() types.Hash {
+	hash, err := common.MsgpHash(h)
+	if err != nil {
 		return types.Hash{}
 	}
+	return hash
 }
-
-func sh3Hash(x interface{}) (h types.Hash) {
-	h3 := sha3.NewKeccak256()
-	h3.Write(x.([]byte))
-	h3.Sum(h[:0])
-	return h
-}
-
 
 var (
 	EmptyRootHash  = DeriveSha(transaction.Transactions{})
@@ -164,17 +119,17 @@ func NewBlock(header *Header, txs []*transaction.Transaction, receipts []*transa
 
 	// TODO: panic if len(txs) != len(receipts)
 	if len(txs) == 0 {
-		b.B_header.TxHash = EmptyRootHash
+		b.B_header.TxRootHash = EmptyRootHash
 	} else {
-		b.B_header.TxHash = DeriveSha(transaction.Transactions(txs))
+		b.B_header.TxRootHash = DeriveSha(transaction.Transactions(txs))
 		b.B_body.Transactions = make(transaction.Transactions, len(txs))
 		copy(b.B_body.Transactions, txs)
 	}
 
 	if len(receipts) == 0 {
-		b.B_header.ReceiptHash = EmptyRootHash
+		b.B_header.ReceiptRootHash = EmptyRootHash
 	} else {
-		b.B_header.ReceiptHash = DeriveSha(transaction.Receipts(receipts))
+		b.B_header.ReceiptRootHash = DeriveSha(transaction.Receipts(receipts))
 		bloomIn := []bloom.BloomByte{}
 		for _, receipt := range receipts {
 			for _, log := range receipt.Logs {
@@ -199,10 +154,19 @@ func CopyHeader(h *Header) *Header {
 	if cpy.Number = new(types.BigInt); h.Number != nil {
 		cpy.Number.Put(h.Number.IntVal)
 	}
-	if len(h.Extra) > 0 {
-		cpy.Extra = make([]byte, len(h.Extra))
-		copy(cpy.Extra, h.Extra)
+
+	if cpy.V = new(types.BigInt); h.V != nil {
+		cpy.V.Put(h.V.IntVal)
 	}
+
+	if cpy.R = new(types.BigInt); h.R != nil {
+		cpy.R.Put(h.R.IntVal)
+	}
+
+	if cpy.S = new(types.BigInt); h.S != nil {
+		cpy.S.Put(h.S.IntVal)
+	}
+
 	return &cpy
 }
 
@@ -210,19 +174,40 @@ func NewBlockWithHeader(header *Header) *Block {
 	return &Block{B_header: CopyHeader(header)}
 }
 
-func (header *Header) HashNoNonce() types.Hash {
-	v := &HeaderNoNonce{
+func (header *Header) HashNoSig() types.Hash {
+	v := &HeaderNoSig{
 		header.ParentHash,
-		header.Coinbase,
-		header.StateHash,
-		header.TxHash,
-		header.ReceiptHash,
+		header.StateRootHash,
+		header.TxRootHash,
+		header.ReceiptRootHash,
 		header.Bloom,
 		header.Number,
 		header.Time,
-		header.Extra,
+		header.BlockProducer,
+		header.ConsensusData,
 	}
 	return v.Hash()
+}
+
+// WithSignature returns a new header with the given signature.
+func (h *Header) WithSignature(signer Signer, sig []byte) (*Header, error) {
+	r, s, v, err := signer.SignatureValues(h, sig)
+	if err != nil {
+		return nil, err
+	}
+	cpy := CopyHeader(h)
+	cpy.R, cpy.S, cpy.V = &types.BigInt{*r}, &types.BigInt{*s}, &types.BigInt{*v}
+	return cpy, nil
+}
+
+// AddSignature returns modify the  header( R, S, V) with the given signature.
+func (h *Header) AddSignature(signer Signer, sig []byte) ( error) {
+	r, s, v, err := signer.SignatureValues(h, sig)
+	if err != nil {
+		return err
+	}
+	h.R, h.S, h.V = &types.BigInt{*r}, &types.BigInt{*s}, &types.BigInt{*v}
+	return  nil
 }
 
 func (b *Block) Transactions() transaction.Transactions { return b.B_body.Transactions }
@@ -241,15 +226,12 @@ func (b *Block) Number() *big.Int     { return new(big.Int).Set(&b.B_header.Numb
 func (b *Block) Time() *big.Int       { return new(big.Int).Set(&b.B_header.Time.IntVal) }
 
 func (b *Block) NumberU64() uint64       { return b.B_header.Number.IntVal.Uint64() }
-func (b *Block) MixDigest() types.Hash   { return b.B_header.MixHash }
-func (b *Block) Nonce() uint64           { return binary.BigEndian.Uint64(b.B_header.Nonce[:]) }
 func (b *Block) Bloom() types.Bloom      { return b.B_header.Bloom }
-func (b *Block) Coinbase() types.Address { return b.B_header.Coinbase }
-func (b *Block) Root() types.Hash        { return b.B_header.StateHash }
+func (b *Block) Coinbase() types.Address { return b.B_header.BlockProducer }
+func (b *Block) Root() types.Hash        { return b.B_header.StateRootHash }
 func (b *Block) ParentHash() types.Hash  { return b.B_header.ParentHash }
-func (b *Block) TxHash() types.Hash      { return b.B_header.TxHash }
-func (b *Block) ReceiptHash() types.Hash { return b.B_header.ReceiptHash }
-func (b *Block) Extra() []byte           { return util.CopyBytes(b.B_header.Extra) }
+func (b *Block) TxHash() types.Hash      { return b.B_header.TxRootHash }
+func (b *Block) ReceiptHash() types.Hash { return b.B_header.ReceiptRootHash }
 
 func (b *Block) Header() *Header { return CopyHeader(b.B_header) }
 
@@ -257,8 +239,8 @@ func (b *Block) Header() *Header { return CopyHeader(b.B_header) }
 func (b *Block) Body() *Body { return &Body{b.B_body.Transactions} }
 
 
-func (b *Block) HashNoNonce() types.Hash {
-	return b.B_header.HashNoNonce()
+func (b *Block) HashNoSig() types.Hash {
+	return b.B_header.HashNoSig()
 }
 
 func (b *Block) Size() common.StorageSize {
@@ -306,7 +288,6 @@ func (b *Block) Hash() types.Hash {
 	return v
 }
 
-
 func (b *Block) String() string {
 	str := fmt.Sprintf(`Block(#%v): Size: %v {
 BlockproducerHash: %x
@@ -314,25 +295,26 @@ BlockproducerHash: %x
 Transactions:
 %v
 }
-`, b.Number(), b.Size(), b.B_header.HashNoNonce(), b.B_header, b.B_body.Transactions)
+`, b.Number(), b.Size(), b.B_header.HashNoSig(), b.B_header, b.B_body.Transactions)
 	return str
 }
 
 func (h *Header) String() string {
 	return fmt.Sprintf(`Header(%x):
 [
-	ParentHash:	    %x
-	Coinbase:	    %x
-	Root:		    %x
-	TxSha		    %x
-	ReceiptSha:	    %x
-	Bloom:		    %x
-	Number:		    %v
-	Time:		    %v
-	Extra:		    %s
-	MixDigest:      %x
-	Nonce:		    %x
-]`, h.Hash(), h.ParentHash, h.Coinbase, h.StateHash, h.TxHash, h.ReceiptHash, h.Bloom, h.Number, h.Time, h.Extra, h.MixHash, h.Nonce)
+	ParentHash:         %x
+	BlockProducer:      %x
+	StateRootHash:      %x
+	TxRootHash          %x
+	ReceiptRootHash:    %x
+	Bloom:              %x
+	Number:	            %v
+	Time:               %v
+	ConsensusData:      %v
+	R:                  %v
+	S:                  %v
+    V:                  %v
+]`, h.Hash(), h.ParentHash, h.BlockProducer, h.StateRootHash, h.TxRootHash, h.ReceiptRootHash, h.Bloom, (*hex.Big)(&h.Number.IntVal), (*hex.Big)(&h.Time.IntVal), h.ConsensusData, (*hex.Big)(&h.R.IntVal), (*hex.Big)(&h.S.IntVal), (*hex.Big)(&h.V.IntVal))
 }
 
 
@@ -363,29 +345,26 @@ func (self blockSorter) Less(i, j int) bool { return self.by(self.blocks[i], sel
 
 func Number(b1, b2 *Block) bool { return b1.B_header.Number.IntVal.Cmp(&b2.B_header.Number.IntVal) < 0 }
 
+// header wihtout signature
+type HeaderNoSig struct {
+	ParentHash  		types.Hash            `json:"parentHash" `
+	StateRootHash   	types.Hash            `json:"stateRoot" `
+	TxRootHash      	types.Hash            `json:"transactionsRoot"`
+	ReceiptRootHash 	types.Hash            `json:"receiptsRoot" `
+	Bloom       		types.Bloom           `json:"logsBloom" `
+	Number      		*types.BigInt         `json:"number" `
+	Time        		*types.BigInt         `json:"timestamp" `
 
-
-// header wihtout mixhash and nonce
-
-type HeaderNoNonce struct {
-	ParentHash  types.Hash
-	Coinbase   types.Address
-	StateHash   types.Hash
-	TxHash      types.Hash
-	ReceiptHash types.Hash
-	Bloom       types.Bloom
-	Number      *types.BigInt
-	Time        *types.BigInt
-	Extra       []byte
+	//BlockProducer is not used in protocol.
+	BlockProducer   	types.Address         `json:"blockProducer" msg:"-" `
+	ConsensusData     	ConsensusData         `json:"consensusData" `
 }
-func (h *HeaderNoNonce) Hash() types.Hash {
-	var buf bytes.Buffer
-	err := msgp.Encode(&buf, h)
-	if err == nil{
-		return sh3Hash(buf.Bytes())
-	}else{
+func (h *HeaderNoSig) Hash() types.Hash {
+	hash, err := common.MsgpHash(h)
+	if err != nil {
 		return types.Hash{}
 	}
+	return hash
 }
 
 //type Headers []*Header

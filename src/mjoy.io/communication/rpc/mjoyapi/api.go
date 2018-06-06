@@ -31,7 +31,6 @@ import (
 	"mjoy.io/accounts"
 	"mjoy.io/accounts/keystore"
 	"mjoy.io/common/types/util/hex"
-	"mjoy.io/common/types/util"
 	"mjoy.io/core/transaction"
 	"mjoy.io/common/types"
 	"mjoy.io/utils/crypto"
@@ -40,6 +39,9 @@ import (
 	"mjoy.io/core/blockchain/block"
 	"github.com/tinylib/msgp/msgp"
 	"mjoy.io/core/blockchain"
+	"mjoy.io/core/sdk"
+	"mjoy.io/core/interpreter"
+	"mjoy.io/core/interpreter/intertypes"
 )
 
 
@@ -141,11 +143,14 @@ func (s *PublicTxPoolAPI) Inspect() map[string]map[string]map[string]string {
 
 	// Define a formatter to flatten a transaction into a string
 	var format = func(tx *transaction.Transaction) string {
-		if to := tx.To(); to != nil {
-			return fmt.Sprintf("%s: %v wei", tx.To().Hex(), tx.Value())
-		}
-		return fmt.Sprintf("contract creation: %v wei", tx.Value())
+		//if to := tx.To(); to != nil {
+			//return fmt.Sprintf("%s: %v wei", tx.To().Hex(), tx.Value())
+			//return "for test"
+		//}
+		//return fmt.Sprintf("contract creation: %v wei", tx.Value())
+		return "for test"
 	}
+
 	// Flatten the pending transactions
 	for account, txs := range pending {
 		dump := make(map[string]string)
@@ -445,16 +450,36 @@ func (s *PublicBlockChainAPI) GetNum() int {
 	return 20
 }
 
-// GetBalance returns the amount of wei for the given address in the state of the
-// given block number. The rpc.LatestBlockNumber and rpc.PendingBlockNumber meta
-// block numbers are also allowed.
-func (s *PublicBlockChainAPI) GetBalance(ctx context.Context, address types.Address, blockNr rpc.BlockNumber) (*big.Int, error) {
+// GetStoragePara returns the storage parameters of certain contract
+// The detail parameter is defined by contact interpreter
+func (s *PublicBlockChainAPI) GetStorageParameter(ctx context.Context, actionArg SendTxAction,blockNr rpc.BlockNumber) (hex.Bytes, error) {
 	state, _, err := s.b.StateAndHeaderByNumber(ctx, blockNr)
 	if state == nil || err != nil {
 		return nil, err
 	}
-	b := state.GetBalance(address)
-	return b, state.Error()
+	fmt.Println("=====================================>")
+	sdkHandler := sdk.NewTmpStatusManager(s.b.ChainDb(), state, types.Address{})
+	vmHandler := interpreter.NewVm()
+	sysparam := intertypes.MakeSystemParams(sdkHandler, vmHandler)
+	//package param
+	action := transaction.Action{}
+	action.Address = actionArg.Address
+	action.Params = *actionArg.Params
+
+	getResult := vmHandler.GetStorage(types.Address{} , action, sysparam)
+	if getResult.Err != nil {
+		return nil , getResult.Err
+	}
+
+	fmt.Println("getResult:" , string(getResult.Var))
+
+	hexbyte := make(hex.Bytes, len(getResult.Var))
+	copy(hexbyte, getResult.Var)
+
+	return hexbyte , nil
+
+	//b := state.GetBalance(address)
+	//return nil, state.Error()
 }
 
 // GetBlockByNumber returns the requested block. When blockNr is -1 the chain head is returned. When fullTx is true all
@@ -506,25 +531,35 @@ func (s *PublicBlockChainAPI) GetStorageAt(ctx context.Context, address types.Ad
 	return res[:], state.Error()
 }
 
+type ConsensusDataHex struct {
+	Id      string         `json:"id"`
+	Para    *hex.Bytes     `json:"data"`
+}
+
 // rpcOutputBlock converts the given block to the RPC output which depends on fullTx. If inclTx is true transactions are
 // returned. When fullTx is true the returned block contains full transaction details, otherwise it will only contain
 // transaction hashes.
 func (s *PublicBlockChainAPI) rpcOutputBlock(b *block.Block, inclTx bool, fullTx bool) (map[string]interface{}, error) {
 	head := b.Header() // copies the header once
+
+	hexbyte := make(hex.Bytes, len(head.ConsensusData.Para))
+	copy(hexbyte, head.ConsensusData.Para)
+	cHex := ConsensusDataHex{head.ConsensusData.Id, &hexbyte}
 	fields := map[string]interface{}{
-		"number":           (*hex.Big)(&head.Number.IntVal),
-		"hash":             b.Hash(),
-		"parentHash":       head.ParentHash,
-		"nonce":            head.Nonce,
-		"mixHash":          head.MixHash,
-		"logsBloom":        head.Bloom,
-		"stateRoot":        head.StateHash,
-		"blockproducer":    head.Coinbase,
-		"extraData":        hex.Bytes(head.Extra),
-		"size":             hex.Uint64(uint64(b.Size())),
-		"timestamp":        (*hex.Big)(&head.Time.IntVal),
-		"transactionsRoot": head.TxHash,
-		"receiptsRoot":     head.ReceiptHash,
+		"number":           	(*hex.Big)(&head.Number.IntVal),
+		"hash":             	b.Hash(),
+		"parentHash":       	head.ParentHash,
+		"logsBloom":        	head.Bloom,
+		"stateRoot":        	head.StateRootHash,
+		"blockproducer":    	head.BlockProducer,
+		"consensusData":     	cHex,
+		"size":             	hex.Uint64(uint64(b.Size())),
+		"timestamp":        	(*hex.Big)(&head.Time.IntVal),
+		"transactionsRoot": 	head.TxRootHash,
+		"receiptsRoot":     	head.ReceiptRootHash,
+		"R":                	(*hex.Big)(&head.R.IntVal),
+		"S":                	(*hex.Big)(&head.S.IntVal),
+		"V":                	(*hex.Big)(&head.V.IntVal),
 	}
 
 	if inclTx {
@@ -571,18 +606,16 @@ func (s *PublicBlockChainAPI)Forking(ctx context.Context , rate uint64)(uint64){
 
 // RPCTransaction represents a transaction that will serialize to the RPC representation of a transaction
 type RPCTransaction struct {
-	BlockHash        types.Hash     `json:"blockHash"`
-	BlockNumber      *hex.Big       `json:"blockNumber"`
-	From             types.Address  `json:"from"`
-	Hash             types.Hash     `json:"hash"`
-	Input            hex.Bytes      `json:"input"`
-	Nonce            hex.Uint64     `json:"nonce"`
-	To               *types.Address `json:"to"`
-	TransactionIndex hex.Uint       `json:"transactionIndex"`
-	Value            *hex.Big       `json:"value"`
-	V                *hex.Big       `json:"v"`
-	R                *hex.Big       `json:"r"`
-	S                *hex.Big       `json:"s"`
+	BlockHash        types.Hash     		 	`json:"blockHash"`
+	BlockNumber      *hex.Big       			`json:"blockNumber"`
+	From             types.Address  			`json:"from"`
+	Hash             types.Hash     			`json:"hash"`
+	Nonce            hex.Uint64     			`json:"nonce"`
+	TransactionIndex hex.Uint       			`json:"transactionIndex"`
+	Actions          []*SendTxAction			`json:"actions"`
+	V                *hex.Big       			`json:"v"`
+	R                *hex.Big       			`json:"r"`
+	S                *hex.Big       			`json:"s"`
 }
 
 // newRPCTransaction returns a transaction that will serialize to the RPC
@@ -593,16 +626,23 @@ func newRPCTransaction(tx *transaction.Transaction, blockHash types.Hash, blockN
 	from, _ := transaction.Sender(signer, tx)
 	v, r, s := tx.RawSignatureValues()
 
+	actions := []*SendTxAction{}
+
+	for _, action := range tx.Data.Actions {
+		hexbyte := make(hex.Bytes, len(action.Params))
+		copy(hexbyte, action.Params)
+		actionSend := &SendTxAction{action.Address, &hexbyte}
+		actions = append(actions, actionSend)
+	}
+
 	result := &RPCTransaction{
 		From:     from,
 		Hash:     tx.Hash(),
-		Input:    hex.Bytes(util.CopyBytes(tx.Data.Payload)),
 		Nonce:    hex.Uint64(tx.Nonce()),
-		To:       tx.To(),
-		Value:    (*hex.Big)(tx.Value()),
 		V:        (*hex.Big)(v),
 		R:        (*hex.Big)(r),
 		S:        (*hex.Big)(s),
+		Actions:  actions,
 	}
 	if blockHash != (types.Hash{}) {
 		result.BlockHash = blockHash
@@ -610,6 +650,8 @@ func newRPCTransaction(tx *transaction.Transaction, blockHash types.Hash, blockN
 		result.TransactionIndex = hex.Uint(index)
 	}
 	return result
+
+	return nil
 }
 
 // newRPCPendingTransaction returns a pending transaction that will serialize to the RPC representation
@@ -752,45 +794,47 @@ func (s *PublicTransactionPoolAPI) GetRawTransactionByHash(ctx context.Context, 
 
 // GetTransactionReceipt returns the transaction receipt for the given transaction hash.
 func (s *PublicTransactionPoolAPI) GetTransactionReceipt(hash types.Hash) (map[string]interface{}, error) {
-	tx, blockHash, blockNumber, index := blockchain.GetTransaction(s.b.ChainDb(), hash)
-	if tx == nil {
-		return nil, errors.New("unknown transaction")
-	}
-	receipt, _, _, _ := blockchain.GetReceipt(s.b.ChainDb(), hash) // Old receipts don't have the lookup data available
-	if receipt == nil {
-		return nil, errors.New("unknown receipt")
-	}
+	//tx, blockHash, blockNumber, index := blockchain.GetTransaction(s.b.ChainDb(), hash)
+	//if tx == nil {
+	//	return nil, errors.New("unknown transaction")
+	//}
+	//receipt, _, _, _ := blockchain.GetReceipt(s.b.ChainDb(), hash) // Old receipts don't have the lookup data available
+	//if receipt == nil {
+	//	return nil, errors.New("unknown receipt")
+	//}
+	//
+	//var signer transaction.Signer = transaction.NewMSigner(tx.ChainId())
+	//
+	//from, _ := transaction.Sender(signer, tx)
+	//
+	//fields := map[string]interface{}{
+	//	"blockHash":         blockHash,
+	//	"blockNumber":       hex.Uint64(blockNumber),
+	//	"transactionHash":   hash,
+	//	"transactionIndex":  hex.Uint64(index),
+	//	"from":              from,
+	//	"to":                tx.To(),
+	//	"contractAddress":   nil,
+	//	"logs":              receipt.Logs,
+	//	"logsBloom":         receipt.Bloom,
+	//}
+	//
+	//// Assign receipt status or post state.
+	//if len(receipt.PostState) > 0 {
+	//	fields["root"] = hex.Bytes(receipt.PostState)
+	//} else {
+	//	fields["status"] = hex.Uint(receipt.Status)
+	//}
+	//if receipt.Logs == nil {
+	//	fields["logs"] = [][]*transaction.Log{}
+	//}
+	//// If the ContractAddress is 20 0x0 bytes, assume it is not a contract creation
+	//if receipt.ContractAddress != (types.Address{}) {
+	//	fields["contractAddress"] = receipt.ContractAddress
+	//}
+	//return fields, nil
 
-	var signer transaction.Signer = transaction.NewMSigner(tx.ChainId())
-
-	from, _ := transaction.Sender(signer, tx)
-
-	fields := map[string]interface{}{
-		"blockHash":         blockHash,
-		"blockNumber":       hex.Uint64(blockNumber),
-		"transactionHash":   hash,
-		"transactionIndex":  hex.Uint64(index),
-		"from":              from,
-		"to":                tx.To(),
-		"contractAddress":   nil,
-		"logs":              receipt.Logs,
-		"logsBloom":         receipt.Bloom,
-	}
-
-	// Assign receipt status or post state.
-	if len(receipt.PostState) > 0 {
-		fields["root"] = hex.Bytes(receipt.PostState)
-	} else {
-		fields["status"] = hex.Uint(receipt.Status)
-	}
-	if receipt.Logs == nil {
-		fields["logs"] = [][]*transaction.Log{}
-	}
-	// If the ContractAddress is 20 0x0 bytes, assume it is not a contract creation
-	if receipt.ContractAddress != (types.Address{}) {
-		fields["contractAddress"] = receipt.ContractAddress
-	}
-	return fields, nil
+	return nil , nil
 }
 
 // sign is a helper function that signs a transaction with the private key of the given address.
@@ -808,24 +852,21 @@ func (s *PublicTransactionPoolAPI) sign(addr types.Address, tx *transaction.Tran
 	return wallet.SignTx(account, tx, chainID)
 }
 
+type SendTxAction struct {
+	Address		*types.Address    `json:"address"`
+	Params 		*hex.Bytes       `json:"params"`
+}
+
 // SendTxArgs represents the arguments to sumbit a new transaction into the transaction pool.
 type SendTxArgs struct {
 	From     types.Address  `json:"from"`
-	To       *types.Address `json:"to"`
-	Value    *hex.Big       `json:"value"`
 	Nonce    *hex.Uint64    `json:"nonce"`
-	// We accept "data" and "input" for backwards-compatibility reasons. "input" is the
-	// newer name and should be preferred by clients.
-	Data  *hex.Bytes 	    `json:"data"`
-	Input *hex.Bytes 	    `json:"input"`
+
+	Actions  []SendTxAction    `json:"actions"`
 }
 
 // setDefaults is a helper function that fills in default values for unspecified tx fields.
 func (args *SendTxArgs) setDefaults(ctx context.Context, b Backend) error {
-
-	if args.Value == nil {
-		args.Value = new(hex.Big)
-	}
 	if args.Nonce == nil {
 		nonce, err := b.GetPoolNonce(ctx, args.From)
 		if err != nil {
@@ -833,23 +874,22 @@ func (args *SendTxArgs) setDefaults(ctx context.Context, b Backend) error {
 		}
 		args.Nonce = (*hex.Uint64)(&nonce)
 	}
-	if args.Data != nil && args.Input != nil && !bytes.Equal(*args.Data, *args.Input) {
-		return errors.New(`Both "data" and "input" are set and not equal. Please use "input" to pass transaction call data.`)
+	if len(args.Actions) == 0 {
+		return errors.New("no actions in transaction !!")
 	}
+
 	return nil
 }
 
 func (args *SendTxArgs) toTransaction() *transaction.Transaction {
-	var input []byte
-	if args.Data != nil {
-		input = *args.Data
-	} else if args.Input != nil {
-		input = *args.Input
+	actions := []transaction.Action{}
+	for _, argAction := range args.Actions {
+		action := transaction.Action{argAction.Address, *argAction.Params}
+		actions = append(actions, action)
 	}
-	if args.To == nil {
-		return transaction.NewContractCreation(uint64(*args.Nonce), (*big.Int)(args.Value), 0, nil, input)
-	}
-	return transaction.NewTransaction(uint64(*args.Nonce), *args.To, (*big.Int)(args.Value), 0, nil, input)
+	return transaction.NewTransaction(uint64(*args.Nonce), actions)
+
+	return nil
 }
 
 // submitTransaction is a helper function that submits tx to txPool and logs a message.
@@ -857,7 +897,7 @@ func submitTransaction(ctx context.Context, b Backend, tx *transaction.Transacti
 	if err := b.SendTx(ctx, tx); err != nil {
 		return types.Hash{}, err
 	}
-	if tx.To() == nil {
+	if len(tx.Data.Actions)==2 && tx.Data.Actions[1].Address == nil {
 		signer := transaction.MakeSigner(b.ChainConfig(), b.CurrentBlock().Number())
 		from, err := transaction.Sender(signer, tx)
 		if err != nil {
@@ -866,7 +906,7 @@ func submitTransaction(ctx context.Context, b Backend, tx *transaction.Transacti
 		addr := crypto.CreateAddress(from, tx.Nonce())
 		logger.Info("Submitted contract creation", "fullhash", tx.Hash().Hex(), "contract", addr.Hex())
 	} else {
-		logger.Info("Submitted transaction", "fullhash", tx.Hash().Hex(), "recipient", tx.To().Hex())
+		logger.Info("Submitted transaction", "fullhash", tx.Hash().Hex(), "recipient")
 	}
 	return tx.Hash(), nil
 }

@@ -350,6 +350,119 @@ func BenchmarkDecodeBody(b *testing.B) {
 	}
 }
 
+func TestMarshalUnmarshalConsensusData(t *testing.T) {
+	v := ConsensusData{}
+	bts, err := v.MarshalMsg(nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	left, err := v.UnmarshalMsg(bts)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(left) > 0 {
+		t.Errorf("%d bytes left over after UnmarshalMsg(): %q", len(left), left)
+	}
+
+	left, err = msgp.Skip(bts)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(left) > 0 {
+		t.Errorf("%d bytes left over after Skip(): %q", len(left), left)
+	}
+}
+
+func BenchmarkMarshalMsgConsensusData(b *testing.B) {
+	v := ConsensusData{}
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		v.MarshalMsg(nil)
+	}
+}
+
+func BenchmarkAppendMsgConsensusData(b *testing.B) {
+	v := ConsensusData{}
+	bts := make([]byte, 0, v.Msgsize())
+	bts, _ = v.MarshalMsg(bts[0:0])
+	b.SetBytes(int64(len(bts)))
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		bts, _ = v.MarshalMsg(bts[0:0])
+	}
+}
+
+func BenchmarkUnmarshalConsensusData(b *testing.B) {
+	v := ConsensusData{}
+	bts, _ := v.MarshalMsg(nil)
+	b.ReportAllocs()
+	b.SetBytes(int64(len(bts)))
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, err := v.UnmarshalMsg(bts)
+		if err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
+func TestEncodeDecodeConsensusData(t *testing.T) {
+	v := ConsensusData{}
+	var buf bytes.Buffer
+	msgp.Encode(&buf, &v)
+
+	m := v.Msgsize()
+	if buf.Len() > m {
+		t.Logf("WARNING: Msgsize() for %v is inaccurate", v)
+	}
+
+	vn := ConsensusData{}
+	err := msgp.Decode(&buf, &vn)
+	if err != nil {
+		t.Error(err)
+	}
+
+	buf.Reset()
+	msgp.Encode(&buf, &v)
+	err = msgp.NewReader(&buf).Skip()
+	if err != nil {
+		t.Error(err)
+	}
+}
+
+func BenchmarkEncodeConsensusData(b *testing.B) {
+	v := ConsensusData{}
+	var buf bytes.Buffer
+	msgp.Encode(&buf, &v)
+	b.SetBytes(int64(buf.Len()))
+	en := msgp.NewWriter(msgp.Nowhere)
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		v.EncodeMsg(en)
+	}
+	en.Flush()
+}
+
+func BenchmarkDecodeConsensusData(b *testing.B) {
+	v := ConsensusData{}
+	var buf bytes.Buffer
+	msgp.Encode(&buf, &v)
+	b.SetBytes(int64(buf.Len()))
+	rd := msgp.NewEndlessReader(buf.Bytes(), b)
+	dc := msgp.NewReader(rd)
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		err := v.DecodeMsg(dc)
+		if err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
 func TestMarshalUnmarshalHeader(t *testing.T) {
 	v := Header{}
 	bts, err := v.MarshalMsg(nil)
@@ -463,8 +576,8 @@ func BenchmarkDecodeHeader(b *testing.B) {
 	}
 }
 
-func TestMarshalUnmarshalHeaderNoNonce(t *testing.T) {
-	v := HeaderNoNonce{}
+func TestMarshalUnmarshalHeaderNoSig(t *testing.T) {
+	v := HeaderNoSig{}
 	bts, err := v.MarshalMsg(nil)
 	if err != nil {
 		t.Fatal(err)
@@ -486,8 +599,8 @@ func TestMarshalUnmarshalHeaderNoNonce(t *testing.T) {
 	}
 }
 
-func BenchmarkMarshalMsgHeaderNoNonce(b *testing.B) {
-	v := HeaderNoNonce{}
+func BenchmarkMarshalMsgHeaderNoSig(b *testing.B) {
+	v := HeaderNoSig{}
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -495,8 +608,8 @@ func BenchmarkMarshalMsgHeaderNoNonce(b *testing.B) {
 	}
 }
 
-func BenchmarkAppendMsgHeaderNoNonce(b *testing.B) {
-	v := HeaderNoNonce{}
+func BenchmarkAppendMsgHeaderNoSig(b *testing.B) {
+	v := HeaderNoSig{}
 	bts := make([]byte, 0, v.Msgsize())
 	bts, _ = v.MarshalMsg(bts[0:0])
 	b.SetBytes(int64(len(bts)))
@@ -507,8 +620,8 @@ func BenchmarkAppendMsgHeaderNoNonce(b *testing.B) {
 	}
 }
 
-func BenchmarkUnmarshalHeaderNoNonce(b *testing.B) {
-	v := HeaderNoNonce{}
+func BenchmarkUnmarshalHeaderNoSig(b *testing.B) {
+	v := HeaderNoSig{}
 	bts, _ := v.MarshalMsg(nil)
 	b.ReportAllocs()
 	b.SetBytes(int64(len(bts)))
@@ -521,8 +634,8 @@ func BenchmarkUnmarshalHeaderNoNonce(b *testing.B) {
 	}
 }
 
-func TestEncodeDecodeHeaderNoNonce(t *testing.T) {
-	v := HeaderNoNonce{}
+func TestEncodeDecodeHeaderNoSig(t *testing.T) {
+	v := HeaderNoSig{}
 	var buf bytes.Buffer
 	msgp.Encode(&buf, &v)
 
@@ -531,7 +644,7 @@ func TestEncodeDecodeHeaderNoNonce(t *testing.T) {
 		t.Logf("WARNING: Msgsize() for %v is inaccurate", v)
 	}
 
-	vn := HeaderNoNonce{}
+	vn := HeaderNoSig{}
 	err := msgp.Decode(&buf, &vn)
 	if err != nil {
 		t.Error(err)
@@ -545,8 +658,8 @@ func TestEncodeDecodeHeaderNoNonce(t *testing.T) {
 	}
 }
 
-func BenchmarkEncodeHeaderNoNonce(b *testing.B) {
-	v := HeaderNoNonce{}
+func BenchmarkEncodeHeaderNoSig(b *testing.B) {
+	v := HeaderNoSig{}
 	var buf bytes.Buffer
 	msgp.Encode(&buf, &v)
 	b.SetBytes(int64(buf.Len()))
@@ -559,8 +672,8 @@ func BenchmarkEncodeHeaderNoNonce(b *testing.B) {
 	en.Flush()
 }
 
-func BenchmarkDecodeHeaderNoNonce(b *testing.B) {
-	v := HeaderNoNonce{}
+func BenchmarkDecodeHeaderNoSig(b *testing.B) {
+	v := HeaderNoSig{}
 	var buf bytes.Buffer
 	msgp.Encode(&buf, &v)
 	b.SetBytes(int64(buf.Len()))

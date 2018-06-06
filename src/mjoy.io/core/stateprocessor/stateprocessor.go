@@ -27,8 +27,12 @@ import (
 	"mjoy.io/core/transaction"
 	"mjoy.io/common/types"
 	"mjoy.io/utils/bloom"
-	"fmt"
 	"mjoy.io/consensus"
+	"mjoy.io/core/interpreter"
+	"mjoy.io/utils/crypto"
+	"mjoy.io/core/sdk"
+	"mjoy.io/utils/database"
+	"mjoy.io/core/interpreter/intertypes"
 )
 
 type IChainForState interface {
@@ -43,6 +47,10 @@ type StateProcessor struct {
 	config *params.ChainConfig // Chain configuration options
 	cs     IChainForState      // chain interface for state processor
 	engine consensus.Engine    // Consensus engine used for block rewards
+}
+
+type DbCache struct {
+	Cache map[string]interpreter.MemDatabase
 }
 
 // NewStateProcessor initialises a new StateProcessor.
@@ -60,40 +68,62 @@ func NewStateProcessor(config *params.ChainConfig, cs IChainForState, engine con
 //
 // Process returns the receipts and logs accumulated during the process.
 // If any of the transactions failed  it will return an error.
-func (p *StateProcessor) Process(block *block.Block, statedb *state.StateDB) (transaction.Receipts, []*transaction.Log, error) {
+func (p *StateProcessor) Process(blk *block.Block, statedb *state.StateDB, db database.IDatabaseGetter, config *params.ChainConfig) (*DbCache, transaction.Receipts, []*transaction.Log, error) {
 	var (
 		receipts transaction.Receipts
-		header   = block.Header()
+		header   = blk.Header()
 		allLogs  []*transaction.Log
 	)
 
+	dbcache := &DbCache{
+		Cache: make(map[string]interpreter.MemDatabase),
+	}
+
+	singner := block.NewBlockSigner(config.ChainId)
+	coinbase, err := singner.Sender(header)
+	if err != nil {
+		logger.Error("Process: block signature is not right", err)
+		return  nil, nil, nil, err
+	}
+
+	logger.Trace("Process: coinbase", coinbase.Hex())
+
+	sdkHandler := sdk.NewTmpStatusManager(db, statedb , coinbase)
+	vmHandler := interpreter.NewVm()
+	//make sysparam
+
+	sysparam := intertypes.MakeSystemParams(sdkHandler , vmHandler )
+
+
 	// Iterate over and process the individual transactions
-	for i, tx := range block.Transactions() {
-		statedb.Prepare(tx.Hash(), block.Hash(), i)
-		receipt, err := ApplyTransaction(p.config, nil, statedb, header, tx)
+	for i, tx := range blk.Transactions() {
+		statedb.Prepare(tx.Hash(), blk.Hash(), i)
+		receipt, err := ApplyTransaction(p.config, nil, statedb, header, tx, dbcache , sysparam)
 		if err != nil {
 			logger.Errorf("ApplyTransacton Wrong.....:",err.Error())
 
-			return nil, nil, err
+			return  nil, nil, nil, err
 		}
 		receipts = append(receipts, receipt)
 		allLogs = append(allLogs, receipt.Logs...)
 	}
 
+
 	// TODO: need to be compeleted, now skip this step
 	// Finalize the block, applying any consensus engine specific extras (e.g. block rewards)
 	if p.engine != nil {
-		p.engine.Finalize(p.cs, header, statedb, block.Transactions(), receipts)
+		p.engine.Finalize(p.cs, header, statedb, blk.Transactions(), receipts, false)
 	}
 
-	return receipts, allLogs, nil
+	return  dbcache, receipts, allLogs, nil
 }
+
 
 // ApplyTransaction attempts to apply a transaction to the given state database
 // and uses the input parameters for its environment. It returns the receipt
 // for the transaction and an error if the transaction failed,
 // indicating the block was invalid.
-func ApplyTransaction(config *params.ChainConfig, author *types.Address, statedb *state.StateDB, header *block.Header, tx *transaction.Transaction) (*transaction.Receipt, error) {
+func ApplyTransaction(config *params.ChainConfig, author *types.Address, statedb *state.StateDB, header *block.Header, tx *transaction.Transaction, cache *DbCache , sysparam *intertypes.SystemParams) (*transaction.Receipt, error) {
 	msg, err := tx.AsMessage(transaction.MakeSigner(config, &header.Number.IntVal))
 	if err != nil {
 		return nil, err
@@ -101,27 +131,22 @@ func ApplyTransaction(config *params.ChainConfig, author *types.Address, statedb
 	
 	// Apply the transaction to the current state (included in the env)
 	if author == nil {
-		author = &header.Coinbase
+		author = &header.BlockProducer
 	}
-	_, failed, err := ApplyMessage(statedb, msg, *author)
+	_, failed, err := ApplyMessage(statedb, msg, *author, cache, header,sysparam)
 	if err != nil {
 		return nil, err
 	}
 	// Update the state with pending changes
-	var root []byte
 	statedb.Finalise(true)
 
 	// Create a new receipt for the transaction, storing the intermediate root  by the tx
 	// based on the mip phase, we're passing wether the root touch-delete accounts.
-	receipt := transaction.NewReceipt(root, failed)
+	receipt := transaction.NewReceipt(failed)
 	receipt.TxHash = tx.Hash()
 	// if the transaction created a contract, store the creation address in the receipt.
-	if msg.To() == nil {
-		// TODO:
-		logger.Warnf("Not support to create contract!\n")
-		return nil, fmt.Errorf("Not support to create contract!")
-
-		//receipt.ContractAddress = crypto.CreateAddress(vmenv.Context.Origin, tx.Nonce())
+	if len(tx.Data.Actions) == 2 && tx.Data.Actions[1].Address == nil {
+		receipt.ContractAddress = crypto.CreateAddress(msg.From(), tx.Nonce())
 	}
 	// Set the receipt logs and create a bloom for filtering
 	receipt.Logs = statedb.GetLogs(tx.Hash())

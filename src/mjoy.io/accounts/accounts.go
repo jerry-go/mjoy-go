@@ -27,6 +27,8 @@ import (
 	"mjoy.io/common"
 	"mjoy.io/core/transaction"
 	"mjoy.io/utils/event"
+	"mjoy.io/core/blockchain/block"
+	"crypto/ecdsa"
 )
 
 // Account represents an mjoy account located at a specific location defined
@@ -116,6 +118,10 @@ type Wallet interface {
 	// the account in a keystore).
 	SignTx(account Account, tx *transaction.Transaction, chainID *big.Int) (*transaction.Transaction, error)
 
+	SignHeader( h *block.Header,chainID *big.Int) (*block.Header, error)
+
+	GetKeyWithPassphrase( account Account, passphrase string) (*ecdsa.PrivateKey, error)
+	
 	// SignHashWithPassphrase requests the wallet to sign the given hash with the
 	// given passphrase as extra authentication information.
 	//

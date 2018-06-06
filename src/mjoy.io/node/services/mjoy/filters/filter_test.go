@@ -151,7 +151,7 @@ func TestFilters(t *testing.T) {
 	chain, receipts := chainmaker.GenerateChain(params.TestChainConfig, genesis, &consensus.Engine_empty{}, db, 1000, func(i int, gen *chainmaker.BlockGen) {
 		switch i {
 		case 1:
-			receipt := transaction.NewReceipt(nil, false)
+			receipt := transaction.NewReceipt( false)
 			receipt.Logs = []*transaction.Log{
 				{
 					Address: addr,
@@ -160,7 +160,7 @@ func TestFilters(t *testing.T) {
 			}
 			gen.AddUncheckedReceipt(receipt)
 		case 2:
-			receipt := transaction.NewReceipt(nil, false)
+			receipt := transaction.NewReceipt( false)
 			receipt.Logs = []*transaction.Log{
 				{
 					Address: addr,
@@ -169,7 +169,7 @@ func TestFilters(t *testing.T) {
 			}
 			gen.AddUncheckedReceipt(receipt)
 		case 998:
-			receipt := transaction.NewReceipt(nil, false)
+			receipt := transaction.NewReceipt( false)
 			receipt.Logs = []*transaction.Log{
 				{
 					Address: addr,
@@ -178,7 +178,7 @@ func TestFilters(t *testing.T) {
 			}
 			gen.AddUncheckedReceipt(receipt)
 		case 999:
-			receipt := transaction.NewReceipt(nil, false)
+			receipt := transaction.NewReceipt( false)
 			receipt.Logs = []*transaction.Log{
 				{
 					Address: addr,

@@ -56,7 +56,7 @@ type Engine interface {
 	// Author retrieves the Mjoy address of the account that minted the given
 	// block, which may be different from the header's coinbase if a consensus
 	// engine is based on signatures.
-	Author(header *block.Header) (types.Address, error)
+	Author(chain ChainReader, header *block.Header) (types.Address, error)
 
 	// VerifyHeader checks whether a header conforms to the consensus rules of a
 	// given engine. Verifying the seal may be done optionally here, or explicitly
@@ -81,7 +81,7 @@ type Engine interface {
 	// and assembles the final block.
 	// Note: The block header and state database might be updated to reflect any
 	// consensus rules that happen at finalization (e.g. block rewards).
-	Finalize(chain ChainReader, header *block.Header, state *state.StateDB, txs []*transaction.Transaction, receipts []*transaction.Receipt) (*block.Block, error)
+	Finalize(chain ChainReader, header *block.Header, state *state.StateDB, txs []*transaction.Transaction, receipts []*transaction.Receipt, sign bool) (*block.Block, error)
 
 	// Seal generates a new block for the given input block with the local blockproducer's
 	// seal place on top.

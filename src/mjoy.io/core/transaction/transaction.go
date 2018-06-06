@@ -26,17 +26,19 @@ import (
 	"sync/atomic"
 
 	"mjoy.io/utils/crypto"
-	"mjoy.io/common/types/util"
 	"mjoy.io/common"
 	"fmt"
-	"mjoy.io/utils/crypto/sha3"
 	"mjoy.io/common/types"
 	"bytes"
 	"github.com/tinylib/msgp/msgp"
+	"container/heap"
+	"mjoy.io/common/types/util/hex"
 )
 
 //go:generate msgp
 //msgp:ignore Message TransactionsByPriceAndNonce
+
+//go:generate gencodec -type Txdata  -out gen_tx_json.go
 
 var (
 	ErrInvalidSig = errors.New("invalid transaction v, r, s values")
@@ -50,78 +52,79 @@ func deriveSigner(V *big.Int) Signer {
 
 type Transaction struct {
 	Data Txdata
+	Priority    *big.Int    `msg:"-"`
 	// caches
 	hash atomic.Value
 	size atomic.Value
 	from atomic.Value
 }
 
-func (this * Transaction)PrintDataInfo(){
-	logger.Debug("Txdata.Amount Value:",this.Data.Amount)
+func (this * Transaction)PrintDataInfo() {
+	//logger.Debug("Txdata.Amount Value:",this.Data.Amount)
 	//fmt.Println("txData.Amount Value:",this.Data.Amount)
 }
 
 //for test
-func (this * Transaction)PrintVSR(){
-	fmt.Printf("V:=%d,S:=%d,R:=%d\n",this.Data.V.IntVal.Int64(),
-											this.Data.S.IntVal.Int64(),
-											this.Data.R.IntVal.Int64())
+func (this * Transaction)PrintVSR() {
+	fmt.Printf("V:%v, S:%v, R:%v\n",
+		this.Data.V.IntVal,
+		this.Data.S.IntVal,
+		this.Data.R.IntVal)
 }
 
-func (this *Transaction)msgpHash()(h types.Hash){
-	var buf bytes.Buffer
-	err := msgp.Encode(&buf, this)
-	if err != nil{
-		return types.Hash{}
-	}else{
-		hw:=sha3.NewKeccak256()
-		hw.Write(buf.Bytes())
-		hw.Sum(h[:0])
-
-		return h
-	}
+type Action struct {
+	Address		*types.Address	`json:"address" gencodec:"required"`
+	Params 		[]byte			`json:"params"  gencodec:"required"`
 }
 
+func MakeAction(address types.Address , params []byte)Action{
+	a := Action{}
+	newAddress := types.Address{}
+	newAddress = address
+	a.Address = &newAddress
+
+	pslice := make([]byte , 0 , len(params))
+	pslice = append(pslice , params...)
+	a.Params = pslice
+	return a
+}
+
+
+//ActionSlice just for msgp.For other memery logic deal,we just need use '[]Action'
+type ActionSlice []Action
 
 type Txdata struct {
-	AccountNonce uint64         `json:"nonce"    gencodec:"required"`
-	Recipient    *types.Address `json:"to"       msgp:"nil"` // nil means contract creation
-	Amount       *types.BigInt  `json:"value"    gencodec:"required"`
-	Payload      []byte         `json:"input"    gencodec:"required"`
-
+	AccountNonce 	uint64         	`json:"nonce"   gencodec:"required"`
+	Actions     	ActionSlice     `json:"actions" gencodec:"required"`
 	// Signature values
-	V *types.BigInt             `json:"v"        gencodec:"required"`
-	R *types.BigInt             `json:"r"        gencodec:"required"`
-	S *types.BigInt             `json:"s"        gencodec:"required"`
+	V *types.BigInt                 `json:"v"       gencodec:"required"`
+	R *types.BigInt                 `json:"r"       gencodec:"required"`
+	S *types.BigInt                 `json:"s"       gencodec:"required"`
 
 	// This is only used when marshaling to JSON.
-	Hash *types.Hash            `json:"hash"     msgp:"-"`
+	Hash *types.Hash                `json:"hash"    msg:"-"`
 }
 
-
-func NewTransaction(nonce uint64, to types.Address, amount *big.Int, no1 uint64, no2 *big.Int, data []byte) *Transaction {
-	return newTransaction(nonce, &to, amount, no1, no2, data)
+//All actions is made by interpreter
+func NewTransaction(nonce uint64, actions ActionSlice) *Transaction {
+	return newTransaction(nonce, actions)
 }
-
-func NewContractCreation(nonce uint64, amount *big.Int, no1 uint64, no2 *big.Int, data []byte) *Transaction {
-	return newTransaction(nonce, nil, amount, no1, no2, data)
+//All acions is made by interpreter
+func NewContractCreation(nonce uint64, actions ActionSlice) *Transaction {
+	return newTransaction(nonce, actions)
 }
-
-func newTransaction(nonce uint64, to *types.Address, amount *big.Int, no1 uint64, no2 *big.Int, data []byte) *Transaction {
-	if len(data) > 0 {
-		data = util.CopyBytes(data)
+//the actions is right or not ,should be judged by interpreter,we have no right to do this
+func newTransaction(nonce uint64, actions ActionSlice) *Transaction {
+	if len(actions) < 0 {
+		return nil
 	}
+
 	d := Txdata{
 		AccountNonce: nonce,
-		Recipient:    to,
-		Payload:      data,
-		Amount:       new(types.BigInt),
+		Actions:	actions,
 		V:            new(types.BigInt),
 		R:            new(types.BigInt),
 		S:            new(types.BigInt),
-	}
-	if amount != nil {
-		d.Amount.IntVal = *amount
 	}
 
 	return &Transaction{Data: d}
@@ -146,7 +149,6 @@ func isProtectedV(V *big.Int) bool {
 	// anything not 27 or 28 are considered unprotected
 	return true
 }
-
 
 // MarshalJSON encodes the web3 RPC transaction format.
 func (tx *Transaction) MarshalJSON() ([]byte, error) {
@@ -176,25 +178,9 @@ func (tx *Transaction) UnmarshalJSON(input []byte) error {
 	return nil
 }
 
-func (tx *Transaction) DataPayload() []byte       { return util.CopyBytes(tx.Data.Payload) }
-func (tx *Transaction) Value() *big.Int    {
-	if tx.Data.Amount == nil{
-		return nil
-	}
-	return new(big.Int).Set(&tx.Data.Amount.IntVal)
-}
 func (tx *Transaction) Nonce() uint64      { return tx.Data.AccountNonce }
 func (tx *Transaction) CheckNonce() bool   { return true }
 
-// To returns the recipient address of the transaction.
-// It returns nil if the transaction is a contract creation.
-func (tx *Transaction) To() *types.Address {
-	if tx.Data.Recipient == nil {
-		return nil
-	}
-	to := *tx.Data.Recipient
-	return &to
-}
 
 // Hash hashes the Msgp encoding of tx.
 // It uniquely identifies the transaction.
@@ -203,12 +189,15 @@ func (tx *Transaction) Hash() types.Hash {
 		return hash.(types.Hash)
 	}
 
-	v := tx.msgpHash()
+	v, err := common.MsgpHash(tx)
+	if err != nil {
+		logger.Errorf("Transaction hash error: %v", err)
+		return types.Hash{}
+	}
+
 	tx.hash.Store(v)
 	return v
 }
-
-
 
 type writeCounter common.StorageSize
 
@@ -216,7 +205,6 @@ func (c *writeCounter) Write(b []byte) (int, error) {
 	*c += writeCounter(len(b))
 	return len(b), nil
 }
-
 
 // Size returns the true MSGP encoded storage size of the transaction, either by
 // encoding and returning it, or returning a previsouly cached value.
@@ -237,20 +225,16 @@ func (tx *Transaction) Size() common.StorageSize {
 	return common.StorageSize(c)
 }
 
-// AsMessage returns the transaction as a core.Message.
-//
-// AsMessage requires a signer to derive the sender.
-//
-// XXX Rename message to something less arbitrary?
+//In Mjoy, all details of transaction dealing should not visiable for others except vm(interpreter)
+
 func (tx *Transaction) AsMessage(s Signer) (Message, error) {
+	newActions := []Action{}
+	newActions = append(newActions , tx.Data.Actions...)
 	msg := Message{
 		nonce:      tx.Data.AccountNonce,
-		to:         tx.Data.Recipient,
-		amount:     &tx.Data.Amount.IntVal,
-		data:       tx.Data.Payload,
+		actions:    newActions,
 		checkNonce: true,
 	}
-
 	var err error
 	msg.from, err = Sender(s, tx)
 	return msg, err
@@ -268,65 +252,59 @@ func (tx *Transaction) WithSignature(signer Signer, sig []byte) (*Transaction, e
 	return cpy, nil
 }
 
-
+//In Mjoy, all details of transaction dealing should not visiable for others except vm(interpreter)
 // Cost returns amount.
-func (tx *Transaction) Cost() *big.Int {
-	total := big.NewInt(0)
-	total.Add(total, &tx.Data.Amount.IntVal)
-	return total
+//func (tx *Transaction) Cost() *big.Int {
+//	total := big.NewInt(0)
+//	total.Add(total, &tx.Data.Amount.IntVal)
+//	return total
+//}
+func (tx *Transaction)GetPriority()*big.Int{
+	return big.NewInt(tx.Priority.Int64())
+}
+
+func (tx *Transaction)SetPriority(priority int){
+	tx.Priority = big.NewInt(int64(priority))
 }
 
 func (tx *Transaction) RawSignatureValues() (*big.Int, *big.Int, *big.Int) {
 	return &tx.Data.V.IntVal, &tx.Data.R.IntVal, &tx.Data.S.IntVal
 }
 
+//String just print Nonce and to,simple is best
 func (tx *Transaction) String() string {
-	var from, to string
+	var from string
 	if tx.Data.V != nil {
-		// make a best guess about the signer and use that to derive
-		// the sender.
 		signer := deriveSigner(&tx.Data.V.IntVal)
-		if f, err := Sender(signer, tx); err != nil { // derive but don't cache
+		if f , err := Sender(signer , tx);err != nil {
 			from = "[invalid sender: invalid sig]"
-		} else {
+		}else{
 			from = fmt.Sprintf("%x", f[:])
 		}
 	} else {
 		from = "[invalid sender: nil V field]"
 	}
 
-	if tx.Data.Recipient == nil {
-		to = "[contract creation]"
-	} else {
-		to = fmt.Sprintf("%x", tx.Data.Recipient[:])
-	}
-	var buf bytes.Buffer
-	msgp.Encode(&buf, tx)
-	return fmt.Sprintf(`
+
+	rStr := fmt.Sprintf(`
 	TX(%x)
-	Contract: %v
-	From:     %s
-	To:       %s
-	Nonce:    %v
-	Value:    %#x
-	Data:     0x%x
-	V:        %#x
-	R:        %#x
-	S:        %#x
-	Hex:      %x
-`,
-		tx.Hash(),
-		tx.Data.Recipient == nil,
-		from,
-		to,
-		tx.Data.AccountNonce,
-		tx.Data.Amount,
-		tx.Data.Payload,
-		tx.Data.V,
-		tx.Data.R,
-		tx.Data.S,
-		buf.Bytes(),
-	)
+	From:       (%s)
+	ActionLen:  (%d)
+	Nonce:      (%d)
+	V:          (%v)
+	S:          (%v)
+	R:          (%v)
+	` ,
+	tx.Hash(),
+	from,
+	len(tx.Data.Actions),
+	tx.Nonce(),
+	(*hex.Big)(&tx.Data.V.IntVal),
+	(*hex.Big)(&tx.Data.S.IntVal),
+	(*hex.Big)(&tx.Data.R.IntVal),
+		)
+
+	return rStr
 }
 
 // Transactions is a Transaction slice type for basic sorting.
@@ -408,6 +386,77 @@ func (t *TransactionForProducing)Shift(){
 		t.Pop()
 	}
 }
+////////////////////////////////////////////
+type TxByPriority Transactions
+
+func (s TxByPriority)Len()	int 			{return len(s)}
+func (s TxByPriority)Less(i , j int)bool 	{return s[i].Priority.Cmp(s[j].Priority) > 0}
+func (s TxByPriority) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
+
+func (s *TxByPriority) Push(x interface{}) {
+	*s = append(*s, x.(*Transaction))
+}
+
+func (s *TxByPriority) Pop() interface{} {
+	old := *s
+	n := len(old)
+	x := old[n-1]
+	*s = old[0 : n-1]
+	return x
+}
+
+type TransactionsByPriorityAndNonce struct {
+	txs 	map[types.Address]Transactions
+	heads 	TxByPriority
+	signer 	Signer
+
+}
+
+func NewTransactionsByPriorityAndNonce(signer Signer , txs map[types.Address]Transactions, txReword *Transaction)*TransactionsByPriorityAndNonce {
+	// Initialize a price based heap with the head transactions
+	heads := make(TxByPriority, 0, len(txs) + 1)
+	heads = append(heads, txReword)
+	for _, accTxs := range txs {
+		heads = append(heads, accTxs[0])
+		// Ensure the sender address is from the signer
+		acc, _ := Sender(signer, accTxs[0])
+		txs[acc] = accTxs[1:]
+	}
+	heap.Init(&heads)
+
+	// Assemble and return the transaction set
+	return &TransactionsByPriorityAndNonce{
+		txs:    txs,
+		heads:  heads,
+		signer: signer,
+	}
+}
+
+// Peek returns the next transaction by price.
+func (t *TransactionsByPriorityAndNonce) Peek() *Transaction {
+	if len(t.heads) == 0 {
+		return nil
+	}
+	return t.heads[0]
+}
+
+// Shift replaces the current best head with the next one from the same account.
+func (t *TransactionsByPriorityAndNonce) Shift() {
+	acc, _ := Sender(t.signer, t.heads[0])
+	if txs, ok := t.txs[acc]; ok && len(txs) > 0 {
+		t.heads[0], t.txs[acc] = txs[0], txs[1:]
+		heap.Fix(&t.heads, 0)
+	} else {
+		heap.Pop(&t.heads)
+	}
+}
+
+// Pop removes the best transaction, *not* replacing it with the next one from
+// the same account. This should be used when a transaction cannot be executed
+// and hence all subsequent ones should be discarded from the same account.
+func (t *TransactionsByPriorityAndNonce) Pop() {
+	heap.Pop(&t.heads)
+}
 
 // TxByNonce implements the sort interface to allow sorting a list of transactions
 // by their nonces. This is usually only useful for sorting transactions from a
@@ -423,28 +472,22 @@ func (s TxByNonce) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
 //
 // NOTE: In a future PR this will be removed.
 type Message struct {
-	to         *types.Address
 	from       types.Address
 	nonce      uint64
-	amount     *big.Int
-	data       []byte
+	actions    []Action
 	checkNonce bool
 }
 
-func NewMessage(from types.Address, to *types.Address, nonce uint64, amount *big.Int, data []byte, checkNonce bool) Message {
+func NewMessage(from types.Address, nonce uint64, actions ActionSlice, checkNonce bool) Message {
 	return Message{
 		from:       from,
-		to:         to,
 		nonce:      nonce,
-		amount:     amount,
-		data:       data,
+		actions:    actions,
 		checkNonce: checkNonce,
 	}
 }
 
 func (m Message) From() types.Address { return m.from }
-func (m Message) To() *types.Address  { return m.to }
-func (m Message) Value() *big.Int      { return m.amount }
 func (m Message) Nonce() uint64        { return m.nonce }
-func (m Message) Data() []byte         { return m.data }
+func (m Message) Actions()[]Action      {return m.actions}
 func (m Message) CheckNonce() bool     { return m.checkNonce }

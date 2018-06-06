@@ -95,7 +95,7 @@ func testChainIndexer(t *testing.T, count int) {
 	}
 	// inject inserts a new random canonical header into the database directly
 	inject := func(number uint64) {
-		header := &block.Header{Number: types.NewBigInt(*big.NewInt(int64(number))), Extra: big.NewInt(rand.Int63()).Bytes()}
+		header := &block.Header{Number: types.NewBigInt(*big.NewInt(int64(number))), ConsensusData: block.ConsensusData{Para: big.NewInt(rand.Int63()).Bytes()}}
 		if number > 0 {
 			header.ParentHash = blockchain.GetCanonicalHash(db, number-1)
 		}

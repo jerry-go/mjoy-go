@@ -23,11 +23,17 @@ package params
 import (
 	"math/big"
 	"fmt"
+	"mjoy.io/utils/crypto"
 )
 
 type ChainConfig struct {
 	ChainId *big.Int `json:"chainId"` // Chain id identifies the current chain and is used for replay protection
 }
+
+var(
+	RewordPrikey , _ = crypto.HexToECDSA("b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f292")
+	Address = crypto.PubkeyToAddress(RewordPrikey.PublicKey)
+)
 
 var (
 

@@ -95,7 +95,7 @@ type stateObject struct {
 
 // empty returns whether the account is considered empty.
 func (s *stateObject) empty() bool {
-	return s.data.Nonce == 0 && s.data.Balance.IntVal.Sign() == 0 && bytes.Equal(s.data.CodeHash, emptyCodeHash)
+	return s.data.Nonce == 0 && bytes.Equal(s.data.CodeHash, emptyCodeHash)
 }
 
 //go:generate msgp
@@ -103,16 +103,12 @@ func (s *stateObject) empty() bool {
 // These objects are stored in the main account trie.
 type Account struct {
 	Nonce    uint64
-	Balance  *types.BigInt
 	Root     types.Hash // merkle root of the storage trie
 	CodeHash []byte
 }
 
 // newObject creates a state object.
 func newObject(db *StateDB, address types.Address, data Account, onDirty func(addr types.Address)) *stateObject {
-	if data.Balance == nil {
-		data.Balance = types.NewBigInt(*new(big.Int))
-	}
 	if data.CodeHash == nil {
 		data.CodeHash = emptyCodeHash
 	}
@@ -247,46 +243,6 @@ func (self *stateObject) CommitTrie(db Database, dbw trie.DatabaseWriter) error 
 	return err
 }
 
-// AddBalance removes amount from c's balance.
-// It is used to add funds to the destination account of a transfer.
-func (c *stateObject) AddBalance(amount *big.Int) {
-	// MIP158: We must check emptiness for the objects such that the account
-	// clearing (0,0,0 objects) can take effect.
-	if amount.Sign() == 0 {
-		if c.empty() {
-			c.touch()
-		}
-
-		return
-	}
-	c.SetBalance(new(big.Int).Add(c.Balance(), amount))
-}
-
-// SubBalance removes amount from c's balance.
-// It is used to remove funds from the origin account of a transfer.
-func (c *stateObject) SubBalance(amount *big.Int) {
-	if amount.Sign() == 0 {
-		return
-	}
-	c.SetBalance(new(big.Int).Sub(c.Balance(), amount))
-}
-
-func (self *stateObject) SetBalance(amount *big.Int) {
-	self.db.journal = append(self.db.journal, balanceChange{
-		account: &self.address,
-		prev:    new(big.Int).Set(&self.data.Balance.IntVal),
-	})
-	self.setBalance(types.NewBigInt(*amount))
-}
-
-func (self *stateObject) setBalance(amount *types.BigInt) {
-	self.data.Balance = amount
-	if self.onDirty != nil {
-		self.onDirty(self.Address())
-		self.onDirty = nil
-	}
-}
-
 
 func (self *stateObject) deepCopy(db *StateDB, onDirty func(addr types.Address)) *stateObject {
 	stateObject := newObject(db, self.address, self.data, onDirty)
@@ -365,10 +321,6 @@ func (self *stateObject) setNonce(nonce uint64) {
 
 func (self *stateObject) CodeHash() []byte {
 	return self.data.CodeHash
-}
-
-func (self *stateObject) Balance() *big.Int {
-	return &self.data.Balance.IntVal
 }
 
 func (self *stateObject) Nonce() uint64 {
