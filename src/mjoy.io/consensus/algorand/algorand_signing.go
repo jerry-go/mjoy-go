@@ -11,12 +11,12 @@ import (
 )
 
 var (
-	ErrInvalidSig = errors.New("invalid block v, r, s values")
-	ErrInvalidChainId = errors.New("invalid chain id for block signer")
+	ErrInvalidSig = errors.New("invalid  v, r, s values")
+	ErrInvalidChainId = errors.New("invalid chain id for signer")
 )
 
 
-// SignHeader signs the header using the given signer and private key
+// SignCredential signs the CredentialData using the given signer and private key
 func SignCredential(c *CredentialData, s Signer, prv *ecdsa.PrivateKey) (*CredentialSig, error) {
 	hash := c.Hash()
 	sig, err := crypto.Sign(hash[:], prv)
@@ -33,10 +33,10 @@ func SignCredential(c *CredentialData, s Signer, prv *ecdsa.PrivateKey) (*Creden
 	return credentialSig, nil
 }
 
-// Signer encapsulates transaction signature handling. Note that this interface is not a
+// Signer encapsulates algorand signature handling. Note that this interface is not a
 // stable API and may change at any time to accommodate new protocol rules.
 type Signer interface {
-	// Sender returns the sender address of the transaction.
+	// Sender returns the sender address of the Credential.
 	Sender(cdata *CredentialData, sig *SignatureVal) (types.Address, error)
 	// SignatureValues returns the raw R, S, V values corresponding to the
 	// given signature.
@@ -50,8 +50,8 @@ type AlgRandSigner struct {
 	chainId, chainIdMul *big.Int
 }
 
-// NewBlockSigner returns a Signer based on the given chain config
-func NewBlockSigner(chainId *big.Int) AlgRandSigner {
+// NewAlgRandSigner returns a Signer based on the given chain config
+func NewAlgRandSigner(chainId *big.Int) AlgRandSigner {
 	if chainId == nil {
 		chainId = new(big.Int)
 	}
