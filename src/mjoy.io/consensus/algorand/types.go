@@ -20,8 +20,49 @@
 
 package algorand
 
+import "sync"
 
 type ConsensusData struct{
 	Id     string
 	Para   []byte
 }
+
+//some system param(algorand system param) for step goroutine.
+//goroutine can set param by SetXXXX,and get param by GetXXXX
+type algoParam struct {
+	lock sync.RWMutex
+	k int
+
+}
+func (this *algoParam)SetDefault(){
+	this.lock.Lock()
+	defer this.lock.Unlock()
+	this.k = 1
+}
+
+//set param k
+func (this *algoParam)SetK(k int){
+	this.lock.Lock()
+	defer this.lock.Unlock()
+
+	this.k = k
+}
+//get param k
+func (this *algoParam)GetK()int{
+	this.lock.RLock()
+	defer this.lock.RUnlock()
+
+	return this.k
+}
+
+
+
+
+func newAlgoParam()*algoParam{
+	n := new(algoParam)
+	n.SetDefault()
+	return n
+}
+
+
+
