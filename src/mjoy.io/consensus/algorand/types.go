@@ -32,12 +32,22 @@ type ConsensusData struct{
 type algoParam struct {
 	lock sync.RWMutex
 	k int
+	pLeader float64
+	pVerifier float64
+	maxSteps int
+	nNodes int
+
 
 }
 func (this *algoParam)SetDefault(){
 	this.lock.Lock()
 	defer this.lock.Unlock()
 	this.k = 1
+	this.pLeader = 0.1
+	this.pVerifier = 0.2
+	this.maxSteps = 183
+	this.nNodes = 100
+
 }
 
 //set param k
@@ -55,8 +65,66 @@ func (this *algoParam)GetK()int{
 	return this.k
 }
 
+//Set pLeader
+func (this *algoParam)SetPleader(pLeader float64){
+	this.lock.Lock()
+	defer this.lock.Unlock()
 
+	this.pLeader = pLeader
+}
+//Get pLeader
+func (this *algoParam)GetPleader()float64{
+	this.lock.RLock()
+	defer this.lock.RUnlock()
 
+	return this.pLeader
+}
+//Set pVerifier
+func (this *algoParam)SetPverifier(pVerifier float64){
+	this.lock.Lock()
+	defer this.lock.Unlock()
+
+	this.pVerifier = pVerifier
+}
+
+//Get pVerifier
+func (this *algoParam)GetPverifier()float64{
+	this.lock.RLock()
+	defer this.lock.RUnlock()
+
+	return this.pVerifier
+}
+
+//Set maxSteps
+func (this *algoParam)SetMaxSteps(ms int){
+	this.lock.Lock()
+	defer this.lock.Unlock()
+
+	this.maxSteps = ms
+}
+//Get maxSteps
+func (this *algoParam)GetMaxSteps()int{
+	this.lock.RLock()
+	defer this.lock.RUnlock()
+
+	return this.maxSteps
+}
+
+//Set nNodes
+func (this *algoParam)SetNnodes(n int){
+	this.lock.Lock()
+	defer this.lock.Unlock()
+
+	this.nNodes = n
+}
+
+//Get nNodes
+func (this *algoParam)GetNnodes()int{
+	this.lock.RLock()
+	defer this.lock.RUnlock()
+
+	return this.nNodes
+}
 
 func newAlgoParam()*algoParam{
 	n := new(algoParam)

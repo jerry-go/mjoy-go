@@ -2,7 +2,6 @@ package algorand
 
 import (
 	"sync"
-	"mjoy.io/utils/crypto/sha3"
 	"mjoy.io/utils/crypto"
 )
 
@@ -57,7 +56,7 @@ func (this *Algorand)makeCredential(){
 	//get Qr_k
 	Qr_k := this.commonTools.GetQr_k(k)
 	//get sig
-	R,S,V := this.commonTools.SIG(1,1,Qr_k)
+	R,S,V := this.commonTools.SIG(r,1,Qr_k)
 	srcBytes := []byte{}
 	srcBytes = append(srcBytes , R.Bytes()...)
 	srcBytes = append(srcBytes , S.Bytes()...)
@@ -66,8 +65,13 @@ func (this *Algorand)makeCredential(){
 	h := crypto.Keccak256(srcBytes)
 
 
+	endFloat , err := BytesToFloat(h)
+	if err != nil {
+		panic(err)
+	}
 
-
+	_ = endFloat
+	//if endFloat <= this.algoParam
 
 }
 
