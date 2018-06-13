@@ -8,6 +8,7 @@ import (
 	"github.com/tinylib/msgp/msgp"
 	"bytes"
 	"fmt"
+	"reflect"
 )
 
 /*
@@ -102,13 +103,7 @@ func (this *Round)StartVerify() {
 	}
 }
 
-func (this *Round)SavaM1(msg *M1) {
-
-
-}
-
 func (this *Round)ReceiveM1(msg *M1) {
-
 	//verify msg
 	if msg.Credential.Round.IntVal.Cmp(&this.round.IntVal) != 0 {
 		logger.Warn("verify fail, M1 msg is not in current round", msg.Credential.Round.IntVal.Uint64(), this.round.IntVal.Uint64())
@@ -116,17 +111,64 @@ func (this *Round)ReceiveM1(msg *M1) {
 	}
 
 	if msg.Credential.Step.IntVal.Uint64() != 1 {
-		logger.Warn("verify fail, M1 msg step is 1", msg.Credential.Round.IntVal.Uint64(), msg.Credential.Step.IntVal.Uint64())
+		logger.Warn("verify fail, M1 msg step is not 1", msg.Credential.Round.IntVal.Uint64(), msg.Credential.Step.IntVal.Uint64())
 		return
 	}
 	//todo more verify need
 
-	//first send this msg to step1 goroutine
+	//send this msg to step1 goroutine
 	if stepObj, ok := this.allStepObj[2]; ok {
-		stepObj.sendMsg(msg , this)
+		stepObj.sendMsg(msg, this)
 	}
 
-	this.SavaM1(msg)
+}
+
+func (this *Round)ReceiveM23(msg *M23) {
+	//verify msg
+	if msg.Credential.Round.IntVal.Cmp(&this.round.IntVal) != 0 {
+		logger.Warn("verify fail, M23 msg is not in current round", msg.Credential.Round.IntVal.Uint64(), this.round.IntVal.Uint64())
+		return
+	}
+
+	if msg.Credential.Step.IntVal.Uint64() != 2  && msg.Credential.Step.IntVal.Uint64() != 3 {
+		logger.Warn("verify fail, M23 msg step is not 2 or 3", msg.Credential.Round.IntVal.Uint64(), msg.Credential.Step.IntVal.Uint64())
+		return
+	}
+	//todo more verify need
+
+	//send this msg to step3 or step4 goroutine
+	if msg.Credential.Step.IntVal.Uint64() == 2 {
+		if stepObj, ok := this.allStepObj[3]; ok {
+			stepObj.sendMsg(msg, this)
+		}
+	} else if msg.Credential.Step.IntVal.Uint64() == 3 {
+		if stepObj, ok := this.allStepObj[4]; ok {
+			stepObj.sendMsg(msg, this)
+		}
+	}
+}
+
+func (this *Round)ReceiveMCommon(msg *MCommon) {
+	//verify msg
+	if msg.Credential.Round.IntVal.Cmp(&this.round.IntVal) != 0 {
+		logger.Warn("verify fail, MCommon msg is not in current round", msg.Credential.Round.IntVal.Uint64(), this.round.IntVal.Uint64())
+		return
+	}
+
+	step := msg.Credential.Step.IntVal.Uint64()
+	if step < 4{
+		logger.Warn("verify fail, MCommon msg step is not right", msg.Credential.Round.IntVal.Uint64(), msg.Credential.Step.IntVal.Uint64())
+		return
+	}
+	//todo more verify need
+
+	//send this msg to step other goroutine
+	if stepObj, ok := this.allStepObj[int(step) + 1]; ok {
+		stepObj.sendMsg(msg, this)
+	}
+
+	//condition 0 and condition 1
+
 }
 
 func (this *Round)CommonProcess() {
@@ -138,12 +180,16 @@ func (this *Round)CommonProcess() {
 			case *CredentialSig:
 				fmt.Println(v)
 			case *M1:
-				fmt.Println(v)
+				//fmt.Println(v)
 				this.ReceiveM1(v)
 			case *M23:
-				fmt.Println(v)
+				//fmt.Println(v)
+				this.ReceiveM23(v)
 			case *MCommon:
-				fmt.Println(v)
+				//fmt.Println(v)
+				this.ReceiveMCommon(v)
+			default:
+				logger.Warn("invalid message type ",reflect.TypeOf(v))
 			}
 		}
 	}
