@@ -27,7 +27,7 @@ type Apos struct {
 	outMsger OutMsger
 
 	//all goroutine send msg to Apos by this Chan
-	allMsgBridge chan []byte
+	allMsgBridge chan dataPack
 
 	roundCtx      *Round
 
@@ -123,7 +123,7 @@ func (this *Round)ReceiveM1(msg *M1) {
 
 	//first send this msg to step1 goroutine
 	if stepObj, ok := this.allStepObj[2]; ok {
-		stepObj.sendMsg(msg)
+		stepObj.sendMsg(msg , this)
 	}
 
 	this.SavaM1(msg)
@@ -168,7 +168,7 @@ func NewApos(msger OutMsger ,cmTools CommonTools )*Apos{
 	a.allStepObj = make(map[int]stepInterface)
 	a.outMsger = msger
 	a.commonTools = cmTools
-	a.allMsgBridge = make(chan []byte , 10000)
+	a.allMsgBridge = make(chan dataPack , 10000)
 	a.reset()
 
 	return a
