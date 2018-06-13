@@ -7,6 +7,7 @@ import (
 	"math/big"
 	"github.com/tinylib/msgp/msgp"
 	"bytes"
+	"fmt"
 )
 
 /*
@@ -28,7 +29,7 @@ type Apos struct {
 	//all goroutine send msg to Apos by this Chan
 	allMsgBridge chan []byte
 
-	roundCtx      *RoundContext
+	roundCtx      *Round
 
 	stop bool
 	lock sync.RWMutex
@@ -40,15 +41,34 @@ type diffCredentialSig struct {
 }
 
 //round context
-type RoundContext struct {
-	Round          types.BigInt
+type Round struct {
+	round          types.BigInt
 	apos           *Apos
 
 	credentials    map[int]*CredentialSig
+
+	allStepObj     map[int]stepInterface
+	lock sync.RWMutex
+}
+
+func (this *Round)addStepObj(step int , stepObj stepInterface){
+	this.lock.Lock()
+	defer this.lock.Unlock()
+
+	if _, ok := this.allStepObj[step]; !ok {
+		this.allStepObj[step] = stepObj
+	}
+}
+
+//inform stepObj to stop running
+func (this *Round)broadCastStop(){
+	for _,v := range this.allStepObj {
+		v.stop()
+	}
 }
 
 // Generate valid Credentials in current round
-func (this *RoundContext)GenerateCredentials() {
+func (this *Round)GenerateCredentials() {
 	for i := 1; i < this.apos.algoParam.maxSteps; i++{
 		credential := this.apos.makeCredential(i)
 		isVerfier := this.apos.judgeVerifier(credential, i)
@@ -58,21 +78,70 @@ func (this *RoundContext)GenerateCredentials() {
 	}
 }
 
-func (this *RoundContext)BroadcastCredentials() {
+func (this *Round)BroadcastCredentials() {
 	for i, credential := range this.credentials {
-		logger.Info("SendCredential round", this.Round.IntVal.Uint64(), "step", i)
+		logger.Info("SendCredential round", this.round.IntVal.Uint64(), "step", i)
 		this.apos.outMsger.SendCredential(credential)
 	}
 }
 
 
-func (this *RoundContext)StartVerify() {
+func (this *Round)StartVerify() {
 	for i, credential := range this.credentials {
-		this.apos.stepsFactory(i, credential)
+		stepObj := this.apos.stepsFactory(i, credential)
+		this.addStepObj(i, stepObj)
+		go stepObj.run()
 	}
 }
 
-func (this *RoundContext)Run(){
+func (this *Round)SavaM1(msg *M1) {
+
+
+}
+
+func (this *Round)ReceiveM1(msg *M1) {
+
+	//verify msg
+	if msg.Credential.Round.IntVal.Cmp(&this.round.IntVal) != 0 {
+		logger.Warn("verify fail, M1 msg is not in current round", msg.Credential.Round.IntVal.Uint64(), this.round.IntVal.Uint64())
+		return
+	}
+
+	if msg.Credential.Step.IntVal.Uint64() != 1 {
+		logger.Warn("verify fail, M1 msg step is 1", msg.Credential.Round.IntVal.Uint64(), msg.Credential.Step.IntVal.Uint64())
+		return
+	}
+	//todo more verify need
+
+	//first send this msg to step1 goroutine
+	if stepObj, ok := this.allStepObj[2]; ok {
+		stepObj.sendMsg(msg)
+	}
+
+	this.SavaM1(msg)
+}
+
+func (this *Round)CommonProcess() {
+	for{
+		select {
+		// receive message
+		case outData := <-this.apos.outMsger.GetDataMsg():
+			switch v := outData.(type) {
+			case *CredentialSig:
+				fmt.Println(v)
+			case *M1:
+				fmt.Println(v)
+				this.ReceiveM1(v)
+			case *M23:
+				fmt.Println(v)
+			case *MCommon:
+				fmt.Println(v)
+			}
+		}
+	}
+}
+
+func (this *Round)Run(){
 	// make verifiers Credential
 	this.GenerateCredentials()
 
@@ -171,7 +240,6 @@ func (this *Apos)broadCastStop(){
 	for _,v := range this.allStepObj {
 		v.stop()
 	}
-
 }
 
 //reset the status of Apos

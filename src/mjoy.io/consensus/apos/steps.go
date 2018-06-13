@@ -26,7 +26,7 @@ func makeStep1Obj(pApos *Apos , pCredential *CredentialSig , outMsgChan chan []b
 	s.step = step
 	return s
 }
-func (this *step1BlockProposal)sendMsg(data []byte)error{
+func (this *step1BlockProposal)sendMsg(data dataPack)error{
 	//todo:
 	return nil
 }
@@ -68,7 +68,7 @@ func makeStep2Obj(pApos *Apos , pCredential *CredentialSig , outMsgChan chan []b
 	return s
 }
 
-func (this *step2FirstStepGC)sendMsg(data []byte)error{
+func (this *step2FirstStepGC)sendMsg(data dataPack)error{
 	//todo:
 	return nil
 }
@@ -108,7 +108,7 @@ func makeStep3Obj(pApos *Apos , pCredential *CredentialSig , outMsgChan chan []b
 	return s
 }
 
-func (this *step3SecondStepGC)sendMsg(data []byte)error{
+func (this *step3SecondStepGC)sendMsg(data dataPack)error{
 	//todo:
 	return nil
 }
@@ -148,7 +148,7 @@ func makeStep4Obj(pApos *Apos , pCredential *CredentialSig , outMsgChan chan []b
 	return s
 }
 
-func (this *step4FirstStepBBA)sendMsg(data []byte)error{
+func (this *step4FirstStepBBA)sendMsg(data dataPack)error{
 	//todo:
 	return nil
 }
@@ -188,7 +188,7 @@ func makeStep5Obj(pApos *Apos , pCredential *CredentialSig , outMsgChan chan []b
 	return s
 }
 
-func (this *step5CoinFixedTo0BBA)sendMsg(data []byte)error{
+func (this *step5CoinFixedTo0BBA)sendMsg(data dataPack)error{
 	//todo:
 	return nil
 }
@@ -227,7 +227,7 @@ func makeStep6Obj(pApos *Apos , pCredential *CredentialSig , outMsgChan chan []b
 	return s
 }
 
-func (this *step6CoinFixedTo1BBA)sendMsg(data []byte)error{
+func (this *step6CoinFixedTo1BBA)sendMsg(data dataPack)error{
 	//todo:
 	return nil
 }
@@ -266,7 +266,7 @@ func makeStep7Obj(pApos *Apos , pCredential *CredentialSig , outMsgChan chan []b
 	return s
 }
 
-func (this *step7CoinGenFlipBBA)sendMsg(data []byte)error{
+func (this *step7CoinGenFlipBBA)sendMsg(data dataPack)error{
 	//todo:
 	return nil
 }
