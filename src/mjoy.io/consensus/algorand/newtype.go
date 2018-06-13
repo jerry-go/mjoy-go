@@ -24,6 +24,8 @@ import (
 	"mjoy.io/common/types"
 	"mjoy.io/common"
 	"mjoy.io/core/blockchain/block"
+	"bytes"
+	"github.com/tinylib/msgp/msgp"
 )
 
 // for algorand1, fill block header ConsensusData filed
@@ -32,13 +34,22 @@ import (
 var (
 	ConsensusDataId = "algorand1"
 )
-
+//go:generate msgp
 // credentialData is the data for generating credential
 // credential = sig(credentialData)
 type CredentialData struct {
 	Round         types.BigInt
 	Step          types.BigInt
 	Quantity      types.Hash    //the seed of round r
+}
+func (s *CredentialData)GetMsgp()[]byte{
+	var buf bytes.Buffer
+	err := msgp.Encode(&buf, s)
+	if err != nil{
+		return nil
+	}
+
+	return buf.Bytes()
 }
 
 type CredentialSig struct {
@@ -48,11 +59,29 @@ type CredentialSig struct {
 	S             types.BigInt
 	V             types.BigInt
 }
+func (s *CredentialSig)GetMsgp()[]byte{
+	var buf bytes.Buffer
+	err := msgp.Encode(&buf, s)
+	if err != nil{
+		return nil
+	}
+
+	return buf.Bytes()
+}
 
 type SignatureVal struct {
 	R             types.BigInt
 	S             types.BigInt
 	V             types.BigInt
+}
+func (s *SignatureVal)GetMsgp()[]byte{
+	var buf bytes.Buffer
+	err := msgp.Encode(&buf, s)
+	if err != nil{
+		return nil
+	}
+
+	return buf.Bytes()
 }
 
 func (c *CredentialData) Hash() types.Hash {
