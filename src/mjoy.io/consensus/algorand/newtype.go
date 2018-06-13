@@ -23,6 +23,7 @@ package algorand
 import (
 	"mjoy.io/common/types"
 	"mjoy.io/common"
+	"mjoy.io/core/blockchain/block"
 )
 
 // for algorand1, fill block header ConsensusData filed
@@ -54,12 +55,42 @@ type SignatureVal struct {
 	V             types.BigInt
 }
 
-func (h *CredentialData) Hash() types.Hash {
-	hash, err := common.MsgpHash(h)
+func (c *CredentialData) Hash() types.Hash {
+	hash, err := common.MsgpHash(c)
 	if err != nil {
 		return types.Hash{}
 	}
 	return hash
 }
 
+// step1 (Block Proposal) message
+// m(r,1) = (Br, esig(H(Br)), σr1)
+type M1 struct {
+	Block         *block.Block
+	Esig          []byte
+	Credential    *CredentialSig
+}
+
+// step2 (The First Step of the Graded Consensus Protocol GC) message
+// step3 (The Second Step of GC) message
+// step2 and step3 message has the same structure
+// m(r,2) = (ESIG(v′), σr2)
+type M23 struct {
+	//hash is v′, the hash of the next block
+	Hash          types.Hash
+	Esig          []byte
+	Credential    *CredentialSig
+}
+
+// step4 and step other message
+// m(r,s) = (ESIG(b), ESIG(v′), σrs)
+type MCommon struct {
+	//B is the BBA⋆ input b, 0 or 1
+	B             uint
+	EsigB         []byte
+	//hash is v′, the hash of the next block
+	Hash          types.Hash
+	EsigV         []byte
+	Credential    *CredentialSig
+}
 
