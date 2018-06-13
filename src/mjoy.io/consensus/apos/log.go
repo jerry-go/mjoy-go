@@ -18,7 +18,7 @@
 // @Date: 2018/06/12 17:18:09
 ////////////////////////////////////////////////////////////////////////////////
 
-package algorand
+package apos
 
 import (
 "fmt"
@@ -27,7 +27,7 @@ import (
 )
 
 var (
-	logTag = "consensus.algorand"
+	logTag = "consensus.apos"
 	logger log.Logger
 )
 

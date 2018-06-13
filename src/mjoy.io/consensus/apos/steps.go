@@ -1,4 +1,4 @@
-package algorand
+package apos
 
 import "fmt"
 
@@ -10,12 +10,12 @@ type step1BlockProposal struct {
 	msgOut chan []byte  //Data: In ----- > Out, out caller should give it us
 	exit chan int
 	step int            //which step the obj stay
-	algorand *Algorand
+	apos *Apos
 
 }
-func makeStep1Obj(pAlgorand *Algorand , pCredential *CredentialSig , outMsgChan chan []byte , step int)*step1BlockProposal{
+func makeStep1Obj(pApos *Apos , pCredential *CredentialSig , outMsgChan chan []byte , step int)*step1BlockProposal{
 	s := new(step1BlockProposal)
-	s.algorand = pAlgorand
+	s.apos = pApos
 
 
 	s.msgIn = make(chan []byte , 100)
@@ -48,13 +48,13 @@ type step2FirstStepGC struct {
 	msgOut chan []byte  //Data: In ----- > Out, out caller should give it us
 	exit chan int
 	step int
-	algorand *Algorand
+	apos *Apos
 
 }
 
-func makeStep2Obj(pAlgorand *Algorand , pCredential *CredentialSig , outMsgChan chan []byte , step int)*step2FirstStepGC{
+func makeStep2Obj(pApos *Apos , pCredential *CredentialSig , outMsgChan chan []byte , step int)*step2FirstStepGC{
 	s := new(step2FirstStepGC)
-	s.algorand = pAlgorand
+	s.apos = pApos
 
 
 	s.msgIn = make(chan []byte , 100)
@@ -88,13 +88,13 @@ type step3SecondStepGC struct {
 	msgOut chan []byte  //Data: In ----- > Out, out caller should give it us
 	exit chan int
 	step int
-	algorand *Algorand
+	apos *Apos
 
 }
 
-func makeStep3Obj(pAlgorand *Algorand , pCredential *CredentialSig , outMsgChan chan []byte , step int)*step3SecondStepGC{
+func makeStep3Obj(pApos *Apos , pCredential *CredentialSig , outMsgChan chan []byte , step int)*step3SecondStepGC{
 	s := new(step3SecondStepGC)
-	s.algorand = pAlgorand
+	s.apos = pApos
 
 
 	s.msgIn = make(chan []byte , 100)
@@ -128,13 +128,13 @@ type step4FirstStepBBA struct {
 	msgOut chan []byte  //Data: In ----- > Out, out caller should give it us
 	exit chan int
 	step int
-	algorand *Algorand
+	apos *Apos
 
 }
 
-func makeStep4Obj(pAlgorand *Algorand , pCredential *CredentialSig , outMsgChan chan []byte , step int)*step4FirstStepBBA{
+func makeStep4Obj(pApos *Apos , pCredential *CredentialSig , outMsgChan chan []byte , step int)*step4FirstStepBBA{
 	s := new(step4FirstStepBBA)
-	s.algorand = pAlgorand
+	s.apos = pApos
 
 
 	s.msgIn = make(chan []byte , 100)
@@ -168,13 +168,13 @@ type step5CoinFixedTo0BBA struct {
 	msgOut chan []byte  //Data: In ----- > Out, out caller should give it us
 	exit chan int
 	step int
-	algorand *Algorand
+	apos *Apos
 
 }
 
-func makeStep5Obj(pAlgorand *Algorand , pCredential *CredentialSig , outMsgChan chan []byte , step int)*step5CoinFixedTo0BBA{
+func makeStep5Obj(pApos *Apos , pCredential *CredentialSig , outMsgChan chan []byte , step int)*step5CoinFixedTo0BBA{
 	s := new(step5CoinFixedTo0BBA)
-	s.algorand = pAlgorand
+	s.apos = pApos
 
 
 	s.msgIn = make(chan []byte , 100)
@@ -207,13 +207,13 @@ type step6CoinFixedTo1BBA struct {
 	msgOut chan []byte  //Data: In ----- > Out, out caller should give it us
 	exit chan int
 	step int
-	algorand *Algorand
+	apos *Apos
 
 }
 
-func makeStep6Obj(pAlgorand *Algorand , pCredential *CredentialSig , outMsgChan chan []byte , step int)*step6CoinFixedTo1BBA{
+func makeStep6Obj(pApos *Apos , pCredential *CredentialSig , outMsgChan chan []byte , step int)*step6CoinFixedTo1BBA{
 	s := new(step6CoinFixedTo1BBA)
-	s.algorand = pAlgorand
+	s.apos = pApos
 
 
 	s.msgIn = make(chan []byte , 100)
@@ -246,13 +246,13 @@ type step7CoinGenFlipBBA struct {
 	msgOut chan []byte  //Data: In ----- > Out, out caller should give it us
 	exit chan int
 	step int
-	algorand *Algorand
+	apos *Apos
 
 }
 
-func makeStep7Obj(pAlgorand *Algorand , pCredential *CredentialSig , outMsgChan chan []byte , step int)*step7CoinGenFlipBBA{
+func makeStep7Obj(pApos *Apos , pCredential *CredentialSig , outMsgChan chan []byte , step int)*step7CoinGenFlipBBA{
 	s := new(step7CoinGenFlipBBA)
-	s.algorand = pAlgorand
+	s.apos = pApos
 
 
 	s.msgIn = make(chan []byte , 100)

@@ -1,4 +1,4 @@
-package algorand
+package apos
 
 import (
 	"mjoy.io/common/types"

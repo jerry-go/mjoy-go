@@ -1,4 +1,4 @@
-package algorand
+package apos
 
 import (
 	"math/big"

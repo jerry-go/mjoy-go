@@ -1,4 +1,4 @@
-package algorand
+package apos
 
 import (
 	"sync"
@@ -10,30 +10,30 @@ import (
 )
 
 /*
-Instructions For Algorand:
-The Type-Algorand manage the main loop of algorand consensus,
+Instructions For Apos:
+The Type-Apos manage the main loop of Apos consensus,
 handle the Condition0,Condition1 and m+3,
-and Output Algorand-SystemParam to the sub-goroutine
+and Output Apos-SystemParam to the sub-goroutine
 */
 
-type Algorand struct {
+type Apos struct {
 	all map[int]stepInterface
 	algoParam *algoParam
-	systemParam interface{} //the difference of algoParam and systemParam is that algoParam show the Algorand
+	systemParam interface{} //the difference of algoParam and systemParam is that algoParam show the Apos
 							//running status,but the systemParam show the Mjoy runing
 	mainStep int
 	commonTools CommonTools
 	outMsger OutMsger
 
-	//all goroutine send msg to Algorand by this Chan
+	//all goroutine send msg to Apos by this Chan
 	allMsgBridge chan []byte
 
 	mu sync.RWMutex
 }
 
-//Create Algorand
-func NewAlgorand(msger OutMsger ,cmTools CommonTools )*Algorand{
-	a := new(Algorand)
+//Create Apos
+func NewApos(msger OutMsger ,cmTools CommonTools )*Apos{
+	a := new(Apos)
 	a.all = make(map[int]stepInterface)
 	a.outMsger = msger
 	a.commonTools = cmTools
@@ -43,11 +43,11 @@ func NewAlgorand(msger OutMsger ,cmTools CommonTools )*Algorand{
 	return a
 }
 
-//this is the main loop of Algorand
-func (this *Algorand)Run(){
+//this is the main loop of Apos
+func (this *Apos)Run(){
 
 	for{
-		//Algorand status reset
+		//Apos status reset
 		this.reset()
 
 		//1.create credential
@@ -89,8 +89,8 @@ func (this *Algorand)Run(){
 	}
 }
 
-//reset the status of algorand
-func (this *Algorand)reset(){
+//reset the status of Apos
+func (this *Apos)reset(){
 	this.all = make(map[int]stepInterface)
 	this.algoParam = newAlgoParam()
 	this.mainStep = 0
@@ -98,7 +98,7 @@ func (this *Algorand)reset(){
 
 
 //Create The Credential
-func (this *Algorand)makeCredential(s int)*CredentialSig{
+func (this *Apos)makeCredential(s int)*CredentialSig{
 	//create the credential and check i is the potential leader or verifier
 	//r := this.commonTools.GetNowBlockNum()
 	//k := this.algoParam.GetK()
@@ -123,7 +123,7 @@ func (this *Algorand)makeCredential(s int)*CredentialSig{
 
 }
 
-func (this *Algorand)judgeLeader(pCredentialSig *CredentialSig)bool{
+func (this *Apos)judgeLeader(pCredentialSig *CredentialSig)bool{
 	srcBytes := []byte{}
 	srcBytes = append(srcBytes , pCredentialSig.R.IntVal.Bytes()...)
 	srcBytes = append(srcBytes , pCredentialSig.S.IntVal.Bytes()...)
@@ -144,7 +144,7 @@ func (this *Algorand)judgeLeader(pCredentialSig *CredentialSig)bool{
 	return false
 }
 
-func (this *Algorand)judgeVerifier(pCredentialSig *CredentialSig)bool{
+func (this *Apos)judgeVerifier(pCredentialSig *CredentialSig)bool{
 	srcBytes := []byte{}
 	srcBytes = append(srcBytes , pCredentialSig.R.IntVal.Bytes()...)
 	srcBytes = append(srcBytes , pCredentialSig.S.IntVal.Bytes()...)
@@ -165,7 +165,7 @@ func (this *Algorand)judgeVerifier(pCredentialSig *CredentialSig)bool{
 }
 
 
-func (this *Algorand)stepsFactory(step int , pCredential *CredentialSig)(stepObj stepInterface){
+func (this *Apos)stepsFactory(step int , pCredential *CredentialSig)(stepObj stepInterface){
 	stepObj = nil
 	switch step {
 	case 1:

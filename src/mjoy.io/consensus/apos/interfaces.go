@@ -1,4 +1,4 @@
-package algorand
+package apos
 
 /*
 for inner interfaces
