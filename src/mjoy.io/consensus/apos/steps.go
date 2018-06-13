@@ -36,7 +36,10 @@ func (this *step1BlockProposal)stop(){
 }
 
 func (this *step1BlockProposal)run(){
+
 	for{
+
+
 		//todo:what should we dealing
 		fmt.Println("For test")
 	}

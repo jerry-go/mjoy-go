@@ -18,3 +18,6 @@ func BytesToFloat(b []byte)(float64,error){
 	}
 	return endFloat , err
 }
+
+
+

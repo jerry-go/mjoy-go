@@ -17,7 +17,7 @@ and Output Apos-SystemParam to the sub-goroutine
 */
 
 type Apos struct {
-	all map[int]stepInterface
+	allStepObj map[int]stepInterface
 	algoParam *algoParam
 	systemParam interface{} //the difference of algoParam and systemParam is that algoParam show the Apos
 							//running status,but the systemParam show the Mjoy runing
@@ -28,13 +28,14 @@ type Apos struct {
 	//all goroutine send msg to Apos by this Chan
 	allMsgBridge chan []byte
 
-	mu sync.RWMutex
+	stop bool
+	lock sync.RWMutex
 }
 
 //Create Apos
 func NewApos(msger OutMsger ,cmTools CommonTools )*Apos{
 	a := new(Apos)
-	a.all = make(map[int]stepInterface)
+	a.allStepObj = make(map[int]stepInterface)
 	a.outMsger = msger
 	a.commonTools = cmTools
 	a.allMsgBridge = make(chan []byte , 10000)
@@ -43,9 +44,29 @@ func NewApos(msger OutMsger ,cmTools CommonTools )*Apos{
 	return a
 }
 
+
+func (this *Apos)msgRcv(){
+	for{
+		select {
+		case outData:=<-this.outMsger.GetMsg():
+			if this.stop{   //other logic deal has stop
+				continue
+			}
+			_ = outData
+			//todo:add msg to buffer
+        case stepData := <-this.allMsgBridge:
+        	if this.stop{   //other logic deal has stop
+        		continue
+	        }
+        	_= stepData
+        	//todo:add msg to buffer
+		}
+	}
+}
+
 //this is the main loop of Apos
 func (this *Apos)Run(){
-
+	go this.msgRcv()
 	for{
 		//Apos status reset
 		this.reset()
@@ -78,23 +99,58 @@ func (this *Apos)Run(){
 
 
 			//here should make goroutine and run it
-
-
-
-
-
+			exist := this.existStepObj(i)
+			if !exist{
+				stepObj := this.stepsFactory(i,pCredential)
+				this.addStepObj(i,stepObj)
+				go stepObj.run()
+			}
 
 		}
 
+		//Condition 0 ,Condition 1 and m+3 judge
+
+
 	}
+}
+//inform stepObj to stop running
+func (this *Apos)broadCastStop(){
+	for _,v := range this.allStepObj {
+		v.stop()
+	}
+
 }
 
 //reset the status of Apos
 func (this *Apos)reset(){
-	this.all = make(map[int]stepInterface)
+	this.lock.Lock()
+	defer this.lock.Unlock()
+
+	this.broadCastStop()
+	this.allStepObj = make(map[int]stepInterface)
 	this.algoParam = newAlgoParam()
 	this.mainStep = 0
+	this.stop = false
 }
+func (this *Apos)addStepObj(step int , stepObj stepInterface){
+	this.lock.Lock()
+	defer this.lock.Unlock()
+
+	if _, ok := this.allStepObj[step]; !ok {
+		this.allStepObj[step] = stepObj
+	}
+}
+
+func (this *Apos)existStepObj(step int)bool {
+	this.lock.RLock()
+	defer this.lock.RUnlock()
+
+	if _, ok := this.allStepObj[step]; ok {
+		return true
+	}
+	return false
+}
+
 
 
 //Create The Credential
