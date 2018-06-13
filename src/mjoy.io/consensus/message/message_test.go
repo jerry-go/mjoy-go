@@ -26,34 +26,34 @@ import (
 )
 
 type Testmsg struct {
-	a int
+	A int
 	stop bool
-	*msgPriv
+	*MsgPriv
 }
 
 // new a message
 func NewTestmsg() *Testmsg {
 	tm := Testmsg{
-		a: 1,
+		A: 1,
 		stop: false,
-		msgPriv: newMsgPriv(),
+		MsgPriv: newMsgPriv(),
 	}
-	Msgcore().handle(&tm)
+	Msgcore().Handle(&tm)
 
 	return &tm
 }
 
-func (tm *Testmsg) dataHandle(data interface{}) {
+func (tm *Testmsg) DataHandle(data interface{}) {
 	go func() {
 		for !tm.stop {
-			fmt.Printf("handle: %v %v\n", tm.a, tm.stop)
+			fmt.Printf("handle: %v %v\n", tm.A, tm.stop)
 			time.Sleep(1 * time.Second)
 		}
 		fmt.Printf("handle stop\n")
 	}()
 }
 
-func (tm *Testmsg) stopHandle() {
+func (tm *Testmsg) StopHandle() {
 	fmt.Printf("stop ...\n")
 	tm.stop = true
 }
@@ -62,7 +62,7 @@ func ExampleMsg() {
 	// new
 	tm := NewTestmsg()
 	// fix and process
-	tm.a = 123
+	tm.A = 123
 	// send
 	tm.Send()
 	time.Sleep(5 * time.Second)

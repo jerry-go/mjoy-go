@@ -29,9 +29,130 @@ type Apos struct {
 	//all goroutine send msg to Apos by this Chan
 	allMsgBridge chan []byte
 
+	roundCtx      *Round
+
 	stop bool
 	lock sync.RWMutex
 }
+
+type diffCredentialSig struct {
+	difficulty    *big.Int
+	credential    *CredentialSig
+}
+
+//round context
+type Round struct {
+	round          types.BigInt
+	apos           *Apos
+
+	credentials    map[int]*CredentialSig
+
+	allStepObj     map[int]stepInterface
+	lock sync.RWMutex
+}
+
+func (this *Round)addStepObj(step int , stepObj stepInterface){
+	this.lock.Lock()
+	defer this.lock.Unlock()
+
+	if _, ok := this.allStepObj[step]; !ok {
+		this.allStepObj[step] = stepObj
+	}
+}
+
+//inform stepObj to stop running
+func (this *Round)broadCastStop(){
+	for _,v := range this.allStepObj {
+		v.stop()
+	}
+}
+
+// Generate valid Credentials in current round
+func (this *Round)GenerateCredentials() {
+	for i := 1; i < this.apos.algoParam.maxSteps; i++{
+		credential := this.apos.makeCredential(i)
+		isVerfier := this.apos.judgeVerifier(credential, i)
+		if isVerfier {
+			this.credentials[i] = credential
+		}
+	}
+}
+
+func (this *Round)BroadcastCredentials() {
+	for i, credential := range this.credentials {
+		logger.Info("SendCredential round", this.round.IntVal.Uint64(), "step", i)
+		this.apos.outMsger.SendCredential(credential)
+	}
+}
+
+
+func (this *Round)StartVerify() {
+	for i, credential := range this.credentials {
+		stepObj := this.apos.stepsFactory(i, credential)
+		this.addStepObj(i, stepObj)
+		go stepObj.run()
+	}
+}
+
+func (this *Round)SavaM1(msg *M1) {
+
+
+}
+
+func (this *Round)ReceiveM1(msg *M1) {
+
+	//verify msg
+	if msg.Credential.Round.IntVal.Cmp(&this.round.IntVal) != 0 {
+		logger.Warn("verify fail, M1 msg is not in current round", msg.Credential.Round.IntVal.Uint64(), this.round.IntVal.Uint64())
+		return
+	}
+
+	if msg.Credential.Step.IntVal.Uint64() != 1 {
+		logger.Warn("verify fail, M1 msg step is 1", msg.Credential.Round.IntVal.Uint64(), msg.Credential.Step.IntVal.Uint64())
+		return
+	}
+	//todo more verify need
+
+	//first send this msg to step1 goroutine
+	if stepObj, ok := this.allStepObj[2]; ok {
+		stepObj.sendMsg(msg)
+	}
+
+	this.SavaM1(msg)
+}
+
+func (this *Round)CommonProcess() {
+	for{
+		select {
+		// receive message
+		case outData := <-this.apos.outMsger.GetDataMsg():
+			switch v := outData.(type) {
+			case *CredentialSig:
+				fmt.Println(v)
+			case *M1:
+				fmt.Println(v)
+				this.ReceiveM1(v)
+			case *M23:
+				fmt.Println(v)
+			case *MCommon:
+				fmt.Println(v)
+			}
+		}
+	}
+}
+
+func (this *Round)Run(){
+	// make verifiers Credential
+	this.GenerateCredentials()
+
+	// broadcast Credentials
+	this.BroadcastCredentials()
+
+	this.StartVerify()
+
+}
+
+
 
 //Create Apos
 func NewApos(msger OutMsger ,cmTools CommonTools )*Apos{
@@ -81,7 +202,7 @@ func (this *Apos)Run(){
 			if i == 1 {
 				broadCastCredential = this.judgeLeader(pCredential)
 			}else{
-				broadCastCredential = this.judgeVerifier(pCredential)
+				broadCastCredential = this.judgeVerifier(pCredential, i)
 			}
 
 			if broadCastCredential {
@@ -119,7 +240,6 @@ func (this *Apos)broadCastStop(){
 	for _,v := range this.allStepObj {
 		v.stop()
 	}
-
 }
 
 //reset the status of Apos
@@ -197,7 +317,7 @@ func (this *Apos)judgeLeader(pCredentialSig *CredentialSig)bool{
 	return false
 }
 
-func (this *Apos)judgeVerifier(pCredentialSig *CredentialSig)bool{
+func (this *Apos)judgeVerifier(pCredentialSig *CredentialSig, setp int) bool{
 	srcBytes := []byte{}
 	srcBytes = append(srcBytes , pCredentialSig.R.IntVal.Bytes()...)
 	srcBytes = append(srcBytes , pCredentialSig.S.IntVal.Bytes()...)
@@ -205,7 +325,14 @@ func (this *Apos)judgeVerifier(pCredentialSig *CredentialSig)bool{
 
 	h := crypto.Keccak256(srcBytes)
 	difficulty := BytesToDifficulty(h)
-	if difficulty.Cmp(this.algoParam.verifierDifficulty) > 0 {
+
+	verifierDifficulty := new(big.Int)
+	if 1 == setp {
+		verifierDifficulty = this.algoParam.leaderDifficulty
+	} else {
+		verifierDifficulty = this.algoParam.verifierDifficulty
+	}
+	if difficulty.Cmp(verifierDifficulty) > 0 {
 		return true
 	}
 

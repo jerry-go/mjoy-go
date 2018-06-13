@@ -23,7 +23,6 @@ package message
 import (
 	"sync"
 	"mjoy.io/utils/event"
-	"mjoy.io/communication/p2p/discover"
 )
 
 // the channel of consensus' message
@@ -41,25 +40,25 @@ type Message interface {
 
 // each message must implement this interface
 // to handle message
-type handler interface {
-	handle(h handleable)
+type Handler interface {
+	Handle(h Handleable)
 }
 
 // each message must implement this interface
 // to handle data and stop
-type handleable interface {
-	dataHandle(data interface{})
-	stopHandle()
+type Handleable interface {
+	DataHandle(data interface{})
+	StopHandle()
 }
 
 // private message struct
 // The basic structure and interface of the message are implemented and could be inherited
-type msgPriv struct {
+type MsgPriv struct {
 	channel messageChannel
 }
 
-func newMsgPriv() *msgPriv {
-	msg := msgPriv{
+func newMsgPriv() *MsgPriv {
+	msg := MsgPriv{
 		channel: messageChannel{
 			data: make(chan interface{}),
 			stop: make(chan struct{}),
@@ -68,62 +67,62 @@ func newMsgPriv() *msgPriv {
 	return &msg
 }
 
-func (msg msgPriv) Send() error {
+func (msg MsgPriv) Send() error {
 	msg.channel.data <- msg
 	return nil
 }
 
-func (msg msgPriv) Close() {
+func (msg MsgPriv) Close() {
 	close(msg.channel.stop)
 }
 
-func (msg msgPriv) handle(h handleable) {
+func (msg MsgPriv) Handle(h Handleable) {
 	for {
 		select {
 		case data := <-msg.channel.data:
-			h.dataHandle(data)
+			h.DataHandle(data)
 		case <-msg.channel.stop:
-			h.stopHandle()
+			h.StopHandle()
 			return
 		}
 	}
 }
 
 func isHandler(msg interface{}) bool {
-	_, ok := msg.(handler)
+	_, ok := msg.(Handler)
 	return ok
 }
 
-func getHandler(msg interface{}) handler {
-	hd, ok := msg.(handler)
+func getHandler(msg interface{}) Handler {
+	hd, ok := msg.(Handler)
 	if !ok {
-		panic("not a handler")
+		panic("not a Handler")
 	}
 	return hd
 }
 
 func isHandleable(msg interface{}) bool {
-	_, ok := msg.(handleable)
+	_, ok := msg.(Handleable)
 	return ok
 }
 
-func getHandleable(msg interface{}) handleable {
-	handle, ok := msg.(handleable)
+func getHandleable(msg interface{}) Handleable {
+	handle, ok := msg.(Handleable)
 	if !ok {
-		panic("not a handleable")
+		panic("not a Handleable")
 	}
 	return handle
 }
 
 // TODO:
 type msgcore struct {
-
+	scope         event.SubscriptionScope
 }
 
 // about msgcore singleton
 var (
-	instance *msgcore
-	once sync.Once
+	instance	*msgcore
+	once		sync.Once
 )
 // get the msgcore singleton
 func Msgcore() *msgcore {
@@ -134,13 +133,20 @@ func Msgcore() *msgcore {
 	return instance
 }
 
-// handle msg
-func (mc *msgcore) handle(msg interface{}) {
-	handler := getHandler(msg)
+// go routine, handle msg
+func (mc msgcore) Handle(msg interface{}) {
+	Handler := getHandler(msg)
 	h := getHandleable(msg)
-	go handler.handle(h)
+	go Handler.Handle(h)
 }
 
-type eventer struct {
-	feed     *event.Feed
+// Track starts tracking a subscription of consensus
+func (mc msgcore) SubTrack(s event.Subscription) event.Subscription {
+	return mc.scope.Track(s)
+}
+
+// Close calls Unsubscribe on all tracked subscriptions and prevents further additions to
+// the tracked set. Calls to Track after Close return nil.
+func (mc msgcore) SubClose() {
+	go mc.scope.Close()
 }

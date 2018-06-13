@@ -4,9 +4,12 @@ package apos
 for inner interfaces
 */
 
+type dataSetp interface {
+
+}
 //goroutine interfaces for algorand main structure
 type stepInterface interface {
-	sendMsg([]byte)error
+	sendMsg(dataPack) error
 	stop()
 	run()
 }
