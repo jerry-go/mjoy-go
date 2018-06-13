@@ -8,6 +8,7 @@ for inner interfaces
 type stepInterface interface {
 	sendMsg([]byte)error
 	stop()
+	run()
 }
 
 

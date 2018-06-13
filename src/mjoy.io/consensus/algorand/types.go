@@ -20,12 +20,53 @@
 
 package algorand
 
-import "sync"
+import (
+	"sync"
+	"bytes"
+	"github.com/tinylib/msgp/msgp"
+)
+//go:generate msgp
 
+const(
+	Type_Credential = iota
+	Type_BrCredential
+)
+
+//ConsensusData:the data type for sending and receiving
 type ConsensusData struct{
-	Id     string
+	Step   int
+	Type   int  //0:credential data 1:credential with Br info
 	Para   []byte
 }
+
+func PackConsensusData(s , t int , data []byte)[]byte{
+	c := new(ConsensusData)
+	c.Step = s
+	c.Type = t
+	c.Para = append(c.Para , data...)
+
+	var buf bytes.Buffer
+	err := msgp.Encode(&buf, c)
+	if err != nil{
+		return nil
+	}
+
+	return buf.Bytes()
+}
+
+func UnpackConsensusData(data []byte)*ConsensusData{
+	c := new(ConsensusData)
+	var buf bytes.Buffer
+	buf.Write(data)
+
+	err := msgp.Decode(&buf , c)
+	if err != nil{
+		logger.Errorf("UnpackConsensusData Err:%s",err.Error())
+		return nil
+	}
+	return c
+}
+
 
 //some system param(algorand system param) for step goroutine.
 //goroutine can set param by SetXXXX,and get param by GetXXXX
@@ -35,6 +76,7 @@ type algoParam struct {
 	pLeader float64
 	pVerifier float64
 	maxSteps int
+	m int
 	nNodes int
 
 
@@ -46,6 +88,7 @@ func (this *algoParam)SetDefault(){
 	this.pLeader = 0.1
 	this.pVerifier = 0.2
 	this.maxSteps = 183
+	this.m = this.maxSteps - 3
 	this.nNodes = 100
 
 }
