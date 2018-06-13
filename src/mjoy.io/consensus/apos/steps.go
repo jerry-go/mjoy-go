@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"mjoy.io/common/types"
 	"time"
+	"sync"
 )
 
 //steps handle
@@ -15,7 +16,8 @@ type step1BlockProposal struct {
 	exit chan int
 	step int            //which step the obj stay
 	apos *Apos
-
+	round *Round
+	lock sync.RWMutex
 }
 func makeStep1Obj(pApos *Apos , pCredential *CredentialSig , outMsgChan chan interface{} , step int)*step1BlockProposal{
 	s := new(step1BlockProposal)
@@ -30,7 +32,11 @@ func makeStep1Obj(pApos *Apos , pCredential *CredentialSig , outMsgChan chan int
 	s.step = step
 	return s
 }
-func (this *step1BlockProposal)sendMsg(data dataPack)error{
+func (this *step1BlockProposal)sendMsg(data dataPack, pRound *Round)error{
+	this.lock.Lock()
+	defer this.lock.Unlock()
+	this.round = pRound
+	this.msgIn <- data
 	//todo:
 	return nil
 }
@@ -61,7 +67,9 @@ type step2FirstStepGC struct {
 	exit chan int
 	step int
 	smallestLBr *M1 //this node regard smallestLBr as the smallest credential's block info
+	round *Round
 	apos *Apos
+	lock sync.RWMutex
 
 }
 
@@ -78,8 +86,12 @@ func makeStep2Obj(pApos *Apos , pCredential *CredentialSig , outMsgChan chan int
 	return s
 }
 
-func (this *step2FirstStepGC)sendMsg(data dataPack)error{
+func (this *step2FirstStepGC)sendMsg(data dataPack , pRound *Round)error{
 	//todo:
+	this.lock.Lock()
+	defer this.lock.Unlock()
+	this.round = pRound
+	this.msgIn <- data
 	return nil
 }
 
@@ -145,10 +157,10 @@ type step3SecondStepGC struct {
 	exit chan int
 	step int
 	apos *Apos
-
+	round *Round
 	//all M2 have received
 	allM2Index map[types.Hash]map[CredentialSig]bool
-
+	lock sync.RWMutex
 
 }
 
@@ -166,8 +178,12 @@ func makeStep3Obj(pApos *Apos , pCredential *CredentialSig , outMsgChan chan int
 	return s
 }
 
-func (this *step3SecondStepGC)sendMsg(data dataPack)error{
+func (this *step3SecondStepGC)sendMsg(data dataPack, pRound *Round)error{
 	//todo:
+	this.lock.Lock()
+	defer this.lock.Unlock()
+	this.round = pRound
+	this.msgIn <- data
 	return nil
 }
 
@@ -183,14 +199,20 @@ func (this *step3SecondStepGC)run(){
 	for{
 		select {
 		case <-timerT:
+
 			//time to work now,send all
 			total:=0
-			max := 0
+			maxLen := 0
 			maxHash := types.Hash{}
+			_ = maxHash
 			for hash,supporter := range this.allM2Index{
-				_ = hash
+
 				currentLen := len(supporter)
-				total += len(supporter)
+				if currentLen > maxLen{
+					maxLen = currentLen
+					maxHash = hash
+				}
+				total += currentLen
 
 			}
 
@@ -223,22 +245,23 @@ func (this *step3SecondStepGC)run(){
 
 //step 4:First Step of BBA*
 type step4FirstStepBBA struct {
-	msgIn chan []byte   //Data: Out ---- > In , we should create it
-	msgOut chan []byte  //Data: In ----- > Out, out caller should give it us
+	msgIn chan interface{}   //Data: Out ---- > In , we should create it
+	msgOut chan interface{}  //Data: In ----- > Out, out caller should give it us
 	exit chan int
 	step int
 	apos *Apos
+	round *Round
 	//all M3 have received
 	allM2Index map[types.Hash]map[CredentialSig]bool
-
+	lock sync.RWMutex
 }
 
-func makeStep4Obj(pApos *Apos , pCredential *CredentialSig , outMsgChan chan []byte , step int)*step4FirstStepBBA{
+func makeStep4Obj(pApos *Apos , pCredential *CredentialSig , outMsgChan chan interface{} , step int)*step4FirstStepBBA{
 	s := new(step4FirstStepBBA)
 	s.apos = pApos
 
 
-	s.msgIn = make(chan []byte , 100)
+	s.msgIn = make(chan interface{} , 100)
 	s.msgOut = outMsgChan
 
 	s.exit = make(chan int , 1)
@@ -246,8 +269,12 @@ func makeStep4Obj(pApos *Apos , pCredential *CredentialSig , outMsgChan chan []b
 	return s
 }
 
-func (this *step4FirstStepBBA)sendMsg(data dataPack)error{
+func (this *step4FirstStepBBA)sendMsg(data dataPack, pRound *Round)error{
 	//todo:
+	this.lock.Lock()
+	defer this.lock.Unlock()
+	this.round = pRound
+	this.msgIn <- data
 	return nil
 }
 
@@ -265,20 +292,22 @@ func (this *step4FirstStepBBA)run(){
 
 //step 5<= s <= m+2 ,s-2 mod 3 == 0 mod 3:Coin-Fixed-To-0 step of BBA*
 type step5CoinFixedTo0BBA struct {
-	msgIn chan []byte   //Data: Out ---- > In , we should create it
-	msgOut chan []byte  //Data: In ----- > Out, out caller should give it us
+	msgIn chan interface{}   //Data: Out ---- > In , we should create it
+	msgOut chan interface{}  //Data: In ----- > Out, out caller should give it us
 	exit chan int
 	step int
 	apos *Apos
+	round *Round
+	lock sync.RWMutex
 
 }
 
-func makeStep5Obj(pApos *Apos , pCredential *CredentialSig , outMsgChan chan []byte , step int)*step5CoinFixedTo0BBA{
+func makeStep5Obj(pApos *Apos , pCredential *CredentialSig , outMsgChan chan interface{} , step int)*step5CoinFixedTo0BBA{
 	s := new(step5CoinFixedTo0BBA)
 	s.apos = pApos
 
 
-	s.msgIn = make(chan []byte , 100)
+	s.msgIn = make(chan interface{} , 100)
 	s.msgOut = outMsgChan
 
 	s.exit = make(chan int , 1)
@@ -286,8 +315,12 @@ func makeStep5Obj(pApos *Apos , pCredential *CredentialSig , outMsgChan chan []b
 	return s
 }
 
-func (this *step5CoinFixedTo0BBA)sendMsg(data dataPack)error{
+func (this *step5CoinFixedTo0BBA)sendMsg(data dataPack, pRound *Round)error{
 	//todo:
+	this.lock.Lock()
+	defer this.lock.Unlock()
+	this.round = pRound
+	this.msgIn <- data
 	return nil
 }
 
@@ -304,20 +337,21 @@ func (this *step5CoinFixedTo0BBA)run(){
 
 //step 6<= s <= m+2 ,s-2 mod 3 == 1 mod 3:Coin-Fixed-To-1 step of BBA*
 type step6CoinFixedTo1BBA struct {
-	msgIn chan []byte   //Data: Out ---- > In , we should create it
-	msgOut chan []byte  //Data: In ----- > Out, out caller should give it us
+	msgIn chan interface{}   //Data: Out ---- > In , we should create it
+	msgOut chan interface{}  //Data: In ----- > Out, out caller should give it us
 	exit chan int
 	step int
 	apos *Apos
-
+	round *Round
+	lock sync.RWMutex
 }
 
-func makeStep6Obj(pApos *Apos , pCredential *CredentialSig , outMsgChan chan []byte , step int)*step6CoinFixedTo1BBA{
+func makeStep6Obj(pApos *Apos , pCredential *CredentialSig , outMsgChan chan interface{} , step int)*step6CoinFixedTo1BBA{
 	s := new(step6CoinFixedTo1BBA)
 	s.apos = pApos
 
 
-	s.msgIn = make(chan []byte , 100)
+	s.msgIn = make(chan interface{} , 100)
 	s.msgOut = outMsgChan
 
 	s.exit = make(chan int , 1)
@@ -325,8 +359,12 @@ func makeStep6Obj(pApos *Apos , pCredential *CredentialSig , outMsgChan chan []b
 	return s
 }
 
-func (this *step6CoinFixedTo1BBA)sendMsg(data dataPack)error{
+func (this *step6CoinFixedTo1BBA)sendMsg(data dataPack, pRound *Round)error{
 	//todo:
+	this.lock.Lock()
+	defer this.lock.Unlock()
+	this.round = pRound
+	this.msgIn <- data
 	return nil
 }
 
@@ -343,20 +381,21 @@ func (this *step6CoinFixedTo1BBA)run(){
 
 //step 7<= s <= m+2 ,s-2 mod 3 == 2 mod 3:Coin-Fixed-To-1 step of BBA*
 type step7CoinGenFlipBBA struct {
-	msgIn chan []byte   //Data: Out ---- > In , we should create it
-	msgOut chan []byte  //Data: In ----- > Out, out caller should give it us
+	msgIn chan interface{}   //Data: Out ---- > In , we should create it
+	msgOut chan interface{}  //Data: In ----- > Out, out caller should give it us
 	exit chan int
 	step int
 	apos *Apos
-
+	round *Round
+	lock sync.RWMutex
 }
 
-func makeStep7Obj(pApos *Apos , pCredential *CredentialSig , outMsgChan chan []byte , step int)*step7CoinGenFlipBBA{
+func makeStep7Obj(pApos *Apos , pCredential *CredentialSig , outMsgChan chan interface{} , step int)*step7CoinGenFlipBBA{
 	s := new(step7CoinGenFlipBBA)
 	s.apos = pApos
 
 
-	s.msgIn = make(chan []byte , 100)
+	s.msgIn = make(chan interface{} , 100)
 	s.msgOut = outMsgChan
 
 	s.exit = make(chan int , 1)
@@ -364,8 +403,12 @@ func makeStep7Obj(pApos *Apos , pCredential *CredentialSig , outMsgChan chan []b
 	return s
 }
 
-func (this *step7CoinGenFlipBBA)sendMsg(data dataPack)error{
+func (this *step7CoinGenFlipBBA)sendMsg(data dataPack, pRound *Round)error{
 	//todo:
+	this.lock.Lock()
+	defer this.lock.Unlock()
+	this.round = pRound
+	this.msgIn <- data
 	return nil
 }
 

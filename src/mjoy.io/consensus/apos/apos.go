@@ -48,7 +48,15 @@ type Round struct {
 	credentials    map[int]*CredentialSig
 
 	allStepObj     map[int]stepInterface
+
+	smallestLBr     *M1
 	lock sync.RWMutex
+}
+func (this *Round)setSmallestBrM1(m *M1){
+	this.lock.Lock()
+	defer this.lock.Unlock()
+
+	this.smallestLBr = m
 }
 
 func (this *Round)addStepObj(step int , stepObj stepInterface){
