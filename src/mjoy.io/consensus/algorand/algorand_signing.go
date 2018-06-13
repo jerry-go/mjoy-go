@@ -50,8 +50,8 @@ type AlgRandSigner struct {
 	chainId, chainIdMul *big.Int
 }
 
-// NewAlgRandSigner returns a Signer based on the given chain config
-func NewAlgRandSigner(chainId *big.Int) AlgRandSigner {
+// NewAlgoRandSigner returns a Signer based on the given chain config
+func NewAlgoRandSigner(chainId *big.Int) AlgRandSigner {
 	if chainId == nil {
 		chainId = new(big.Int)
 	}
