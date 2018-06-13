@@ -24,6 +24,7 @@ import (
 	"sync"
 	"bytes"
 	"github.com/tinylib/msgp/msgp"
+	"math/big"
 )
 //go:generate msgp
 
@@ -71,13 +72,15 @@ func UnpackConsensusData(data []byte)*ConsensusData{
 //some system param(algorand system param) for step goroutine.
 //goroutine can set param by SetXXXX,and get param by GetXXXX
 type algoParam struct {
-	lock sync.RWMutex
-	k int
-	pLeader float64
-	pVerifier float64
-	maxSteps int
-	m int
-	nNodes int
+	lock                sync.RWMutex
+	k                   int
+	pLeader             float64
+	leaderDifficulty    *big.Int
+	pVerifier           float64
+	verifierDifficulty  *big.Int
+	maxSteps            int
+	m                   int
+	nNodes              int
 
 
 }
@@ -86,7 +89,9 @@ func (this *algoParam)SetDefault(){
 	defer this.lock.Unlock()
 	this.k = 1
 	this.pLeader = 0.1
+	this.leaderDifficulty = big.NewInt(10)
 	this.pVerifier = 0.2
+	this.leaderDifficulty = big.NewInt(5)
 	this.maxSteps = 183
 	this.m = this.maxSteps - 3
 	this.nNodes = 100

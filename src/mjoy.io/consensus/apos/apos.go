@@ -130,14 +130,9 @@ func (this *Apos)judgeLeader(pCredentialSig *CredentialSig)bool{
 	srcBytes = append(srcBytes , pCredentialSig.V.IntVal.Bytes()...)
 
 	h := crypto.Keccak256(srcBytes)
-	endFloat , err := BytesToFloat(h)
-	if err != nil {
-		logger.Errorf("judgeLeader:%s" , err.Error())
-		return false
-	}
+	difficulty := BytesToDifficulty(h)
 
-	if endFloat <= this.algoParam.pLeader {
-
+	if difficulty.Cmp(this.algoParam.leaderDifficulty) > 0 {
 		return true
 	}
 
@@ -151,13 +146,8 @@ func (this *Apos)judgeVerifier(pCredentialSig *CredentialSig)bool{
 	srcBytes = append(srcBytes , pCredentialSig.V.IntVal.Bytes()...)
 
 	h := crypto.Keccak256(srcBytes)
-	endFloat , err := BytesToFloat(h)
-	if err != nil {
-		logger.Errorf("judgeLeader:%s" , err.Error())
-		return false
-	}
-	if endFloat <= this.algoParam.pVerifier {
-
+	difficulty := BytesToDifficulty(h)
+	if difficulty.Cmp(this.algoParam.verifierDifficulty) > 0 {
 		return true
 	}
 
