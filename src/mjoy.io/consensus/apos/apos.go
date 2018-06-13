@@ -28,9 +28,62 @@ type Apos struct {
 	//all goroutine send msg to Apos by this Chan
 	allMsgBridge chan []byte
 
+	roundCtx      *RoundContext
+
 	stop bool
 	lock sync.RWMutex
 }
+
+type diffCredentialSig struct {
+	difficulty    *big.Int
+	credential    *CredentialSig
+}
+
+//round context
+type RoundContext struct {
+	Round          types.BigInt
+	apos           *Apos
+
+	credentials    map[int]*CredentialSig
+}
+
+// Generate valid Credentials in current round
+func (this *RoundContext)GenerateCredentials() {
+	for i := 1; i < this.apos.algoParam.maxSteps; i++{
+		credential := this.apos.makeCredential(i)
+		isVerfier := this.apos.judgeVerifier(credential, i)
+		if isVerfier {
+			this.credentials[i] = credential
+		}
+	}
+}
+
+func (this *RoundContext)BroadcastCredentials() {
+	for i, credential := range this.credentials {
+		logger.Info("SendCredential round", this.Round.IntVal.Uint64(), "step", i)
+		this.apos.outMsger.SendCredential(credential)
+	}
+}
+
+
+func (this *RoundContext)StartVerify() {
+	for i, credential := range this.credentials {
+		this.apos.stepsFactory(i, credential)
+	}
+}
+
+func (this *RoundContext)Run(){
+	// make verifiers Credential
+	this.GenerateCredentials()
+
+	// broadcast Credentials
+	this.BroadcastCredentials()
+
+	this.StartVerify()
+
+}
+
+
 
 //Create Apos
 func NewApos(msger OutMsger ,cmTools CommonTools )*Apos{
@@ -80,7 +133,7 @@ func (this *Apos)Run(){
 			if i == 1 {
 				broadCastCredential = this.judgeLeader(pCredential)
 			}else{
-				broadCastCredential = this.judgeVerifier(pCredential)
+				broadCastCredential = this.judgeVerifier(pCredential, i)
 			}
 
 			if broadCastCredential {
@@ -195,7 +248,7 @@ func (this *Apos)judgeLeader(pCredentialSig *CredentialSig)bool{
 	return false
 }
 
-func (this *Apos)judgeVerifier(pCredentialSig *CredentialSig)bool{
+func (this *Apos)judgeVerifier(pCredentialSig *CredentialSig, setp int) bool{
 	srcBytes := []byte{}
 	srcBytes = append(srcBytes , pCredentialSig.R.IntVal.Bytes()...)
 	srcBytes = append(srcBytes , pCredentialSig.S.IntVal.Bytes()...)
@@ -203,7 +256,14 @@ func (this *Apos)judgeVerifier(pCredentialSig *CredentialSig)bool{
 
 	h := crypto.Keccak256(srcBytes)
 	difficulty := BytesToDifficulty(h)
-	if difficulty.Cmp(this.algoParam.verifierDifficulty) > 0 {
+
+	verifierDifficulty := new(big.Int)
+	if 1 == setp {
+		verifierDifficulty = this.algoParam.leaderDifficulty
+	} else {
+		verifierDifficulty = this.algoParam.verifierDifficulty
+	}
+	if difficulty.Cmp(verifierDifficulty) > 0 {
 		return true
 	}
 

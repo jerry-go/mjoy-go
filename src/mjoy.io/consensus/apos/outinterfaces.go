@@ -13,6 +13,8 @@ type OutMsger interface {
 	SendMsg([]byte)error
 	BroadCast([]byte)error
 	GetMsg()<-chan []byte
+
+	SendCredential(* CredentialSig) error
 }
 //some out tools offered by Mjoy,such as signer and blockInfo getter
 type CommonTools interface {

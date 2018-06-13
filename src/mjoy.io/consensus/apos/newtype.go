@@ -29,10 +29,10 @@ import (
 )
 
 // for algorand1, fill block header ConsensusData filed
-// id = "algorand1"
+// id = "apos"
 // para = Q(r) = hash(Sig(Q(r-1)), r) where r = block number
 var (
-	ConsensusDataId = "algorand1"
+	ConsensusDataId = "apos"
 )
 //go:generate msgp
 // credentialData is the data for generating credential
