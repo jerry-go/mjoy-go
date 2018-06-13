@@ -1,4 +1,4 @@
-package algorand
+package apos
 
 /*
 for inner interfaces
@@ -8,6 +8,7 @@ for inner interfaces
 type stepInterface interface {
 	sendMsg([]byte)error
 	stop()
+	run()
 }
 
 
