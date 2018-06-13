@@ -17,7 +17,7 @@ type OutMsger interface {
 //some out tools offered by Mjoy,such as signer and blockInfo getter
 type CommonTools interface {
 	//
-	SIG(r,s int ,Qr_k types.Hash )(R,S,V *big.Int)
+	SIG([]byte )(R,S,V *big.Int)
 
 	GetQr_k(k int)types.Hash
 	GetNowBlockNum()int

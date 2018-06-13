@@ -7,6 +7,7 @@ import (
 	"math/big"
 	"github.com/tinylib/msgp/msgp"
 	"bytes"
+	"fmt"
 )
 
 /*
@@ -163,8 +164,9 @@ func (this *Apos)makeCredential(s int)*CredentialSig{
 	k := 1
 
 	Qr_k := this.commonTools.GetQr_k(k)
+	str := fmt.Sprintf("%d%d%s",r,k,Qr_k.Hex())
 	//get sig
-	R,S,V := this.commonTools.SIG(r,1,Qr_k)
+	R,S,V := this.commonTools.SIG([]byte(str))
 
 	//if endFloat <= this.algoParam
 	c := new(CredentialSig)
@@ -209,6 +211,7 @@ func (this *Apos)judgeVerifier(pCredentialSig *CredentialSig)bool{
 
 	return false
 }
+
 
 
 func (this *Apos)stepsFactory(step int , pCredential *CredentialSig)(stepObj stepInterface){

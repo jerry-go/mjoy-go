@@ -36,7 +36,7 @@ const(
 //ConsensusData:the data type for sending and receiving
 type ConsensusData struct{
 	Step   int
-	Type   int  //0:credential data 1:credential with Br info
+	Type   int  //0:just credential data 1:credential with other info
 	Para   []byte
 }
 

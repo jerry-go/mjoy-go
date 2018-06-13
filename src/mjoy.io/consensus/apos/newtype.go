@@ -26,6 +26,7 @@ import (
 	"mjoy.io/core/blockchain/block"
 	"bytes"
 	"github.com/tinylib/msgp/msgp"
+	"mjoy.io/utils/crypto"
 )
 
 // for algorand1, fill block header ConsensusData filed
@@ -68,6 +69,30 @@ func (s *CredentialSig)GetMsgp()[]byte{
 
 	return buf.Bytes()
 }
+//   -1 if a <  b
+//    0 if a == b
+//   +1 if a >  b
+func (a *CredentialSig)Cmp(b *CredentialSig)int{
+	srcBytes := []byte{}
+	srcBytes = append(srcBytes , a.R.IntVal.Bytes()...)
+	srcBytes = append(srcBytes , a.S.IntVal.Bytes()...)
+	srcBytes = append(srcBytes , a.V.IntVal.Bytes()...)
+
+	h := crypto.Keccak256(srcBytes)
+
+	aInt := BytesToDifficulty(h)
+
+	srcBytes = []byte{}
+	srcBytes = append(srcBytes , b.R.IntVal.Bytes()...)
+	srcBytes = append(srcBytes , b.S.IntVal.Bytes()...)
+	srcBytes = append(srcBytes , b.V.IntVal.Bytes()...)
+
+	h = crypto.Keccak256(srcBytes)
+	bInt := BytesToDifficulty(h)
+
+	return aInt.Cmp(bInt)
+
+}
 
 type SignatureVal struct {
 	R             types.BigInt
@@ -84,6 +109,7 @@ func (s *SignatureVal)GetMsgp()[]byte{
 	return buf.Bytes()
 }
 
+
 func (c *CredentialData) Hash() types.Hash {
 	hash, err := common.MsgpHash(c)
 	if err != nil {
@@ -99,18 +125,59 @@ type M1 struct {
 	Esig          []byte
 	Credential    *CredentialSig
 }
+func (s *M1)GetMsgp()[]byte{
+	var buf bytes.Buffer
+	err := msgp.Encode(&buf, s)
+	if err != nil{
+		return nil
+	}
+
+	return buf.Bytes()
+}
+func M1Decode(data []byte)*M1{
+	c := new(M1)
+	var buf bytes.Buffer
+	buf.Write(data)
+
+	err := msgp.Decode(&buf , c)
+	if err != nil{
+		logger.Errorf("UnpackConsensusData Err:%s",err.Error())
+		return nil
+	}
+	return c
+}
 
 // step2 (The First Step of the Graded Consensus Protocol GC) message
 // step3 (The Second Step of GC) message
 // step2 and step3 message has the same structure
-// m(r,2) = (ESIG(v′), σr2)
+// m(r,2) = (ESIG(v′), σr2),v′= H(Bℓr) OR emptyHash{}
 type M23 struct {
 	//hash is v′, the hash of the next block
-	Hash          types.Hash
-	Esig          []byte
+	Hash          types.Hash    //the Br's hash
+	Esig          []byte        //the signature of somebody's ephemeral secret key
 	Credential    *CredentialSig
 }
+func (s *M23)GetMsgp()[]byte{
+	var buf bytes.Buffer
+	err := msgp.Encode(&buf, s)
+	if err != nil{
+		return nil
+	}
 
+	return buf.Bytes()
+}
+func M23Decode(data []byte)*M23{
+	c := new(M23)
+	var buf bytes.Buffer
+	buf.Write(data)
+
+	err := msgp.Decode(&buf , c)
+	if err != nil{
+		logger.Errorf("UnpackConsensusData Err:%s",err.Error())
+		return nil
+	}
+	return c
+}
 // step4 and step other message
 // m(r,s) = (ESIG(b), ESIG(v′), σrs)
 type MCommon struct {
@@ -122,4 +189,12 @@ type MCommon struct {
 	EsigV         []byte
 	Credential    *CredentialSig
 }
+func (s *MCommon)GetMsgp()[]byte{
+	var buf bytes.Buffer
+	err := msgp.Encode(&buf, s)
+	if err != nil{
+		return nil
+	}
 
+	return buf.Bytes()
+}
