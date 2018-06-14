@@ -42,3 +42,11 @@ func GetDifficulty(pCredentialSig *CredentialSig) *big.Int {
 	return BytesToDifficulty(h)
 }
 
+func EndConditon(voteNum, target int) bool {
+	if (3 * voteNum) > (2 * target) {
+		return true
+	} else {
+		return false
+	}
+}
+

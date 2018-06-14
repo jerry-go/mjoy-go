@@ -11,6 +11,13 @@ import (
 	"reflect"
 )
 
+const (
+	IDLE  = iota
+	ENDCONDITION0
+	ENDCONDITION1
+	ENDMAX
+)
+
 /*
 Instructions For Apos:
 The Type-Apos manage the main loop of Apos consensus,
@@ -48,7 +55,17 @@ type VoteInfo struct {
 // Potential Leader used for judge End condition 0 and 1
 type PotentialLeader struct {
 	m1            *M1
-	stepMsg       map[int]*VoteInfo
+	stepMsg       map[uint]*VoteInfo
+}
+
+func (this *PotentialLeader)AddVoteNumber(step uint, b uint) int {
+	if _, ok := this.stepMsg[step]; !ok {
+		vi := &VoteInfo{1}
+		this.stepMsg[step] = vi
+		return 1
+	}
+	this.stepMsg[step].sum++
+	return this.stepMsg[step].sum
 }
 
 
@@ -118,7 +135,7 @@ func (this *Round)StartVerify() {
 	for i, credential := range this.credentials {
 		stepObj := this.apos.stepsFactory(i, credential)
 		this.addStepObj(i, stepObj)
-		go stepObj.run()
+		//go stepObj.run()
 	}
 }
 
@@ -135,7 +152,7 @@ func (this *Round)SaveM1(msg *M1) {
 
 	hash := msg.Block.Hash().String()
 	if _, ok := this.leaders[hash]; !ok {
-		pleader := &PotentialLeader{msg, make(map[int]*VoteInfo)}
+		pleader := &PotentialLeader{msg, make(map[uint]*VoteInfo)}
 		this.leaders[hash] = pleader
 		this.curLeaderNum++
 	}
@@ -183,8 +200,31 @@ func (this *Round)ReceiveM23(msg *M23) {
 	}
 }
 
-func (this *Round)SaveMCommon(msg *MCommon) {
+func (this *Round)SaveMCommon(msg *MCommon) int {
+	hash := msg.Hash.String()
+	if pleader, ok := this.leaders[hash]; ok {
+		step := msg.Credential.Step.IntVal.Uint64()
+		b := msg.B
+		voteNum := 0
+		if ((step + 1 -2 ) % 3 == 0) && (0 == b) {
+			voteNum = pleader.AddVoteNumber(uint(step), b)
+		}
 
+		if ((step + 1 -2 ) % 3 == 1) && (1 == b) {
+			voteNum = pleader.AddVoteNumber(uint(step), b)
+		}
+
+		if EndConditon(voteNum, this.targetNum) {
+			if 0 == b{
+				return ENDCONDITION0
+			} else {
+				return ENDCONDITION1
+			}
+		} else {
+			return IDLE
+		}
+	}
+	return IDLE
 }
 
 func (this *Round)ReceiveMCommon(msg *MCommon) {
@@ -207,8 +247,9 @@ func (this *Round)ReceiveMCommon(msg *MCommon) {
 	}
 
 	//condition 0 and condition 1
-	this.SaveMCommon(msg)
+	ret := this.SaveMCommon(msg)
 
+	_ = ret
 
 }
 
