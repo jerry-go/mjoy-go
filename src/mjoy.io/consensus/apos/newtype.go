@@ -27,6 +27,7 @@ import (
 	"bytes"
 	"github.com/tinylib/msgp/msgp"
 	"mjoy.io/utils/crypto"
+	"sync"
 )
 
 // for algorand1, fill block header ConsensusData filed
@@ -93,6 +94,105 @@ func (a *CredentialSig)Cmp(b *CredentialSig)int{
 	return aInt.Cmp(bInt)
 
 }
+
+
+type CredentialSigStatus struct {
+	c CredentialSig
+	v int
+}
+
+func makeCredentialStatus(c CredentialSig , v int)*CredentialSigStatus{
+	cs := new(CredentialSigStatus)
+	cs.c = c
+	cs.v = v
+	return cs
+}
+
+type CredentialSigStatusHeap []*CredentialSigStatus
+
+func (h CredentialSigStatusHeap)Len()int            {return len(h)}
+func (h CredentialSigStatusHeap)Less(i,j int)bool   {return h[i].c.Cmp(&h[j].c) < 0}
+func (h CredentialSigStatusHeap)Swap(i,j int)       {h[i],h[j] = h[j],h[i]}
+
+func (h *CredentialSigStatusHeap)Push(x interface{}){
+	*h = append(*h , x.(*CredentialSigStatus))
+}
+
+func (h *CredentialSigStatusHeap)Pop()interface{}{
+	old := *h
+	n := len(old)
+	x := old[n-1]
+	*h = old[0:n-1]
+	return x
+}
+
+type binaryStatus struct {
+	lock sync.RWMutex
+	status1 map[CredentialSig]bool
+	status0 map[CredentialSig]bool
+}
+
+
+
+func makeBinaryStatus()*binaryStatus{
+	b := new(binaryStatus)
+	b.status1 = make(map[CredentialSig]bool)
+	b.status0 = make(map[CredentialSig]bool)
+	return b
+}
+
+func (this *binaryStatus)export1Credential()[]CredentialSig{
+	r := []CredentialSig{}
+	for k,_ := range this.status1{
+		r = append(r , k)
+	}
+	return r
+}
+
+func (this *binaryStatus)export0Credential()[]CredentialSig{
+	r := []CredentialSig{}
+	for k,_ := range this.status0{
+		r = append(r , k)
+	}
+	return r
+}
+
+
+func (this *binaryStatus)getTotalCnt()int{
+	this.lock.RLock()
+	defer this.lock.RUnlock()
+
+	t := len(this.status1) + len(this.status0)
+	return t
+}
+
+func (this *binaryStatus)getCnt(b int)int{
+	if b == 0 {
+		return len(this.status0)
+	}else {
+		return len(this.status1)
+	}
+	return 0
+}
+
+func (this *binaryStatus)setToStatus(c CredentialSig , b int){
+	this.lock.Lock()
+	defer this.lock.Unlock()
+	if b == 0 {
+		if _,ok:=this.status0[c];ok{
+			return
+		}
+		this.status0[c] = true
+	}else{
+		if _,ok:=this.status1[c];ok{
+			return
+		}
+		this.status1[c] = true
+	}
+}
+
+
+
 
 type SignatureVal struct {
 	R             types.BigInt
