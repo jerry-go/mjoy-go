@@ -14,13 +14,18 @@ type dataPack interface {
 }
 
 type OutMsger interface {
-	SendMsg([]byte)error
+	//SendMsg([]byte)error
 	BroadCast([]byte)error
 	GetMsg() <-chan []byte
 
 	GetDataMsg() <-chan dataPack
 
+	// send msg means that the implement must send this message to apos (loopback) as a plus step
+	// Propagate msg means that the implement just send msg to p2p
 	SendCredential(*CredentialSig) error
+
+	SendMsg(dataPack) error
+	PropagateMsg(dataPack) error
 }
 //some out tools offered by Mjoy,such as signer and blockInfo getter
 type CommonTools interface {

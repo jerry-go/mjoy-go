@@ -91,6 +91,8 @@ type Round struct {
 	curLeaderNum   int
 	curLeaderDiff  *big.Int
 	curLeader      types.Hash
+
+	quitCh         chan int
 }
 func (this *Round)setSmallestBrM1(m *M1){
 	this.lock.Lock()
@@ -224,6 +226,20 @@ func (this *Round)ReceiveM23(msg *M23) {
 	}
 }
 
+func (this *Round)EndCondition(voteNum int, b uint) int {
+	if EndConditon(voteNum, this.targetNum) {
+		if 0 == b{
+			return ENDCONDITION0
+		} else if 1 == b {
+			return ENDCONDITION1
+		} else {
+			return ENDMAX
+		}
+	} else {
+		return IDLE
+	}
+}
+
 func (this *Round)SaveMCommon(msg *MCommon) int {
 	hash := msg.Hash
 	if pleader, ok := this.leaders[hash]; ok {
@@ -238,15 +254,11 @@ func (this *Round)SaveMCommon(msg *MCommon) int {
 			voteNum = pleader.AddVoteNumber(uint(step), b)
 		}
 
-		if EndConditon(voteNum, this.targetNum) {
-			if 0 == b{
-				return ENDCONDITION0
-			} else {
-				return ENDCONDITION1
-			}
-		} else {
-			return IDLE
+		if int(step) == this.apos.algoParam.maxSteps + 3 {
+			b = 2
+			voteNum = pleader.AddVoteNumber(uint(step), b)
 		}
+		return this.EndCondition(voteNum, b)
 	}
 	return IDLE
 }
@@ -273,8 +285,14 @@ func (this *Round)ReceiveMCommon(msg *MCommon) {
 	//condition 0 and condition 1
 	ret := this.SaveMCommon(msg)
 
-	_ = ret
+	if ret != IDLE {
+		//end condition 0, 1 or maxstep
+		this.broadCastStop()
+		//todo need import block to block chain
 
+
+		this.quitCh <- 1
+	}
 }
 
 func (this *Round)CommonProcess() {
@@ -297,6 +315,8 @@ func (this *Round)CommonProcess() {
 			default:
 				logger.Warn("invalid message type ",reflect.TypeOf(v))
 			}
+		case <-this.quitCh:
+			logger.Info("round exit ")
 		}
 	}
 }
