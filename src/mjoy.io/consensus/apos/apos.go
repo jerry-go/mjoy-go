@@ -131,11 +131,11 @@ func (this *Round)BroadcastCredentials() {
 }
 
 
-func (this *Round)StartVerify() {
+func (this *Round)StartVerify(wg *sync.WaitGroup) {
 	for i, credential := range this.credentials {
 		stepObj := this.apos.stepsFactory(i, credential)
 		this.addStepObj(i, stepObj)
-		//go stepObj.run()
+		go stepObj.run(wg)
 	}
 }
 
@@ -277,19 +277,20 @@ func (this *Round)CommonProcess() {
 	}
 }
 
+
 func (this *Round)Run(){
+	wg := sync.WaitGroup{}
 	// make verifiers Credential
 	this.GenerateCredentials()
 
 	// broadcast Credentials
 	this.BroadcastCredentials()
 
-	this.StartVerify()
+	this.StartVerify(&wg)
 
 	this.CommonProcess()
-
+	wg.Wait()
 }
-
 
 
 //Create Apos
