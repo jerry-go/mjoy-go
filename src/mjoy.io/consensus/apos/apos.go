@@ -55,6 +55,7 @@ type VoteInfo struct {
 // Potential Leader used for judge End condition 0 and 1
 type PotentialLeader struct {
 	m1            *M1
+	diff          *big.Int
 	stepMsg       map[uint]*VoteInfo
 }
 
@@ -67,6 +68,7 @@ func (this *PotentialLeader)AddVoteNumber(step uint, b uint) int {
 	this.stepMsg[step].sum++
 	return this.stepMsg[step].sum
 }
+
 
 
 //round context
@@ -88,6 +90,7 @@ type Round struct {
 	maxLeaderNum   int
 	curLeaderNum   int
 	curLeaderDiff  *big.Int
+	curLeader      string
 }
 func (this *Round)setSmallestBrM1(m *M1){
 	this.lock.Lock()
@@ -139,20 +142,41 @@ func (this *Round)StartVerify(wg *sync.WaitGroup) {
 	}
 }
 
+func (this *Round)MinDifficultM1() *PotentialLeader{
+	curDiff := maxUint256
+	cur := &PotentialLeader{diff:maxUint256}
+	for _,pleader := range this.leaders {
+		if curDiff.Cmp(pleader.diff) > 0 {
+			curDiff = pleader.diff
+			cur = pleader
+		}
+	}
+	return cur
+}
+
+
 func (this *Round)SaveM1(msg *M1) {
 	difficulty := GetDifficulty(msg.Credential)
-	if this.curLeaderNum >= this.maxLeaderNum && difficulty.Cmp(this.curLeaderDiff) <= 0{
-		logger.Info("can not save m1 because of difficulty is not catch", difficulty)
-		return
+	if this.curLeaderNum >= this.maxLeaderNum {
+		if difficulty.Cmp(this.curLeaderDiff) <= 0 {
+			logger.Info("can not save m1 because of difficulty is not catch", difficulty)
+			return
+		}
+		delete(this.leaders, this.curLeader)
+		pleader := this.MinDifficultM1()
+		this.curLeaderDiff = pleader.diff
+		this.curLeader = pleader.m1.Block.Hash().String()
+		this.curLeaderNum--
 	}
 
-	if difficulty.Cmp(this.curLeaderDiff) > 0 {
+	if this.curLeaderNum == 0 || difficulty.Cmp(this.curLeaderDiff) < 0 {
 		this.curLeaderDiff = difficulty
+		this.curLeader = msg.Block.Hash().String()
 	}
 
 	hash := msg.Block.Hash().String()
 	if _, ok := this.leaders[hash]; !ok {
-		pleader := &PotentialLeader{msg, make(map[uint]*VoteInfo)}
+		pleader := &PotentialLeader{msg, difficulty,make(map[uint]*VoteInfo)}
 		this.leaders[hash] = pleader
 		this.curLeaderNum++
 	}
@@ -171,7 +195,7 @@ func (this *Round)ReceiveM1(msg *M1) {
 	}
 	//todo more verify need
 
-	//send this msg to step1 goroutine
+	//send this msg to step2 goroutine
 	if stepObj, ok := this.allStepObj[2]; ok {
 		stepObj.sendMsg(msg, this)
 	}
