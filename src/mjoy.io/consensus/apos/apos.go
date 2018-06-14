@@ -41,17 +41,36 @@ type diffCredentialSig struct {
 	credential    *CredentialSig
 }
 
+type VoteInfo struct {
+	sum           int
+}
+
+// Potential Leader used for judge End condition 0 and 1
+type PotentialLeader struct {
+	m1            *M1
+	stepMsg       map[int]*VoteInfo
+}
+
+
 //round context
 type Round struct {
 	round          types.BigInt
+	//condition 0 and condition 1 end number tH = 2n/3 + 1
+	targetNum      int
+
 	apos           *Apos
 
 	credentials    map[int]*CredentialSig
 
 	allStepObj     map[int]stepInterface
 
-	smallestLBr     *M1
-	lock sync.RWMutex
+	smallestLBr    *M1
+	lock           sync.RWMutex
+
+	leaders        map[string]*PotentialLeader
+	maxLeaderNum   int
+	curLeaderNum   int
+	curLeaderDiff  *big.Int
 }
 func (this *Round)setSmallestBrM1(m *M1){
 	this.lock.Lock()
@@ -103,6 +122,25 @@ func (this *Round)StartVerify() {
 	}
 }
 
+func (this *Round)SaveM1(msg *M1) {
+	difficulty := GetDifficulty(msg.Credential)
+	if this.curLeaderNum >= this.maxLeaderNum && difficulty.Cmp(this.curLeaderDiff) <= 0{
+		logger.Info("can not save m1 because of difficulty is not catch", difficulty)
+		return
+	}
+
+	if difficulty.Cmp(this.curLeaderDiff) > 0 {
+		this.curLeaderDiff = difficulty
+	}
+
+	hash := msg.Block.Hash().String()
+	if _, ok := this.leaders[hash]; !ok {
+		pleader := &PotentialLeader{msg, make(map[int]*VoteInfo)}
+		this.leaders[hash] = pleader
+		this.curLeaderNum++
+	}
+}
+
 func (this *Round)ReceiveM1(msg *M1) {
 	//verify msg
 	if msg.Credential.Round.IntVal.Cmp(&this.round.IntVal) != 0 {
@@ -121,6 +159,8 @@ func (this *Round)ReceiveM1(msg *M1) {
 		stepObj.sendMsg(msg, this)
 	}
 
+	this.SaveM1(msg)
+
 }
 
 func (this *Round)ReceiveM23(msg *M23) {
@@ -130,22 +170,21 @@ func (this *Round)ReceiveM23(msg *M23) {
 		return
 	}
 
-	if msg.Credential.Step.IntVal.Uint64() != 2  && msg.Credential.Step.IntVal.Uint64() != 3 {
-		logger.Warn("verify fail, M23 msg step is not 2 or 3", msg.Credential.Round.IntVal.Uint64(), msg.Credential.Step.IntVal.Uint64())
+	step := msg.Credential.Step.IntVal.Uint64()
+	if step != 2  && step != 3 {
+		logger.Warn("verify fail, M23 msg step is not 2 or 3", msg.Credential.Round.IntVal.Uint64(), step)
 		return
 	}
 	//todo more verify need
 
 	//send this msg to step3 or step4 goroutine
-	if msg.Credential.Step.IntVal.Uint64() == 2 {
-		if stepObj, ok := this.allStepObj[3]; ok {
-			stepObj.sendMsg(msg, this)
-		}
-	} else if msg.Credential.Step.IntVal.Uint64() == 3 {
-		if stepObj, ok := this.allStepObj[4]; ok {
-			stepObj.sendMsg(msg, this)
-		}
+	if stepObj, ok := this.allStepObj[int(step) + 1]; ok {
+		stepObj.sendMsg(msg, this)
 	}
+}
+
+func (this *Round)SaveMCommon(msg *MCommon) {
+
 }
 
 func (this *Round)ReceiveMCommon(msg *MCommon) {
@@ -157,7 +196,7 @@ func (this *Round)ReceiveMCommon(msg *MCommon) {
 
 	step := msg.Credential.Step.IntVal.Uint64()
 	if step < 4{
-		logger.Warn("verify fail, MCommon msg step is not right", msg.Credential.Round.IntVal.Uint64(), msg.Credential.Step.IntVal.Uint64())
+		logger.Warn("verify fail, MCommon msg step is not right", msg.Credential.Round.IntVal.Uint64(), step)
 		return
 	}
 	//todo more verify need
@@ -168,6 +207,8 @@ func (this *Round)ReceiveMCommon(msg *MCommon) {
 	}
 
 	//condition 0 and condition 1
+	this.SaveMCommon(msg)
+
 
 }
 
@@ -203,6 +244,8 @@ func (this *Round)Run(){
 	this.BroadcastCredentials()
 
 	this.StartVerify()
+
+	this.CommonProcess()
 
 }
 

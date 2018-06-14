@@ -4,6 +4,7 @@ import (
 	"math/big"
 	"fmt"
 	"strconv"
+	"mjoy.io/utils/crypto"
 )
 var (
 	// maxUint256 is a big integer representing 2^256-1
@@ -29,5 +30,15 @@ func BytesToDifficulty(b []byte) (*big.Int){
 	bigI := new(big.Int).SetBytes(b)
 	target := new(big.Int).Div(maxUint256, bigI)
 	return target
+}
+
+func GetDifficulty(pCredentialSig *CredentialSig) *big.Int {
+	srcBytes := []byte{}
+	srcBytes = append(srcBytes , pCredentialSig.R.IntVal.Bytes()...)
+	srcBytes = append(srcBytes , pCredentialSig.S.IntVal.Bytes()...)
+	srcBytes = append(srcBytes , pCredentialSig.V.IntVal.Bytes()...)
+
+	h := crypto.Keccak256(srcBytes)
+	return BytesToDifficulty(h)
 }
 
