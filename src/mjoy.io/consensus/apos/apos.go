@@ -86,11 +86,11 @@ type Round struct {
 	smallestLBr    *M1
 	lock           sync.RWMutex
 
-	leaders        map[string]*PotentialLeader
+	leaders        map[types.Hash]*PotentialLeader
 	maxLeaderNum   int
 	curLeaderNum   int
 	curLeaderDiff  *big.Int
-	curLeader      string
+	curLeader      types.Hash
 }
 func (this *Round)setSmallestBrM1(m *M1){
 	this.lock.Lock()
@@ -165,16 +165,16 @@ func (this *Round)SaveM1(msg *M1) {
 		delete(this.leaders, this.curLeader)
 		pleader := this.MinDifficultM1()
 		this.curLeaderDiff = pleader.diff
-		this.curLeader = pleader.m1.Block.Hash().String()
+		this.curLeader = pleader.m1.Block.Hash()
 		this.curLeaderNum--
 	}
 
 	if this.curLeaderNum == 0 || difficulty.Cmp(this.curLeaderDiff) < 0 {
 		this.curLeaderDiff = difficulty
-		this.curLeader = msg.Block.Hash().String()
+		this.curLeader = msg.Block.Hash()
 	}
 
-	hash := msg.Block.Hash().String()
+	hash := msg.Block.Hash()
 	if _, ok := this.leaders[hash]; !ok {
 		pleader := &PotentialLeader{msg, difficulty,make(map[uint]*VoteInfo)}
 		this.leaders[hash] = pleader
@@ -225,7 +225,7 @@ func (this *Round)ReceiveM23(msg *M23) {
 }
 
 func (this *Round)SaveMCommon(msg *MCommon) int {
-	hash := msg.Hash.String()
+	hash := msg.Hash
 	if pleader, ok := this.leaders[hash]; ok {
 		step := msg.Credential.Step.IntVal.Uint64()
 		b := msg.B
