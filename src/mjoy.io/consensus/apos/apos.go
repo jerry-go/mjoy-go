@@ -240,53 +240,67 @@ func (this *Apos)msgRcv(){
 	}
 }
 
+func (this *Apos)DoForCycle(){
+	defer func(){
+		r := recover()
+		if err , ok := r.(error);ok{
+			logger.Errorf("DoForCycle Get A Err:",err.Error())
+		}
+	}()
+
+	//Apos status reset
+	this.reset()
+	wg := &sync.WaitGroup{}
+
+	//1.create credential
+	//2.send credential
+	//3.create goroutine
+	for i:=1;i<this.algoParam.maxSteps;i++{
+		pCredential := this.makeCredential(i)
+		broadCastCredential := false
+
+		if i == 1 {
+			broadCastCredential = this.judgeLeader(pCredential)
+		}else{
+			broadCastCredential = this.judgeVerifier(pCredential, i)
+		}
+
+		if broadCastCredential {
+			var buf bytes.Buffer
+			err := msgp.Encode(&buf , pCredential)
+			if err != nil {
+				logger.Errorf("broadCastCredential msgp:" , err.Error())
+			}
+			packData := PackConsensusData(i , 0 , buf.Bytes())
+			if packData != nil {
+				this.outMsger.SendMsg(packData)
+			}
+
+
+		}
+
+
+		//here should make goroutine and run it
+		exist := this.existStepObj(i)
+		if !exist{
+			stepObj := this.stepsFactory(i,pCredential)
+			this.addStepObj(i,stepObj)
+			go stepObj.run(wg)
+		}
+
+	}
+
+	//Condition 0 ,Condition 1 and m+3 judge
+
+	wg.Wait()
+
+}
+
 //this is the main loop of Apos
 func (this *Apos)Run(){
 	go this.msgRcv()
 	for{
-		//Apos status reset
-		this.reset()
-
-		//1.create credential
-		//2.send credential
-		//3.create goroutine
-		for i:=1;i<this.algoParam.maxSteps;i++{
-			pCredential := this.makeCredential(i)
-			broadCastCredential := false
-			if i == 1 {
-				broadCastCredential = this.judgeLeader(pCredential)
-			}else{
-				broadCastCredential = this.judgeVerifier(pCredential, i)
-			}
-
-			if broadCastCredential {
-				var buf bytes.Buffer
-				err := msgp.Encode(&buf , pCredential)
-				if err != nil {
-					logger.Errorf("broadCastCredential msgp:" , err.Error())
-				}
-				packData := PackConsensusData(i , 0 , buf.Bytes())
-				if packData != nil {
-					this.outMsger.SendMsg(packData)
-				}
-
-
-			}
-
-
-			//here should make goroutine and run it
-			exist := this.existStepObj(i)
-			if !exist{
-				stepObj := this.stepsFactory(i,pCredential)
-				this.addStepObj(i,stepObj)
-				go stepObj.run()
-			}
-
-		}
-
-		//Condition 0 ,Condition 1 and m+3 judge
-
-
+		this.DoForCycle()
 	}
 }
 //inform stepObj to stop running

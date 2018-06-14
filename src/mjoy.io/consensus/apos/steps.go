@@ -48,8 +48,9 @@ func (this *step1BlockProposal)stop(){
 	this.exit<-1
 }
 
-func (this *step1BlockProposal)run(){
-
+func (this *step1BlockProposal)run(wg *sync.WaitGroup){
+	wg.Add(1)
+	defer wg.Done()
 	for{
 		//new a M1 data
 		m1 := new(M1)
@@ -102,7 +103,9 @@ func (this *step2FirstStepGC)stop(){
 	this.exit<-1
 }
 
-func (this *step2FirstStepGC)run(){
+func (this *step2FirstStepGC)run(wg *sync.WaitGroup){
+	wg.Add(1)
+	defer wg.Done()
 	//this step ,we should wait the time
 	delayT := time.Duration(this.apos.algoParam.timeDelayY + this.apos.algoParam.timeDelayA)
 
@@ -194,7 +197,9 @@ func (this *step3SecondStepGC)stop(){
 	this.exit<-1
 }
 
-func (this *step3SecondStepGC)run(){
+func (this *step3SecondStepGC)run(wg *sync.WaitGroup){
+	wg.Add(1)
+	defer wg.Done()
 	//this step ,we should wait the time
 	delayT := time.Duration(3*this.apos.algoParam.timeDelayY + this.apos.algoParam.timeDelayA)
 
@@ -321,7 +326,9 @@ func (this *step4FirstStepBBA)stop(){
 	this.exit<-1
 }
 
-func (this *step4FirstStepBBA)run(){
+func (this *step4FirstStepBBA)run(wg *sync.WaitGroup){
+	wg.Add(1)
+	defer wg.Done()
 	//this step ,we should wait the time
 	delayT := time.Duration(3*this.apos.algoParam.timeDelayY + this.apos.algoParam.timeDelayA)
 
@@ -483,7 +490,9 @@ func (this *step567CoinGenFlipBBA)stop(){
 	this.exit<-1
 }
 
-func (this *step567CoinGenFlipBBA)run(){
+func (this *step567CoinGenFlipBBA)run(wg *sync.WaitGroup){
+	wg.Add(1)
+	defer wg.Done()
 	//this step ,we should wait the time
 	delayT := time.Duration(3*this.apos.algoParam.timeDelayY + this.apos.algoParam.timeDelayA)
 

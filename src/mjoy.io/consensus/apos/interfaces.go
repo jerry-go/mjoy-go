@@ -1,5 +1,7 @@
 package apos
 
+import "sync"
+
 /*
 for inner interfaces
 */
@@ -11,7 +13,7 @@ type dataSetp interface {
 type stepInterface interface {
 	sendMsg(dataPack,*Round) error
 	stop()
-	run()
+	run(wg *sync.WaitGroup)
 }
 
 
