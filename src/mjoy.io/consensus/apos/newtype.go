@@ -28,6 +28,7 @@ import (
 	"github.com/tinylib/msgp/msgp"
 	"mjoy.io/utils/crypto"
 	"sync"
+	"math/big"
 )
 
 // for algorand1, fill block header ConsensusData filed
@@ -61,6 +62,8 @@ type CredentialSig struct {
 	S             types.BigInt
 	V             types.BigInt
 }
+
+
 func (s *CredentialSig)GetMsgp()[]byte{
 	var buf bytes.Buffer
 	err := msgp.Encode(&buf, s)
@@ -95,6 +98,15 @@ func (a *CredentialSig)Cmp(b *CredentialSig)int{
 
 }
 
+func (this *CredentialSig)ToCredentialSigKey()*CredentialSigForKey{
+	r := new(CredentialSigForKey)
+	r.Round = this.Round.IntVal.Uint64()
+	r.Step  = this.Step.IntVal.Uint64()
+	r.R     = this.R.IntVal.Uint64()
+	r.S     = this.S.IntVal.Uint64()
+	r.V     = this.V.IntVal.Uint64()
+	return r
+}
 
 type CredentialSigStatus struct {
 	c CredentialSig
@@ -106,6 +118,23 @@ func makeCredentialStatus(c CredentialSig , v int)*CredentialSigStatus{
 	cs.c = c
 	cs.v = v
 	return cs
+}
+//this type just used in map structure member:Key
+type CredentialSigForKey struct {
+	Round         uint64
+	Step          uint64
+	R             uint64
+	S             uint64
+	V             uint64
+}
+func (this *CredentialSigForKey)ToCredentialSig()*CredentialSig{
+	r := new(CredentialSig)
+	r.Round = types.BigInt{IntVal:*big.NewInt(int64(this.Round))}
+	r.Step  = types.BigInt{IntVal:*big.NewInt(int64(this.Step))}
+	r.R     = types.BigInt{IntVal:*big.NewInt(int64(this.R))}
+	r.S     = types.BigInt{IntVal:*big.NewInt(int64(this.S))}
+	r.V     = types.BigInt{IntVal:*big.NewInt(int64(this.V))}
+	return r
 }
 
 type CredentialSigStatusHeap []*CredentialSigStatus
@@ -128,29 +157,29 @@ func (h *CredentialSigStatusHeap)Pop()interface{}{
 
 type binaryStatus struct {
 	lock sync.RWMutex
-	status1 map[CredentialSig]bool
-	status0 map[CredentialSig]bool
+	status1 map[CredentialSigForKey]bool
+	status0 map[CredentialSigForKey]bool
 }
 
 
 
 func makeBinaryStatus()*binaryStatus{
 	b := new(binaryStatus)
-	b.status1 = make(map[CredentialSig]bool)
-	b.status0 = make(map[CredentialSig]bool)
+	b.status1 = make(map[CredentialSigForKey]bool)
+	b.status0 = make(map[CredentialSigForKey]bool)
 	return b
 }
 
-func (this *binaryStatus)export1Credential()[]CredentialSig{
-	r := []CredentialSig{}
+func (this *binaryStatus)export1Credential()[]CredentialSigForKey{
+	r := []CredentialSigForKey{}
 	for k,_ := range this.status1{
 		r = append(r , k)
 	}
 	return r
 }
 
-func (this *binaryStatus)export0Credential()[]CredentialSig{
-	r := []CredentialSig{}
+func (this *binaryStatus)export0Credential()[]CredentialSigForKey{
+	r := []CredentialSigForKey{}
 	for k,_ := range this.status0{
 		r = append(r , k)
 	}
@@ -178,16 +207,17 @@ func (this *binaryStatus)getCnt(b int)int{
 func (this *binaryStatus)setToStatus(c CredentialSig , b int){
 	this.lock.Lock()
 	defer this.lock.Unlock()
+	ck := c.ToCredentialSigKey()
 	if b == 0 {
-		if _,ok:=this.status0[c];ok{
+		if _,ok:=this.status0[*ck];ok{
 			return
 		}
-		this.status0[c] = true
+		this.status0[*ck] = true
 	}else{
-		if _,ok:=this.status1[c];ok{
+		if _,ok:=this.status1[*ck];ok{
 			return
 		}
-		this.status1[c] = true
+		this.status1[*ck] = true
 	}
 }
 

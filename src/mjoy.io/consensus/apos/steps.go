@@ -6,6 +6,7 @@ import (
 	"time"
 	"sync"
 	"container/heap"
+	"math/big"
 )
 
 //steps handle
@@ -55,7 +56,7 @@ func (this *step1BlockProposal)run(wg *sync.WaitGroup){
 		//new a M1 data
 		m1 := new(M1)
 		//fill struct members
-
+		//todo: should using interface
 		this.msgOut <- m1
 		//todo:what should we dealing
 		fmt.Println("For test")
@@ -118,14 +119,8 @@ func (this *step2FirstStepGC)run(wg *sync.WaitGroup){
 			m2 := new(M23)
 			m2.Credential = this.pCredential
 			m2.Hash = this.smallestLBr.Block.Hash()
-
-			R,S,V := this.apos.commonTools.SIG(m2.Hash[:])
-			sigVal := new(SignatureVal)
-			sigVal.R = types.BigInt{*R}
-			sigVal.S = types.BigInt{*S}
-			sigVal.V = types.BigInt{*V}
-
-			m2.Esig = sigVal.GetMsgp()
+			sigBytes := this.apos.commonTools.ESIG(m2.Hash)
+			m2.Esig = append(m2.Esig , sigBytes...)
 
 
 			this.msgOut<-m2
@@ -165,7 +160,7 @@ type step3SecondStepGC struct {
 	round *Round
 	pCredential *CredentialSig
 	//all M2 have received
-	allM2Index map[types.Hash]map[CredentialSig]bool
+	allM2Index map[types.Hash]map[CredentialSigForKey]bool
 	lock sync.RWMutex
 
 }
@@ -180,7 +175,7 @@ func makeStep3Obj(pApos *Apos , pCredential *CredentialSig , outMsgChan chan dat
 
 	s.exit = make(chan int , 1)
 	s.step = step
-	s.allM2Index = make(map[types.Hash]map[CredentialSig]bool)
+	s.allM2Index = make(map[types.Hash]map[CredentialSigForKey]bool)
 	return s
 }
 
@@ -238,14 +233,8 @@ func (this *step3SecondStepGC)run(wg *sync.WaitGroup){
 				m3 := new(M23)
 				m3.Credential = this.pCredential
 				m3.Hash = v
-
-				R,S,V := this.apos.commonTools.SIG(m3.Hash[:])
-				sigVal := new(SignatureVal)
-				sigVal.R = types.BigInt{*R}
-				sigVal.S = types.BigInt{*S}
-				sigVal.V = types.BigInt{*V}
-
-				m3.Esig = sigVal.GetMsgp()
+				sigBytes := this.apos.commonTools.ESIG(m3.Hash)
+				m3.Esig = append(m3.Esig , sigBytes...)
 
 				this.msgOut<-m3
 
@@ -263,15 +252,15 @@ func (this *step3SecondStepGC)run(wg *sync.WaitGroup){
 					return
 				}
 				//add to IndexMap
-				var subIndex map[CredentialSig]bool
+				var subIndex map[CredentialSigForKey]bool
 				subIndex = this.allM2Index[m2.Hash]
 				if subIndex == nil {
-					this.allM2Index[m2.Hash] = make(map[CredentialSig]bool)
+					this.allM2Index[m2.Hash] = make(map[CredentialSigForKey]bool)
 					subIndex = this.allM2Index[m2.Hash]
 				}
-
-				if _ , ok := subIndex[*m2.Credential];!ok{
-					subIndex[*m2.Credential] = true
+				sigKey := *m2.Credential.ToCredentialSigKey()
+				if _ , ok := subIndex[sigKey];!ok{
+					subIndex[sigKey] = true
 				}
 
 			}(this)
@@ -294,7 +283,7 @@ type step4FirstStepBBA struct {
 	round *Round
 	pCredential *CredentialSig
 	//all M3 have received
-	allM2Index map[types.Hash]map[CredentialSig]bool
+	allM2Index map[types.Hash]map[CredentialSigForKey]bool
 	lock sync.RWMutex
 }
 
@@ -357,12 +346,13 @@ func (this *step4FirstStepBBA)run(wg *sync.WaitGroup){
 					total += currentLen
 
 				}
+				//todo:should be H(Be)
 				v := types.Hash{}
 				g := 0
 				if maxLen >= (2*total/3){
 					v = maxHash
 					g = 2
-				}else if maxLen >= (2*total/3){
+				}else if maxLen >= (1*total/3){
 					v = maxHash
 					g = 1
 				}else{
@@ -383,21 +373,14 @@ func (this *step4FirstStepBBA)run(wg *sync.WaitGroup){
 				m4.Hash = v
 				m4.B = uint(b)
 				m4.Credential = this.pCredential
-				//b
-				str := fmt.Sprintf("%d",m4.B)
-				R,S,V := this.apos.commonTools.SIG([]byte(str))
-				sigVal := new(SignatureVal)
-				sigVal.R = types.BigInt{*R}
-				sigVal.S = types.BigInt{*S}
-				sigVal.V = types.BigInt{*V}
-				m4.EsigB = sigVal.GetMsgp()
+
+				//b big.Int
+				h := types.BytesToHash(big.NewInt(int64(m4.B)).Bytes())
+				sigBytes := this.apos.commonTools.ESIG(h)
+				m4.EsigB = append(m4.EsigB,sigBytes...)
 				//v
-				str = fmt.Sprintf("%s",m4.Hash.Hex())
-				R,S,V = this.apos.commonTools.SIG([]byte(str))
-				sigVal.R = types.BigInt{*R}
-				sigVal.S = types.BigInt{*S}
-				sigVal.V = types.BigInt{*V}
-				m4.EsigV = sigVal.GetMsgp()
+				sigBytes = this.apos.commonTools.ESIG(m4.Hash)
+				m4.EsigV = append(m4.EsigV , sigBytes...)
 
 				this.msgOut<-m4
 
@@ -415,15 +398,15 @@ func (this *step4FirstStepBBA)run(wg *sync.WaitGroup){
 					return
 				}
 				//add to IndexMap
-				var subIndex map[CredentialSig]bool
+				var subIndex map[CredentialSigForKey]bool
 				subIndex = this.allM2Index[m3.Hash]
 				if subIndex == nil {
-					this.allM2Index[m3.Hash] = make(map[CredentialSig]bool)
+					this.allM2Index[m3.Hash] = make(map[CredentialSigForKey]bool)
 					subIndex = this.allM2Index[m3.Hash]
 				}
-
-				if _ , ok := subIndex[*m3.Credential];!ok{
-					subIndex[*m3.Credential] = true
+				sigKey := *m3.Credential.ToCredentialSigKey()
+				if _ , ok := subIndex[sigKey];!ok{
+					subIndex[sigKey] = true
 				}
 
 			}(this)
@@ -561,12 +544,12 @@ func (this *step567CoinGenFlipBBA)run(wg *sync.WaitGroup){
 								allCredential := bStatus.export0Credential()
 								// 0 credential
 								for _,c := range allCredential{
-									*cHeap = append(*cHeap , &CredentialSigStatus{c:c , v:0})
+									*cHeap = append(*cHeap , &CredentialSigStatus{c:*c.ToCredentialSig() , v:0})
 								}
 								allCredential = bStatus.export1Credential()
 								// 1 credential
 								for _,c := range allCredential{
-									*cHeap = append(*cHeap , &CredentialSigStatus{c:c , v:1})
+									*cHeap = append(*cHeap , &CredentialSigStatus{c:*c.ToCredentialSig() , v:1})
 								}
 
 							}
@@ -577,21 +560,12 @@ func (this *step567CoinGenFlipBBA)run(wg *sync.WaitGroup){
 						}
 					}
 				}
-
-				str := fmt.Sprintf("%d",mx.B)
-				R,S,V := this.apos.commonTools.SIG([]byte(str))
-				sigVal := new(SignatureVal)
-				sigVal.R = types.BigInt{*R}
-				sigVal.S = types.BigInt{*S}
-				sigVal.V = types.BigInt{*V}
-				mx.EsigB = sigVal.GetMsgp()
+				h := types.BytesToHash(big.NewInt(int64(mx.B)).Bytes())
+				sigBytes := this.apos.commonTools.ESIG(h)
+				mx.EsigB = append(mx.EsigB , sigBytes...)
 				//v
-				str = fmt.Sprintf("%s",mx.Hash.Hex())
-				R,S,V = this.apos.commonTools.SIG([]byte(str))
-				sigVal.R = types.BigInt{*R}
-				sigVal.S = types.BigInt{*S}
-				sigVal.V = types.BigInt{*V}
-				mx.EsigV = sigVal.GetMsgp()
+				sigBytes = this.apos.commonTools.ESIG(mx.Hash)
+				mx.EsigV = append(mx.EsigV , sigBytes...)
 
 
 				this.msgOut<-mx

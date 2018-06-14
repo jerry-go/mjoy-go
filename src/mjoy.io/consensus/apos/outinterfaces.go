@@ -26,7 +26,7 @@ type OutMsger interface {
 type CommonTools interface {
 	//
 	SIG([]byte )(R,S,V *big.Int)
-
+	ESIG(hash types.Hash)([]byte)
 	GetQr_k(k int)types.Hash
 	GetNowBlockNum()int
 }
