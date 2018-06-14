@@ -373,6 +373,7 @@ func (this *Apos)msgRcv(){
 func (this *Apos)Run(){
 	go this.msgRcv()
 	for{
+
 		//todo:
 		time.Sleep(1)
 	}

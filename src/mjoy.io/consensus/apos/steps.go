@@ -604,6 +604,96 @@ func (this *step567CoinGenFlipBBA)run(wg *sync.WaitGroup){
 	}
 }
 
+//m+3
+
+
+//step 5 6 7:Coin-Fixed-To-x step of BBA*
+type stepm3LastBBA struct {
+	msgIn chan dataPack   //Data: Out ---- > In , we should create it
+	msgOut chan dataPack  //Data: In ----- > Out, out caller should give it us
+	exit chan int
+	step int
+	stepIndex int
+	apos *Apos
+	round *Round
+	pCredential *CredentialSig
+	lock sync.RWMutex
+
+	//all M6 have received
+
+}
+
+func makeStepm3Obj(pApos *Apos , pCredential *CredentialSig , outMsgChan chan dataPack , step int)*stepm3LastBBA{
+	s := new(stepm3LastBBA)
+	s.apos = pApos
+
+
+	s.msgIn = make(chan dataPack , 100)
+	s.msgOut = outMsgChan
+
+	s.exit = make(chan int , 1)
+	s.step = step
+
+
+	s.pCredential = pCredential
+	return s
+}
+
+func (this *stepm3LastBBA)sendMsg(data dataPack, pRound *Round)error{
+	//todo:
+	this.lock.Lock()
+	defer this.lock.Unlock()
+	this.round = pRound
+	this.msgIn <- data
+	return nil
+}
+
+func (this *stepm3LastBBA)stop(){
+	this.exit<-1
+}
+
+func (this *stepm3LastBBA)run(wg *sync.WaitGroup){
+	wg.Add(1)
+	defer wg.Done()
+	//this step ,we should wait the time
+	delayT := time.Duration(3*this.apos.algoParam.timeDelayY + this.apos.algoParam.timeDelayA)
+
+	timerT := time.Tick(delayT*time.Second)
+	for{
+		select {
+		case <-timerT:
+			func(this *stepm3LastBBA){
+				this.lock.Lock()
+				defer this.lock.Unlock()
+
+
+				m3 := new(MCommon)
+				//todo:should be H(Be)
+				m3.Hash = types.Hash{}
+				m3.B = 1
+				m3.Credential = this.pCredential
+				h := types.BytesToHash(big.NewInt(int64(m3.B)).Bytes())
+				sigBytes := this.apos.commonTools.ESIG(h)
+				m3.EsigB = append(m3.EsigB , sigBytes...)
+				//v
+				sigBytes = this.apos.commonTools.ESIG(m3.Hash)
+				m3.EsigV = append(m3.EsigV , sigBytes...)
+
+				this.msgOut<-m3
+
+			}(this)
+
+			return
+		case <-this.msgIn:
+
+			continue
+
+		case <-this.exit:
+			return
+		}
+	}
+}
+
 
 
 
