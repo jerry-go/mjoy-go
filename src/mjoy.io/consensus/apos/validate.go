@@ -23,6 +23,7 @@ package apos
 import (
 	"math/big"
 	"mjoy.io/common/types"
+	"errors"
 )
 
 type MsgValidator struct {
@@ -39,6 +40,20 @@ func NewMsgValidator(algoParam *algoParam, apos *Apos) *MsgValidator {
 }
 
 func (v *MsgValidator)ValidateCredential(cs *CredentialSig) error{
+
+	difficulty := GetDifficulty(cs)
+
+	verifierDifficulty := new(big.Int)
+	if 1 == cs.Step.IntVal.Uint64() {
+		verifierDifficulty = v.algoParam.leaderDifficulty
+	} else {
+		verifierDifficulty = v.algoParam.verifierDifficulty
+	}
+
+	if difficulty.Cmp(verifierDifficulty) <= 0 {
+		return errors.New("credential has no right to verify")
+	}
+
 	cd := CredentialData{cs.Round,cs.Step, v.apos.commonTools.GetQr_k(1)}
 	sig := &SignatureVal{&cs.R, &cs.S, &cs.V}
 	//verify signature
