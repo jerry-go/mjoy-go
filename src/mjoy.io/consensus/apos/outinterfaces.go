@@ -52,7 +52,13 @@ type OutMsger interface {
 type CommonTools interface {
 	//
 	SIG([]byte )(R,S,V *big.Int)
+	SigVerify(hash types.Hash, sig *SignatureVal) (error)
+	Sender(hash types.Hash, sig *SignatureVal) (types.Address, error)
+
 	ESIG(hash types.Hash)([]byte)
+	ESigVerify(hash types.Hash, sig []byte) (error)
+	ESender(hash types.Hash, sig []byte) (types.Address, error)
+
 	GetQr_k(k int)types.Hash
 	GetNowBlockNum()int
 	GetNextRound()int

@@ -6,6 +6,7 @@ package apos
 
 import (
 	"github.com/tinylib/msgp/msgp"
+	"mjoy.io/common/types"
 	"mjoy.io/core/blockchain/block"
 )
 
@@ -1408,19 +1409,52 @@ func (z *SignatureVal) DecodeMsg(dc *msgp.Reader) (err error) {
 		}
 		switch msgp.UnsafeString(field) {
 		case "R":
-			err = z.R.DecodeMsg(dc)
-			if err != nil {
-				return
+			if dc.IsNil() {
+				err = dc.ReadNil()
+				if err != nil {
+					return
+				}
+				z.R = nil
+			} else {
+				if z.R == nil {
+					z.R = new(types.BigInt)
+				}
+				err = z.R.DecodeMsg(dc)
+				if err != nil {
+					return
+				}
 			}
 		case "S":
-			err = z.S.DecodeMsg(dc)
-			if err != nil {
-				return
+			if dc.IsNil() {
+				err = dc.ReadNil()
+				if err != nil {
+					return
+				}
+				z.S = nil
+			} else {
+				if z.S == nil {
+					z.S = new(types.BigInt)
+				}
+				err = z.S.DecodeMsg(dc)
+				if err != nil {
+					return
+				}
 			}
 		case "V":
-			err = z.V.DecodeMsg(dc)
-			if err != nil {
-				return
+			if dc.IsNil() {
+				err = dc.ReadNil()
+				if err != nil {
+					return
+				}
+				z.V = nil
+			} else {
+				if z.V == nil {
+					z.V = new(types.BigInt)
+				}
+				err = z.V.DecodeMsg(dc)
+				if err != nil {
+					return
+				}
 			}
 		default:
 			err = dc.Skip()
@@ -1440,27 +1474,48 @@ func (z *SignatureVal) EncodeMsg(en *msgp.Writer) (err error) {
 	if err != nil {
 		return
 	}
-	err = z.R.EncodeMsg(en)
-	if err != nil {
-		return
+	if z.R == nil {
+		err = en.WriteNil()
+		if err != nil {
+			return
+		}
+	} else {
+		err = z.R.EncodeMsg(en)
+		if err != nil {
+			return
+		}
 	}
 	// write "S"
 	err = en.Append(0xa1, 0x53)
 	if err != nil {
 		return
 	}
-	err = z.S.EncodeMsg(en)
-	if err != nil {
-		return
+	if z.S == nil {
+		err = en.WriteNil()
+		if err != nil {
+			return
+		}
+	} else {
+		err = z.S.EncodeMsg(en)
+		if err != nil {
+			return
+		}
 	}
 	// write "V"
 	err = en.Append(0xa1, 0x56)
 	if err != nil {
 		return
 	}
-	err = z.V.EncodeMsg(en)
-	if err != nil {
-		return
+	if z.V == nil {
+		err = en.WriteNil()
+		if err != nil {
+			return
+		}
+	} else {
+		err = z.V.EncodeMsg(en)
+		if err != nil {
+			return
+		}
 	}
 	return
 }
@@ -1471,21 +1526,33 @@ func (z *SignatureVal) MarshalMsg(b []byte) (o []byte, err error) {
 	// map header, size 3
 	// string "R"
 	o = append(o, 0x83, 0xa1, 0x52)
-	o, err = z.R.MarshalMsg(o)
-	if err != nil {
-		return
+	if z.R == nil {
+		o = msgp.AppendNil(o)
+	} else {
+		o, err = z.R.MarshalMsg(o)
+		if err != nil {
+			return
+		}
 	}
 	// string "S"
 	o = append(o, 0xa1, 0x53)
-	o, err = z.S.MarshalMsg(o)
-	if err != nil {
-		return
+	if z.S == nil {
+		o = msgp.AppendNil(o)
+	} else {
+		o, err = z.S.MarshalMsg(o)
+		if err != nil {
+			return
+		}
 	}
 	// string "V"
 	o = append(o, 0xa1, 0x56)
-	o, err = z.V.MarshalMsg(o)
-	if err != nil {
-		return
+	if z.V == nil {
+		o = msgp.AppendNil(o)
+	} else {
+		o, err = z.V.MarshalMsg(o)
+		if err != nil {
+			return
+		}
 	}
 	return
 }
@@ -1507,19 +1574,52 @@ func (z *SignatureVal) UnmarshalMsg(bts []byte) (o []byte, err error) {
 		}
 		switch msgp.UnsafeString(field) {
 		case "R":
-			bts, err = z.R.UnmarshalMsg(bts)
-			if err != nil {
-				return
+			if msgp.IsNil(bts) {
+				bts, err = msgp.ReadNilBytes(bts)
+				if err != nil {
+					return
+				}
+				z.R = nil
+			} else {
+				if z.R == nil {
+					z.R = new(types.BigInt)
+				}
+				bts, err = z.R.UnmarshalMsg(bts)
+				if err != nil {
+					return
+				}
 			}
 		case "S":
-			bts, err = z.S.UnmarshalMsg(bts)
-			if err != nil {
-				return
+			if msgp.IsNil(bts) {
+				bts, err = msgp.ReadNilBytes(bts)
+				if err != nil {
+					return
+				}
+				z.S = nil
+			} else {
+				if z.S == nil {
+					z.S = new(types.BigInt)
+				}
+				bts, err = z.S.UnmarshalMsg(bts)
+				if err != nil {
+					return
+				}
 			}
 		case "V":
-			bts, err = z.V.UnmarshalMsg(bts)
-			if err != nil {
-				return
+			if msgp.IsNil(bts) {
+				bts, err = msgp.ReadNilBytes(bts)
+				if err != nil {
+					return
+				}
+				z.V = nil
+			} else {
+				if z.V == nil {
+					z.V = new(types.BigInt)
+				}
+				bts, err = z.V.UnmarshalMsg(bts)
+				if err != nil {
+					return
+				}
 			}
 		default:
 			bts, err = msgp.Skip(bts)
@@ -1534,6 +1634,23 @@ func (z *SignatureVal) UnmarshalMsg(bts []byte) (o []byte, err error) {
 
 // Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
 func (z *SignatureVal) Msgsize() (s int) {
-	s = 1 + 2 + z.R.Msgsize() + 2 + z.S.Msgsize() + 2 + z.V.Msgsize()
+	s = 1 + 2
+	if z.R == nil {
+		s += msgp.NilSize
+	} else {
+		s += z.R.Msgsize()
+	}
+	s += 2
+	if z.S == nil {
+		s += msgp.NilSize
+	} else {
+		s += z.S.Msgsize()
+	}
+	s += 2
+	if z.V == nil {
+		s += msgp.NilSize
+	} else {
+		s += z.V.Msgsize()
+	}
 	return
 }
