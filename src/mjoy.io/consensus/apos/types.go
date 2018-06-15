@@ -21,33 +21,33 @@
 package apos
 
 import (
-	"sync"
+	"mjoy.io/common/types"
+	"mjoy.io/common"
+	"mjoy.io/core/blockchain/block"
 	"bytes"
 	"github.com/tinylib/msgp/msgp"
+	"mjoy.io/utils/crypto"
+	"sync"
 	"math/big"
 )
-//go:generate msgp
 
-const(
-	Type_Credential = iota
-	Type_BrCredential
+// for algorand1, fill block header ConsensusData filed
+// id = "apos"
+// para = Q(r) = hash(Sig(Q(r-1)), r) where r = block number
+var (
+	ConsensusDataId = "apos"
 )
-
-//ConsensusData:the data type for sending and receiving
-type ConsensusData struct{
-	Step   int
-	Type   int  //0:just credential data 1:credential with other info
-	Para   []byte
+//go:generate msgp
+// credentialData is the data for generating credential
+// credential = sig(credentialData)
+type CredentialData struct {
+	Round         types.BigInt
+	Step          types.BigInt
+	Quantity      types.Hash    //the seed of round r
 }
-
-func PackConsensusData(s , t int , data []byte)[]byte{
-	c := new(ConsensusData)
-	c.Step = s
-	c.Type = t
-	c.Para = append(c.Para , data...)
-
+func (s *CredentialData)GetMsgp()[]byte{
 	var buf bytes.Buffer
-	err := msgp.Encode(&buf, c)
+	err := msgp.Encode(&buf, s)
 	if err != nil{
 		return nil
 	}
@@ -55,8 +55,217 @@ func PackConsensusData(s , t int , data []byte)[]byte{
 	return buf.Bytes()
 }
 
-func UnpackConsensusData(data []byte)*ConsensusData{
-	c := new(ConsensusData)
+type CredentialSig struct {
+	Round         types.BigInt
+	Step          types.BigInt
+	R             types.BigInt
+	S             types.BigInt
+	V             types.BigInt
+}
+
+
+func (s *CredentialSig)GetMsgp()[]byte{
+	var buf bytes.Buffer
+	err := msgp.Encode(&buf, s)
+	if err != nil{
+		return nil
+	}
+
+	return buf.Bytes()
+}
+//   -1 if a <  b
+//    0 if a == b
+//   +1 if a >  b
+func (a *CredentialSig)Cmp(b *CredentialSig)int{
+	srcBytes := []byte{}
+	srcBytes = append(srcBytes , a.R.IntVal.Bytes()...)
+	srcBytes = append(srcBytes , a.S.IntVal.Bytes()...)
+	srcBytes = append(srcBytes , a.V.IntVal.Bytes()...)
+
+	h := crypto.Keccak256(srcBytes)
+
+	aInt := BytesToDifficulty(h)
+
+	srcBytes = []byte{}
+	srcBytes = append(srcBytes , b.R.IntVal.Bytes()...)
+	srcBytes = append(srcBytes , b.S.IntVal.Bytes()...)
+	srcBytes = append(srcBytes , b.V.IntVal.Bytes()...)
+
+	h = crypto.Keccak256(srcBytes)
+	bInt := BytesToDifficulty(h)
+
+	return aInt.Cmp(bInt)
+
+}
+
+func (this *CredentialSig)ToCredentialSigKey()*CredentialSigForKey{
+	r := new(CredentialSigForKey)
+	r.Round = this.Round.IntVal.Uint64()
+	r.Step  = this.Step.IntVal.Uint64()
+	r.R     = this.R.IntVal.Uint64()
+	r.S     = this.S.IntVal.Uint64()
+	r.V     = this.V.IntVal.Uint64()
+	return r
+}
+
+type CredentialSigStatus struct {
+	c CredentialSig
+	v int
+}
+
+func makeCredentialStatus(c CredentialSig , v int)*CredentialSigStatus{
+	cs := new(CredentialSigStatus)
+	cs.c = c
+	cs.v = v
+	return cs
+}
+//this type just used in map structure member:Key
+type CredentialSigForKey struct {
+	Round         uint64
+	Step          uint64
+	R             uint64
+	S             uint64
+	V             uint64
+}
+func (this *CredentialSigForKey)ToCredentialSig()*CredentialSig{
+	r := new(CredentialSig)
+	r.Round = types.BigInt{IntVal:*big.NewInt(int64(this.Round))}
+	r.Step  = types.BigInt{IntVal:*big.NewInt(int64(this.Step))}
+	r.R     = types.BigInt{IntVal:*big.NewInt(int64(this.R))}
+	r.S     = types.BigInt{IntVal:*big.NewInt(int64(this.S))}
+	r.V     = types.BigInt{IntVal:*big.NewInt(int64(this.V))}
+	return r
+}
+
+type CredentialSigStatusHeap []*CredentialSigStatus
+
+func (h CredentialSigStatusHeap)Len()int            {return len(h)}
+func (h CredentialSigStatusHeap)Less(i,j int)bool   {return h[i].c.Cmp(&h[j].c) < 0}
+func (h CredentialSigStatusHeap)Swap(i,j int)       {h[i],h[j] = h[j],h[i]}
+
+func (h *CredentialSigStatusHeap)Push(x interface{}){
+	*h = append(*h , x.(*CredentialSigStatus))
+}
+
+func (h *CredentialSigStatusHeap)Pop()interface{}{
+	old := *h
+	n := len(old)
+	x := old[n-1]
+	*h = old[0:n-1]
+	return x
+}
+
+type binaryStatus struct {
+	lock sync.RWMutex
+	status1 map[CredentialSigForKey]bool
+	status0 map[CredentialSigForKey]bool
+}
+
+
+
+func makeBinaryStatus()*binaryStatus{
+	b := new(binaryStatus)
+	b.status1 = make(map[CredentialSigForKey]bool)
+	b.status0 = make(map[CredentialSigForKey]bool)
+	return b
+}
+
+func (this *binaryStatus)export1Credential()[]CredentialSigForKey{
+	r := []CredentialSigForKey{}
+	for k,_ := range this.status1{
+		r = append(r , k)
+	}
+	return r
+}
+
+func (this *binaryStatus)export0Credential()[]CredentialSigForKey{
+	r := []CredentialSigForKey{}
+	for k,_ := range this.status0{
+		r = append(r , k)
+	}
+	return r
+}
+
+
+func (this *binaryStatus)getTotalCnt()int{
+	this.lock.RLock()
+	defer this.lock.RUnlock()
+
+	t := len(this.status1) + len(this.status0)
+	return t
+}
+
+func (this *binaryStatus)getCnt(b int)int{
+	if b == 0 {
+		return len(this.status0)
+	}else {
+		return len(this.status1)
+	}
+	return 0
+}
+
+func (this *binaryStatus)setToStatus(c CredentialSig , b int){
+	this.lock.Lock()
+	defer this.lock.Unlock()
+	ck := c.ToCredentialSigKey()
+	if b == 0 {
+		if _,ok:=this.status0[*ck];ok{
+			return
+		}
+		this.status0[*ck] = true
+	}else{
+		if _,ok:=this.status1[*ck];ok{
+			return
+		}
+		this.status1[*ck] = true
+	}
+}
+
+
+
+
+type SignatureVal struct {
+	R             types.BigInt
+	S             types.BigInt
+	V             types.BigInt
+}
+func (s *SignatureVal)GetMsgp()[]byte{
+	var buf bytes.Buffer
+	err := msgp.Encode(&buf, s)
+	if err != nil{
+		return nil
+	}
+
+	return buf.Bytes()
+}
+
+
+func (c *CredentialData) Hash() types.Hash {
+	hash, err := common.MsgpHash(c)
+	if err != nil {
+		return types.Hash{}
+	}
+	return hash
+}
+
+// step1 (Block Proposal) message
+// m(r,1) = (Br, esig(H(Br)), σr1)
+type M1 struct {
+	Block         *block.Block
+	Esig          []byte
+	Credential    *CredentialSig
+}
+func (s *M1)GetMsgp()[]byte{
+	var buf bytes.Buffer
+	err := msgp.Encode(&buf, s)
+	if err != nil{
+		return nil
+	}
+
+	return buf.Bytes()
+}
+func M1Decode(data []byte)*M1{
+	c := new(M1)
 	var buf bytes.Buffer
 	buf.Write(data)
 
@@ -68,123 +277,54 @@ func UnpackConsensusData(data []byte)*ConsensusData{
 	return c
 }
 
-
-//some system param(algorand system param) for step goroutine.
-//goroutine can set param by SetXXXX,and get param by GetXXXX
-type algoParam struct {
-
-	lock                sync.RWMutex
-	k                   int
-	pLeader             float64
-	leaderDifficulty    *big.Int
-	pVerifier           float64
-	verifierDifficulty  *big.Int
-	maxSteps            int
-	m                   int
-	nNodes              int
-	timeDelayA          int  //time A
-	timeDelayY          int  //time λ
-	targetNum           int
-	maxLeaderNum        int
-
-
-
+// step2 (The First Step of the Graded Consensus Protocol GC) message
+// step3 (The Second Step of GC) message
+// step2 and step3 message has the same structure
+// m(r,2) = (ESIG(v′), σr2),v′= H(Bℓr) OR emptyHash{}
+type M23 struct {
+	//hash is v′, the hash of the next block
+	Hash          types.Hash    //the Br's hash
+	Esig          []byte        //the signature of somebody's ephemeral secret key
+	Credential    *CredentialSig
 }
-func (this *algoParam)SetDefault(){
-	this.lock.Lock()
-	defer this.lock.Unlock()
-	this.k = 1
-	this.pLeader = 0.1
-	this.leaderDifficulty = big.NewInt(10)
-	this.pVerifier = 0.2
-	this.leaderDifficulty = big.NewInt(5)
-	this.maxSteps = 183
-	this.m = this.maxSteps - 3
-	this.nNodes = 100
+func (s *M23)GetMsgp()[]byte{
+	var buf bytes.Buffer
+	err := msgp.Encode(&buf, s)
+	if err != nil{
+		return nil
+	}
 
+	return buf.Bytes()
 }
+func M23Decode(data []byte)*M23{
+	c := new(M23)
+	var buf bytes.Buffer
+	buf.Write(data)
 
-//set param k
-func (this *algoParam)SetK(k int){
-	this.lock.Lock()
-	defer this.lock.Unlock()
-
-	this.k = k
+	err := msgp.Decode(&buf , c)
+	if err != nil{
+		logger.Errorf("UnpackConsensusData Err:%s",err.Error())
+		return nil
+	}
+	return c
 }
-//get param k
-func (this *algoParam)GetK()int{
-	this.lock.RLock()
-	defer this.lock.RUnlock()
-
-	return this.k
+// step4 and step other message
+// m(r,s) = (ESIG(b), ESIG(v′), σrs)
+type MCommon struct {
+	//B is the BBA⋆ input b, 0 or 1
+	B             uint
+	EsigB         []byte
+	//hash is v′, the hash of the next block
+	Hash          types.Hash
+	EsigV         []byte
+	Credential    *CredentialSig
 }
+func (s *MCommon)GetMsgp()[]byte{
+	var buf bytes.Buffer
+	err := msgp.Encode(&buf, s)
+	if err != nil{
+		return nil
+	}
 
-//Set pLeader
-func (this *algoParam)SetPleader(pLeader float64){
-	this.lock.Lock()
-	defer this.lock.Unlock()
-
-	this.pLeader = pLeader
+	return buf.Bytes()
 }
-//Get pLeader
-func (this *algoParam)GetPleader()float64{
-	this.lock.RLock()
-	defer this.lock.RUnlock()
-
-	return this.pLeader
-}
-//Set pVerifier
-func (this *algoParam)SetPverifier(pVerifier float64){
-	this.lock.Lock()
-	defer this.lock.Unlock()
-
-	this.pVerifier = pVerifier
-}
-
-//Get pVerifier
-func (this *algoParam)GetPverifier()float64{
-	this.lock.RLock()
-	defer this.lock.RUnlock()
-
-	return this.pVerifier
-}
-
-//Set maxSteps
-func (this *algoParam)SetMaxSteps(ms int){
-	this.lock.Lock()
-	defer this.lock.Unlock()
-
-	this.maxSteps = ms
-}
-//Get maxSteps
-func (this *algoParam)GetMaxSteps()int{
-	this.lock.RLock()
-	defer this.lock.RUnlock()
-
-	return this.maxSteps
-}
-
-//Set nNodes
-func (this *algoParam)SetNnodes(n int){
-	this.lock.Lock()
-	defer this.lock.Unlock()
-
-	this.nNodes = n
-}
-
-//Get nNodes
-func (this *algoParam)GetNnodes()int{
-	this.lock.RLock()
-	defer this.lock.RUnlock()
-
-	return this.nNodes
-}
-
-func newAlgoParam()*algoParam{
-	n := new(algoParam)
-	n.SetDefault()
-	return n
-}
-
-
-

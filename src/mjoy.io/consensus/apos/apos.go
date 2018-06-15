@@ -464,21 +464,21 @@ func (this *Apos)stepsFactory(step int , pCredential *CredentialSig)(stepObj ste
 	stepObj = nil
 	switch step {
 	case 1:
-		stepObj = makeStep1Obj(this,pCredential,this.allMsgBridge,step)
+		stepObj = makeStep1Obj(this,pCredential,step)
 	case 2:
-		stepObj = makeStep2Obj(this,pCredential,this.allMsgBridge,step)
+		stepObj = makeStep2Obj(this,pCredential,step)
 	case 3:
-		stepObj = makeStep3Obj(this,pCredential,this.allMsgBridge,step)
+		stepObj = makeStep3Obj(this,pCredential,step)
 	case 4:
-		stepObj = makeStep4Obj(this,pCredential,this.allMsgBridge,step)
+		stepObj = makeStep4Obj(this,pCredential,step)
 
 	default:
 		if step > this.algoParam.maxSteps{
 			stepObj = nil
 		}else if (step >= 5 && step <= (this.algoParam.m + 2)) {
-			stepObj = makeStep567Obj(this,pCredential,this.allMsgBridge,step)
+			stepObj = makeStep567Obj(this,pCredential,step)
 		}else if (step == (this.algoParam.m+3)){
-			stepObj = makeStepm3Obj(this,pCredential,this.allMsgBridge,step)
+			stepObj = makeStepm3Obj(this,pCredential,step)
 		}else{
 			stepObj = nil
 		}

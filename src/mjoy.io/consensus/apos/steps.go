@@ -14,7 +14,6 @@ import (
 //step 1:Block Proposal
 type step1BlockProposal struct {
 	msgIn chan dataPack   //Data: Out ---- > In , we should create it
-	msgOut chan dataPack  //Data: In ----- > Out, out caller should give it us
 	exit chan int
 	step int            //which step the obj stay
 	apos *Apos
@@ -23,13 +22,11 @@ type step1BlockProposal struct {
 	lock sync.RWMutex
 
 }
-func makeStep1Obj(pApos *Apos , pCredential *CredentialSig , outMsgChan chan dataPack , step int)*step1BlockProposal{
+func makeStep1Obj(pApos *Apos , pCredential *CredentialSig  , step int)*step1BlockProposal{
 	s := new(step1BlockProposal)
 	s.apos = pApos
 
-
 	s.msgIn = make(chan dataPack , 100)
-	s.msgOut = outMsgChan
 
 	s.exit = make(chan int , 1)
 	s.pCredential = pCredential
@@ -57,7 +54,8 @@ func (this *step1BlockProposal)run(wg *sync.WaitGroup){
 		m1 := new(M1)
 		//fill struct members
 		//todo: should using interface
-		this.msgOut <- m1
+		this.apos.outMsger.SendMsg(m1)
+
 		//todo:what should we dealing
 		fmt.Println("For test")
 	}
@@ -66,7 +64,6 @@ func (this *step1BlockProposal)run(wg *sync.WaitGroup){
 //step 2:First step of GC
 type step2FirstStepGC struct {
 	msgIn chan dataPack   //Data: Out ---- > In , we should create it
-	msgOut chan dataPack  //Data: In ----- > Out, out caller should give it us
 	exit chan int
 	step int
 	smallestLBr *M1 //this node regard smallestLBr as the smallest credential's block info
@@ -77,13 +74,12 @@ type step2FirstStepGC struct {
 
 }
 
-func makeStep2Obj(pApos *Apos , pCredential *CredentialSig , outMsgChan chan dataPack , step int)*step2FirstStepGC{
+func makeStep2Obj(pApos *Apos , pCredential *CredentialSig , step int)*step2FirstStepGC{
 	s := new(step2FirstStepGC)
 	s.apos = pApos
 
 
 	s.msgIn = make(chan dataPack , 100)
-	s.msgOut = outMsgChan
 
 	s.exit = make(chan int , 1)
 	s.step = step
@@ -122,8 +118,7 @@ func (this *step2FirstStepGC)run(wg *sync.WaitGroup){
 			sigBytes := this.apos.commonTools.ESIG(m2.Hash)
 			m2.Esig = append(m2.Esig , sigBytes...)
 
-
-			this.msgOut<-m2
+			this.apos.outMsger.SendMsg(m2)
 			return
 		case data:=<-this.msgIn:
 			m1 := new(M1)
@@ -141,6 +136,7 @@ func (this *step2FirstStepGC)run(wg *sync.WaitGroup){
 			if r > 0 {
 				//exchange smallestLBr and m1
 				this.smallestLBr = m1
+				this.apos.outMsger.PropagateMsg(m1)
 			}
 
 		case <-this.exit:
@@ -153,7 +149,7 @@ func (this *step2FirstStepGC)run(wg *sync.WaitGroup){
 //step 3:Second Step of GC
 type step3SecondStepGC struct {
 	msgIn chan dataPack   //Data: Out ---- > In , we should create it
-	msgOut chan dataPack  //Data: In ----- > Out, out caller should give it us
+
 	exit chan int
 	step int
 	apos *Apos
@@ -165,13 +161,12 @@ type step3SecondStepGC struct {
 
 }
 
-func makeStep3Obj(pApos *Apos , pCredential *CredentialSig , outMsgChan chan dataPack , step int)*step3SecondStepGC{
+func makeStep3Obj(pApos *Apos , pCredential *CredentialSig , step int)*step3SecondStepGC{
 	s := new(step3SecondStepGC)
 	s.apos = pApos
 
 
 	s.msgIn = make(chan dataPack , 100)
-	s.msgOut = outMsgChan
 
 	s.exit = make(chan int , 1)
 	s.step = step
@@ -235,8 +230,7 @@ func (this *step3SecondStepGC)run(wg *sync.WaitGroup){
 				m3.Hash = v
 				sigBytes := this.apos.commonTools.ESIG(m3.Hash)
 				m3.Esig = append(m3.Esig , sigBytes...)
-
-				this.msgOut<-m3
+				this.apos.outMsger.SendMsg(m3)
 
 			}(this)
 
@@ -276,7 +270,6 @@ func (this *step3SecondStepGC)run(wg *sync.WaitGroup){
 //step 4:First Step of BBA*
 type step4FirstStepBBA struct {
 	msgIn chan dataPack   //Data: Out ---- > In , we should create it
-	msgOut chan dataPack  //Data: In ----- > Out, out caller should give it us
 	exit chan int
 	step int
 	apos *Apos
@@ -287,13 +280,12 @@ type step4FirstStepBBA struct {
 	lock sync.RWMutex
 }
 
-func makeStep4Obj(pApos *Apos , pCredential *CredentialSig , outMsgChan chan dataPack , step int)*step4FirstStepBBA{
+func makeStep4Obj(pApos *Apos , pCredential *CredentialSig  , step int)*step4FirstStepBBA{
 	s := new(step4FirstStepBBA)
 	s.apos = pApos
 
 
 	s.msgIn = make(chan dataPack , 100)
-	s.msgOut = outMsgChan
 
 	s.exit = make(chan int , 1)
 	s.step = step
@@ -381,8 +373,8 @@ func (this *step4FirstStepBBA)run(wg *sync.WaitGroup){
 				//v
 				sigBytes = this.apos.commonTools.ESIG(m4.Hash)
 				m4.EsigV = append(m4.EsigV , sigBytes...)
+				this.apos.outMsger.SendMsg(m4)
 
-				this.msgOut<-m4
 
 			}(this)
 
@@ -423,7 +415,7 @@ func (this *step4FirstStepBBA)run(wg *sync.WaitGroup){
 //step 5 6 7:Coin-Fixed-To-x step of BBA*
 type step567CoinGenFlipBBA struct {
 	msgIn chan dataPack   //Data: Out ---- > In , we should create it
-	msgOut chan dataPack  //Data: In ----- > Out, out caller should give it us
+
 	exit chan int
 	step int
 	stepIndex int
@@ -436,13 +428,12 @@ type step567CoinGenFlipBBA struct {
 	allMxIndex map[types.Hash]*binaryStatus
 }
 
-func makeStep567Obj(pApos *Apos , pCredential *CredentialSig , outMsgChan chan dataPack , step int)*step567CoinGenFlipBBA{
+func makeStep567Obj(pApos *Apos , pCredential *CredentialSig  , step int)*step567CoinGenFlipBBA{
 	s := new(step567CoinGenFlipBBA)
 	s.apos = pApos
 
 
 	s.msgIn = make(chan dataPack , 100)
-	s.msgOut = outMsgChan
 
 	s.exit = make(chan int , 1)
 	s.step = step
@@ -567,8 +558,7 @@ func (this *step567CoinGenFlipBBA)run(wg *sync.WaitGroup){
 				sigBytes = this.apos.commonTools.ESIG(mx.Hash)
 				mx.EsigV = append(mx.EsigV , sigBytes...)
 
-
-				this.msgOut<-mx
+				this.apos.outMsger.SendMsg(mx)
 
 			}(this)
 
@@ -610,7 +600,6 @@ func (this *step567CoinGenFlipBBA)run(wg *sync.WaitGroup){
 //step 5 6 7:Coin-Fixed-To-x step of BBA*
 type stepm3LastBBA struct {
 	msgIn chan dataPack   //Data: Out ---- > In , we should create it
-	msgOut chan dataPack  //Data: In ----- > Out, out caller should give it us
 	exit chan int
 	step int
 	stepIndex int
@@ -623,13 +612,12 @@ type stepm3LastBBA struct {
 
 }
 
-func makeStepm3Obj(pApos *Apos , pCredential *CredentialSig , outMsgChan chan dataPack , step int)*stepm3LastBBA{
+func makeStepm3Obj(pApos *Apos , pCredential *CredentialSig , step int)*stepm3LastBBA{
 	s := new(stepm3LastBBA)
 	s.apos = pApos
 
 
 	s.msgIn = make(chan dataPack , 100)
-	s.msgOut = outMsgChan
 
 	s.exit = make(chan int , 1)
 	s.step = step
@@ -678,8 +666,7 @@ func (this *stepm3LastBBA)run(wg *sync.WaitGroup){
 				//v
 				sigBytes = this.apos.commonTools.ESIG(m3.Hash)
 				m3.EsigV = append(m3.EsigV , sigBytes...)
-
-				this.msgOut<-m3
+				this.apos.outMsger.SendMsg(m3)
 
 			}(this)
 
