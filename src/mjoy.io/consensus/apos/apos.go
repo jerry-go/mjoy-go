@@ -159,8 +159,10 @@ func (this *Round)BroadcastCredentials() {
 func (this *Round)StartVerify(wg *sync.WaitGroup) {
 	for i, credential := range this.credentials {
 		stepObj := this.apos.stepsFactory(i, credential)
-		this.addStepObj(i, stepObj)
-		go stepObj.run(wg)
+		if stepObj != nil {
+			this.addStepObj(i, stepObj)
+			go stepObj.run(wg)
+		}
 	}
 }
 
@@ -257,7 +259,7 @@ func (this *Round)ReceiveM23(msg *M23) {
 }
 
 func (this *Round)EndCondition(voteNum int, b uint) int {
-	if EndConditon(voteNum, this.targetNum) {
+	if voteNum >= this.targetNum {
 		if 0 == b{
 			return ENDCONDITION0
 		} else if 1 == b {
