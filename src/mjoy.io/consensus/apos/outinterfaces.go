@@ -34,6 +34,7 @@ type CommonTools interface {
 	ESIG(hash types.Hash)([]byte)
 	GetQr_k(k int)types.Hash
 	GetNowBlockNum()int
+	GetNextRound()int
 }
 
 

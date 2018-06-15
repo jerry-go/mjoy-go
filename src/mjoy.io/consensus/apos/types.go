@@ -82,8 +82,10 @@ type algoParam struct {
 	maxSteps            int
 	m                   int
 	nNodes              int
-	timeDelayA int  //time A
-	timeDelayY int  //time λ
+	timeDelayA          int  //time A
+	timeDelayY          int  //time λ
+	targetNum           int
+	maxLeaderNum        int
 
 
 

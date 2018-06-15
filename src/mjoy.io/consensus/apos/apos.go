@@ -7,7 +7,6 @@ import (
 	"math/big"
 	"fmt"
 	"reflect"
-	"time"
 )
 
 const (
@@ -36,7 +35,9 @@ type Apos struct {
 	//all goroutine send msg to Apos by this Chan
 	allMsgBridge chan dataPack
 
+
 	roundCtx      *Round
+	roundOverCh   chan interface{}
 
 	stop bool
 	lock sync.RWMutex
@@ -91,8 +92,29 @@ type Round struct {
 	curLeaderDiff  *big.Int
 	curLeader      types.Hash
 
-	quitCh         chan int
+	quitCh         chan interface{}
+	roundOverCh    chan interface{}
 }
+
+func newRound(round int , apos *Apos , roundOverCh chan interface{})*Round{
+	r := new(Round)
+	r.init(round,apos,roundOverCh)
+	return r
+}
+
+func (this *Round)init(round int , apos *Apos , roundOverCh chan interface{}){
+	this.round = types.BigInt{*big.NewInt(int64(round))}
+	this.apos = apos
+	this.roundOverCh = roundOverCh
+
+	this.targetNum = this.apos.algoParam.targetNum
+	this.maxLeaderNum = this.apos.algoParam.maxLeaderNum
+	this.credentials = make(map[int]*CredentialSig)
+	this.allStepObj = make(map[int]stepInterface)
+	this.leaders = make(map[types.Hash]*PotentialLeader)
+	this.quitCh = make(chan interface{} , 1)
+}
+
 func (this *Round)setSmallestBrM1(m *M1){
 	this.lock.Lock()
 	defer this.lock.Unlock()
@@ -316,6 +338,7 @@ func (this *Round)CommonProcess() {
 			}
 		case <-this.quitCh:
 			logger.Info("round exit ")
+			return
 		}
 	}
 }
@@ -333,6 +356,7 @@ func (this *Round)Run(){
 
 	this.CommonProcess()
 	wg.Wait()
+	this.roundOverCh<-1 //inform the caller,the mission complete
 }
 
 
@@ -349,33 +373,18 @@ func NewApos(msger OutMsger ,cmTools CommonTools )*Apos{
 }
 
 
-func (this *Apos)msgRcv(){
-	for{
-		select {
-		case outData:=<-this.outMsger.GetMsg():
-			if this.stop{   //other logic deal has stop
-				continue
-			}
-			_ = outData
-			//todo:add msg to buffer
-        case stepData := <-this.allMsgBridge:
-        	if this.stop{   //other logic deal has stop
-        		continue
-	        }
-        	_= stepData
-        	//todo:add msg to buffer
-		}
-	}
-}
-
 
 //this is the main loop of Apos
 func (this *Apos)Run(){
-	go this.msgRcv()
-	for{
 
-		//todo:
-		time.Sleep(1)
+	//start round
+	this.roundOverCh<-1
+	for{
+		select {
+		case <-this.roundOverCh:
+			this.roundCtx = newRound(this.commonTools.GetNextRound(),this,this.roundOverCh)
+			go this.roundCtx.Run()
+		}
 	}
 }
 //inform stepObj to stop running
@@ -480,11 +489,14 @@ func (this *Apos)stepsFactory(step int , pCredential *CredentialSig)(stepObj ste
 		stepObj = makeStep3Obj(this,pCredential,this.allMsgBridge,step)
 	case 4:
 		stepObj = makeStep4Obj(this,pCredential,this.allMsgBridge,step)
+
 	default:
 		if step > this.algoParam.maxSteps{
 			stepObj = nil
 		}else if (step >= 5 && step <= (this.algoParam.m + 2)) {
 			stepObj = makeStep567Obj(this,pCredential,this.allMsgBridge,step)
+		}else if (step == (this.algoParam.m+3)){
+			stepObj = makeStepm3Obj(this,pCredential,this.allMsgBridge,step)
 		}else{
 			stepObj = nil
 		}
