@@ -24,7 +24,6 @@ and Output Apos-SystemParam to the sub-goroutine
 */
 
 type Apos struct {
-	allStepObj map[int]stepInterface
 	algoParam *algoParam
 	systemParam interface{} //the difference of algoParam and systemParam is that algoParam show the Apos
 							//running status,but the systemParam show the Mjoy runing
@@ -374,7 +373,6 @@ func (this *Round)Run(){
 //Create Apos
 func NewApos(msger OutMsger ,cmTools CommonTools )*Apos{
 	a := new(Apos)
-	a.allStepObj = make(map[int]stepInterface)
 	a.outMsger = msger
 	a.commonTools = cmTools
 	a.allMsgBridge = make(chan dataPack , 10000)
@@ -398,44 +396,17 @@ func (this *Apos)Run(){
 		}
 	}
 }
-//inform stepObj to stop running
-func (this *Apos)broadCastStop(){
-	for _,v := range this.allStepObj {
-		v.stop()
-	}
-}
+
 
 //reset the status of Apos
 func (this *Apos)reset(){
 	this.lock.Lock()
 	defer this.lock.Unlock()
 
-	this.broadCastStop()
-	this.allStepObj = make(map[int]stepInterface)
 	this.algoParam = newAlgoParam()
 	this.mainStep = 0
 	this.stop = false
 }
-func (this *Apos)addStepObj(step int , stepObj stepInterface){
-	this.lock.Lock()
-	defer this.lock.Unlock()
-
-	if _, ok := this.allStepObj[step]; !ok {
-		this.allStepObj[step] = stepObj
-	}
-}
-
-func (this *Apos)existStepObj(step int)bool {
-	this.lock.RLock()
-	defer this.lock.RUnlock()
-
-	if _, ok := this.allStepObj[step]; ok {
-		return true
-	}
-	return false
-}
-
-
 
 //Create The Credential
 func (this *Apos)makeCredential(s int)*CredentialSig{
