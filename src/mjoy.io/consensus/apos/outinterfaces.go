@@ -23,6 +23,7 @@ type OutMsger interface {
 	// send msg means that the implement must send this message to apos (loopback) as a plus step
 	// Propagate msg means that the implement just send msg to p2p
 	SendCredential(*CredentialSig) error
+	PropagateCredential(*CredentialSig) error
 
 	SendMsg(dataPack) error
 	PropagateMsg(dataPack) error

@@ -165,6 +165,16 @@ func (this *Round)StartVerify(wg *sync.WaitGroup) {
 	}
 }
 
+
+// hear M0 is the Credential message
+func (this *Round)ReceiveM0(msg *CredentialSig) {
+	//verify msg
+	//todo more verify need
+
+	//Propagate message via p2p
+	this.apos.outMsger.PropagateCredential(msg)
+}
+
 func (this *Round)MinDifficultM1() *PotentialLeader{
 	curDiff := maxUint256
 	cur := &PotentialLeader{diff:maxUint256}
@@ -323,7 +333,8 @@ func (this *Round)CommonProcess() {
 		case outData := <-this.apos.outMsger.GetDataMsg():
 			switch v := outData.(type) {
 			case *CredentialSig:
-				fmt.Println(v)
+				//fmt.Println(v)
+				this.ReceiveM0(v)
 			case *M1:
 				//fmt.Println(v)
 				this.ReceiveM1(v)
