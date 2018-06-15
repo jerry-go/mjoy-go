@@ -225,9 +225,9 @@ func (this *binaryStatus)setToStatus(c CredentialSig , b int){
 
 
 type SignatureVal struct {
-	R             types.BigInt
-	S             types.BigInt
-	V             types.BigInt
+	R             *types.BigInt
+	S             *types.BigInt
+	V             *types.BigInt
 }
 func (s *SignatureVal)GetMsgp()[]byte{
 	var buf bytes.Buffer
