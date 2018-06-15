@@ -14,40 +14,55 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-// @File: types.go
-// @Date: 2018/06/12 11:01:51
+// @File: aaa.go
+// @Date: 2018/06/15 17:12:15
 ////////////////////////////////////////////////////////////////////////////////
 
 package apos
 
 import (
-	"sync"
 	"bytes"
 	"github.com/tinylib/msgp/msgp"
-	"math/big"
 )
 
-//some system param(algorand system param) for step goroutine.
-type Config struct {
-	Lookback            uint32		// lookback val, r - k
-	PrPrecision			*big.Int	// the precision
-	PrLeader			*big.Int	// the probability of Leaders
-	PrVerifier			*big.Int	// the probability of Verifiers
-	MaxBBASteps         uint32		// the max number of BBA steps
-	MaxNumPerRound      uint32		// the max number of nodes per round
-	PrH					*big.Int	// the probability of honest
-	DelayBlock          int  		// time A, sec
-	DelayVerify         int  		// time λ, sec
+//go:generate msgp
+
+const(
+	Type_Credential = iota
+	Type_BrCredential
+)
+
+//ConsensusData:the data type for sending and receiving
+type ConsensusData struct{
+	Step   int
+	Type   int  //0:just credential data 1:credential with other info
+	Para   []byte
 }
 
-func (c *Config) setDefault() {
-	c.Lookback = 100
-	c.PrPrecision = big.NewInt(10)
-	c.PrLeader = big.NewInt(1000000000)		// 0.1
-	c.PrVerifier = big.NewInt(5000000000) 	// 0.5
-	c.MaxBBASteps = 180
-	c.MaxNumPerRound = 10
-	c.PrH = big.NewInt(34)
-	c.DelayBlock = 60
-	c.DelayVerify = 10
+func PackConsensusData(s , t int , data []byte)[]byte{
+	c := new(ConsensusData)
+	c.Step = s
+	c.Type = t
+	c.Para = append(c.Para , data...)
+
+	var buf bytes.Buffer
+	err := msgp.Encode(&buf, c)
+	if err != nil{
+		return nil
+	}
+
+	return buf.Bytes()
+}
+
+func UnpackConsensusData(data []byte)*ConsensusData{
+	c := new(ConsensusData)
+	var buf bytes.Buffer
+	buf.Write(data)
+
+	err := msgp.Decode(&buf , c)
+	if err != nil{
+		logger.Errorf("UnpackConsensusData Err:%s",err.Error())
+		return nil
+	}
+	return c
 }
