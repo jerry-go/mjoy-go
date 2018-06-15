@@ -56,6 +56,7 @@ type Apos struct {
 
 
 	roundCtx      *Round
+	validate      *MsgValidator
 	roundOverCh   chan interface{}
 
 	stop bool
@@ -190,7 +191,12 @@ func (this *Round)StartVerify(wg *sync.WaitGroup) {
 // hear M0 is the Credential message
 func (this *Round)ReceiveM0(msg *CredentialSig) {
 	//verify msg
-	//todo more verify need
+	err := this.apos.validate.ValidateCredential(msg)
+	if err != nil {
+		logger.Info("verify m0 fail", err)
+		return
+	}
+	//todo msg filter need
 
 	//Propagate message via p2p
 	this.apos.outMsger.PropagateCredential(msg)
@@ -247,15 +253,22 @@ func (this *Round)ReceiveM1(msg *M1) {
 		logger.Warn("verify fail, M1 msg step is not 1", msg.Credential.Round.IntVal.Uint64(), msg.Credential.Step.IntVal.Uint64())
 		return
 	}
-	//todo more verify need
+
+	err := this.apos.validate.ValidateM1(msg)
+	if err != nil {
+		logger.Info("verify m1 fail", err)
+		return
+	}
+	//todo msg filter need
 
 	//send this msg to step2 goroutine
 	if stepObj, ok := this.allStepObj[2]; ok {
 		stepObj.sendMsg(msg, this)
 	}
 
-	this.SaveM1(msg)
+	// for M1 Propagate process will in stepObj
 
+	this.SaveM1(msg)
 }
 
 func (this *Round)ReceiveM23(msg *M23) {
@@ -270,7 +283,12 @@ func (this *Round)ReceiveM23(msg *M23) {
 		logger.Warn("verify fail, M23 msg step is not 2 or 3", msg.Credential.Round.IntVal.Uint64(), step)
 		return
 	}
-	//todo more verify need
+	err := this.apos.validate.ValidateM23(msg)
+	if err != nil {
+		logger.Info("verify m23 fail", err)
+		return
+	}
+	//todo msg filter need
 
 	//send this msg to step3 or step4 goroutine
 	if stepObj, ok := this.allStepObj[int(step) + 1]; ok {
@@ -327,7 +345,12 @@ func (this *Round)ReceiveMCommon(msg *MCommon) {
 		logger.Warn("verify fail, MCommon msg step is not right", msg.Credential.Round.IntVal.Uint64(), step)
 		return
 	}
-	//todo more verify need
+	err := this.apos.validate.ValidateMCommon(msg)
+	if err != nil {
+		logger.Info("verify msg common fail", err)
+		return
+	}
+	//todo msg filter need
 
 	//send this msg to step other goroutine
 	if stepObj, ok := this.allStepObj[int(step) + 1]; ok {
@@ -393,12 +416,15 @@ func (this *Round)Run(){
 
 
 //Create Apos
-func NewApos(msger OutMsger ,cmTools CommonTools )*Apos{
+func NewApos(msger OutMsger ,cmTools CommonTools)*Apos{
 	a := new(Apos)
 	a.outMsger = msger
 	a.commonTools = cmTools
 	a.allMsgBridge = make(chan dataPack , 10000)
+
 	a.reset()
+
+	a.validate = NewMsgValidator(a.algoParam, a)
 
 	return a
 }
