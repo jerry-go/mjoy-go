@@ -36,7 +36,7 @@ type dataPack interface {
 type OutMsger interface {
 	//SendMsg([]byte)error
 	BroadCast([]byte)error
-	GetMsg() <-chan []byte
+	GetMsg() <-chan dataPack
 
 	GetDataMsg() <-chan dataPack
 
@@ -51,7 +51,7 @@ type OutMsger interface {
 //some out tools offered by Mjoy,such as signer and blockInfo getter
 type CommonTools interface {
 	//
-	SIG([]byte )(R,S,V *big.Int)
+	SIG(hash types.Hash)(R,S,V *big.Int)
 	SigVerify(hash types.Hash, sig *SignatureVal) (error)
 	Sender(hash types.Hash, sig *SignatureVal) (types.Address, error)
 

@@ -58,7 +58,7 @@ type Apos struct {
 	roundCtx      *Round
 	validate      *MsgValidator
 	roundOverCh   chan interface{}
-
+	aposStopCh    chan interface{}  //for test if apos just deal once
 	stop bool
 	lock sync.RWMutex
 }
@@ -161,6 +161,7 @@ func (this *Round)broadCastStop(){
 // Generate valid Credentials in current round
 func (this *Round)GenerateCredentials() {
 	for i := 1; i < this.apos.algoParam.maxSteps; i++{
+		fmt.Println("step i:",i)
 		credential := this.apos.makeCredential(i)
 		isVerfier := this.apos.judgeVerifier(credential, i)
 		if isVerfier {
@@ -435,10 +436,15 @@ func NewApos(msger OutMsger ,cmTools CommonTools)*Apos{
 func (this *Apos)Run(){
 
 	//start round
-	this.roundOverCh<-1
+	//this.roundOverCh<-1
+	this.roundCtx = newRound(this.commonTools.GetNextRound(),this,this.roundOverCh)
+	go this.roundCtx.Run()
+
 	for{
 		select {
 		case <-this.roundOverCh:
+			this.aposStopCh<-1
+			return //if apos deal once ,stop it
 			this.roundCtx = newRound(this.commonTools.GetNextRound(),this,this.roundOverCh)
 			go this.roundCtx.Run()
 		}
@@ -468,7 +474,8 @@ func (this *Apos)makeCredential(s int)*CredentialSig{
 	Qr_k := this.commonTools.GetQr_k(k)
 	str := fmt.Sprintf("%d%d%s",r,k,Qr_k.Hex())
 	//get sig
-	R,S,V := this.commonTools.SIG([]byte(str))
+
+	R,S,V := this.commonTools.SIG(types.BytesToHash([]byte(str)))
 
 	//if endFloat <= this.algoParam
 	c := new(CredentialSig)
@@ -483,6 +490,9 @@ func (this *Apos)makeCredential(s int)*CredentialSig{
 
 }
 
+func (this *Apos)StopCh()chan interface{}{
+	return this.aposStopCh
+}
 
 func (this *Apos)judgeVerifier(pCredentialSig *CredentialSig, setp int) bool{
 	srcBytes := []byte{}
@@ -499,6 +509,8 @@ func (this *Apos)judgeVerifier(pCredentialSig *CredentialSig, setp int) bool{
 	} else {
 		verifierDifficulty = this.algoParam.verifierDifficulty
 	}
+	fmt.Println("verifyDiff:",verifierDifficulty)
+	fmt.Println("diffculty:",difficulty)
 	if difficulty.Cmp(verifierDifficulty) > 0 {
 		return true
 	}
