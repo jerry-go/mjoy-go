@@ -144,7 +144,7 @@ func newOutCommonTools()*outCommonTools{
 	//privateKey
 	o.pri = generatePrivateKey()
 	//signer with chainId
-	o.signer = NewAlgoRandSigner(big.NewInt(1))
+	o.signer = NewSigner(big.NewInt(1))
 
 	return o
 }

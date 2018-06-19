@@ -45,7 +45,6 @@ and Output Apos-SystemParam to the sub-goroutine
 */
 
 type Apos struct {
-	algoParam *algoParam
 	systemParam interface{} //the difference of algoParam and systemParam is that algoParam show the Apos
 							//running status,but the systemParam show the Mjoy runing
 	mainStep int
@@ -76,7 +75,7 @@ type VoteInfo struct {
 // Potential Leader used for judge End condition 0 and 1
 type PotentialLeader struct {
 	m1            *M1
-	diff          *big.Int
+	//diff          *big.Int
 	stepMsg       map[uint]*VoteInfo
 }
 
@@ -136,9 +135,7 @@ func (this *Round)init(round int , apos *Apos , roundOverCh chan interface{}){
 	this.apos = apos
 	this.roundOverCh = roundOverCh
 
-	this.targetNum = this.apos.algoParam.targetNum
-
-	this.maxLeaderNum = this.apos.algoParam.maxLeaderNum
+	// this.maxLeaderNum = this.apos.algoParam.maxLeaderNum
 	this.credentials = make(map[int]*CredentialSig)
 	this.allStepObj = make(map[int]stepInterface)
 	this.leaders = make(map[types.Hash]*PotentialLeader)
@@ -171,7 +168,7 @@ func (this *Round)broadCastStop(){
 
 // Generate valid Credentials in current round
 func (this *Round)GenerateCredentials() {
-	for i := 1; i < this.apos.algoParam.maxSteps; i++{
+	for i := 1; i < Config().maxBBASteps; i++{
 		fmt.Println("step i:",i)
 		credential := this.apos.makeCredential(i)
 		isVerfier := this.apos.judgeVerifier(credential, i)
@@ -213,7 +210,7 @@ func (this *Round)ReceiveM0(msg *CredentialSig) {
 	//Propagate message via p2p
 	this.apos.outMsger.PropagateCredential(msg)
 }
-
+/*
 func (this *Round)MinDifficultM1() *PotentialLeader{
 	curDiff := maxUint256
 	cur := &PotentialLeader{diff:maxUint256}
@@ -225,9 +222,10 @@ func (this *Round)MinDifficultM1() *PotentialLeader{
 	}
 	return cur
 }
-
+*/
 
 func (this *Round)SaveM1(msg *M1) {
+/*
 	difficulty := GetDifficulty(msg.Credential)
 	if this.curLeaderNum >= this.maxLeaderNum {
 		if difficulty.Cmp(this.curLeaderDiff) <= 0 {
@@ -245,10 +243,10 @@ func (this *Round)SaveM1(msg *M1) {
 		this.curLeaderDiff = difficulty
 		this.curLeader = msg.Block.Hash()
 	}
-
+*/
 	hash := msg.Block.Hash()
 	if _, ok := this.leaders[hash]; !ok {
-		pleader := &PotentialLeader{msg, difficulty,make(map[uint]*VoteInfo)}
+		pleader := &PotentialLeader{msg,make(map[uint]*VoteInfo)}
 		this.leaders[hash] = pleader
 		this.curLeaderNum++
 	}
@@ -386,7 +384,9 @@ func (this *Round)filterMCommon(msg *MCommon) error {
 }
 
 func (this *Round)EndCondition(voteNum int, b uint) int {
-	if voteNum >= this.targetNum {
+
+	//if voteNum >= this.targetNum {
+	if isAbsHonest(voteNum, false) {
 		if 0 == b{
 			return ENDCONDITION0
 		} else if 1 == b {
@@ -413,7 +413,7 @@ func (this *Round)SaveMCommon(msg *MCommon) int {
 			voteNum = pleader.AddVoteNumber(uint(step), b)
 		}
 
-		if int(step) == this.apos.algoParam.maxSteps + 3 {
+		if int(step) == Config().maxBBASteps + 3 {
 			b = 2
 			voteNum = pleader.AddVoteNumber(uint(step), b)
 		}
@@ -520,7 +520,7 @@ func NewApos(msger OutMsger ,cmTools CommonTools)*Apos{
 
 	a.reset()
 
-	a.validate = NewMsgValidator(a.algoParam, a)
+	a.validate = NewMsgValidator(a)
 
 	return a
 }
@@ -552,7 +552,6 @@ func (this *Apos)reset(){
 	this.lock.Lock()
 	defer this.lock.Unlock()
 
-	this.algoParam = newAlgoParam()
 	this.mainStep = 0
 	this.stop = false
 }
@@ -603,21 +602,12 @@ func (this *Apos)judgeVerifier(pCredentialSig *CredentialSig, setp int) bool{
 	srcBytes = append(srcBytes , pCredentialSig.V.IntVal.Bytes()...)
 
 	h := crypto.Keccak256(srcBytes)
-	difficulty := BytesToDifficulty(h)
 
-	verifierDifficulty := new(big.Int)
+	leader := false
 	if 1 == setp {
-		verifierDifficulty = this.algoParam.leaderDifficulty
-	} else {
-		verifierDifficulty = this.algoParam.verifierDifficulty
+		leader = true
 	}
-	fmt.Println("verifyDiff:",verifierDifficulty)
-	fmt.Println("diffculty:",difficulty)
-	if difficulty.Cmp(verifierDifficulty) > 0 {
-		return true
-	}
-
-	return false
+	return isPotVerifier(h, leader)
 }
 
 
@@ -635,11 +625,11 @@ func (this *Apos)stepsFactory(step int , pCredential *CredentialSig)(stepObj ste
 		stepObj = makeStep4Obj(this,pCredential,step)
 
 	default:
-		if step > this.algoParam.maxSteps{
+		if step > Config().maxBBASteps{
 			stepObj = nil
-		}else if (step >= 5 && step <= (this.algoParam.m + 2)) {
+		}else if (step >= 5 && step <= (Config().maxBBASteps + 2)) {
 			stepObj = makeStep567Obj(this,pCredential,step)
-		}else if (step == (this.algoParam.m+3)){
+		}else if (step == (Config().maxBBASteps + 3)){
 			stepObj = makeStepm3Obj(this,pCredential,step)
 		}else{
 			stepObj = nil

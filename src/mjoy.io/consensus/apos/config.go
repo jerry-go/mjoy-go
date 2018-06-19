@@ -72,10 +72,10 @@ func Config() *config {
 	once.Do(func() {
 		instance = &config{
 		}
+		instance.setDefault()
+		instance.Verify()
+		instance.verifier()
 	})
-	instance.setDefault()
-	instance.Verify()
-	instance.verifier()
 	return instance
 }
 
