@@ -137,6 +137,7 @@ func (this *Round)init(round int , apos *Apos , roundOverCh chan interface{}){
 	this.roundOverCh = roundOverCh
 
 	this.targetNum = this.apos.algoParam.targetNum
+
 	this.maxLeaderNum = this.apos.algoParam.maxLeaderNum
 	this.credentials = make(map[int]*CredentialSig)
 	this.allStepObj = make(map[int]stepInterface)
