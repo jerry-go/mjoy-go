@@ -84,7 +84,7 @@ func (a *CredentialSig)Cmp(b *CredentialSig)int{
 
 	h := crypto.Keccak256(srcBytes)
 
-	aInt := BytesToDifficulty(h)
+	aInt := new(big.Int).SetBytes(h)
 
 	srcBytes = []byte{}
 	srcBytes = append(srcBytes , b.R.IntVal.Bytes()...)
@@ -92,7 +92,7 @@ func (a *CredentialSig)Cmp(b *CredentialSig)int{
 	srcBytes = append(srcBytes , b.V.IntVal.Bytes()...)
 
 	h = crypto.Keccak256(srcBytes)
-	bInt := BytesToDifficulty(h)
+	bInt := new(big.Int).SetBytes(h)
 
 	return aInt.Cmp(bInt)
 
