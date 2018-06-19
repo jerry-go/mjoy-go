@@ -33,7 +33,7 @@ var (
 
 //go:generate gencodec -type config -field-override configMarshaling -out gen_config.go
 
-//some system param(algorand system param) for step goroutine.
+//some system param(apos system param) for step goroutine.
 type config struct {
 	lookback            	int			`json:"lookback"`             // lookback val, r - k
 	prPrecision				uint64		`json:"precision"`            // the precision

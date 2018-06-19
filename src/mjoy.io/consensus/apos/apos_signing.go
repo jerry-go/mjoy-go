@@ -53,7 +53,7 @@ func SignCredential(c *CredentialData, s Signer, prv *ecdsa.PrivateKey) (*Creden
 	return credentialSig, nil
 }
 
-// Signer encapsulates algorand signature handling. Note that this interface is not a
+// Signer encapsulates apos signature handling. Note that this interface is not a
 // stable API and may change at any time to accommodate new protocol rules.
 type Signer interface {
 	// Sender returns the sender address of the Credential.
@@ -70,8 +70,8 @@ type AlgRandSigner struct {
 	chainId, chainIdMul *big.Int
 }
 
-// NewAlgoRandSigner returns a Signer based on the given chain config
-func NewAlgoRandSigner(chainId *big.Int) AlgRandSigner {
+// NewSigner returns a Signer based on the given chain config
+func NewSigner(chainId *big.Int) AlgRandSigner {
 	if chainId == nil {
 		chainId = new(big.Int)
 	}

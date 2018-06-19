@@ -24,6 +24,7 @@ import (
 	"math/big"
 )
 
+// Determine a potential verifier(leader) by hash
 func isPotVerifier(hash []byte, leader bool) bool {
 	h := big.NewInt(0).SetBytes(hash)
 	prVal := big.NewInt(0)

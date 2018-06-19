@@ -31,7 +31,7 @@ import (
 	"math/big"
 )
 
-// for algorand1, fill block header ConsensusData filed
+// for apos1, fill block header ConsensusData filed
 // id = "apos"
 // para = Q(r) = hash(Sig(Q(r-1)), r) where r = block number
 var (
