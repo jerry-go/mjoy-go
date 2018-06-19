@@ -22,169 +22,123 @@ package apos
 
 import (
 	"sync"
-	"bytes"
-	"github.com/tinylib/msgp/msgp"
 	"math/big"
-)
-//go:generate msgp
-
-const(
-	Type_Credential = iota
-	Type_BrCredential
+	"fmt"
 )
 
-//ConsensusData:the data type for sending and receiving
-type ConsensusData struct{
-	Step   int
-	Type   int  //0:just credential data 1:credential with other info
-	Para   []byte
+var (
+	decimal = big.NewInt(10)
+	honestPercision = big.NewInt(100)
+)
+
+//go:generate gencodec -type config -field-override configMarshaling -out gen_config.go
+
+//some system param(apos system param) for step goroutine.
+type config struct {
+	lookback            	int			`json:"lookback"`             // lookback val, r - k
+	prPrecision				uint64		`json:"precision"`            // the precision
+	prLeader				uint64		`json:"probability-leader"`   // the probability of Leaders
+	prVerifier				uint64		`json:"probability-verifier"` // the probability of Verifiers
+	maxBBASteps         	int			`json:"max-steps"`            // the max number of BBA steps
+	maxNodesPerRound    	int			`json:"max-nodes-per-round"`  // the max number of nodes per round
+	prH						uint64		`json:"probability-honest"`   // the probability of honest
+	blockDelay          	int  		`json:"block-delay"`          // time A, sec
+	verifyDelay         	int  		`json:"verify-delay"`         // time λ, sec
+
+	prP						*big.Int	`json:"-"`                    // 10 ^ prPrecision
+	maxPotLeaders			*big.Int	`json:"-"`                    // the max number of potential leaders
+	maxPotVerifiers			*big.Int	`json:"-"`                    // the max number of potential verifiers
 }
 
-func PackConsensusData(s , t int , data []byte)[]byte{
-	c := new(ConsensusData)
-	c.Step = s
-	c.Type = t
-	c.Para = append(c.Para , data...)
+func (c *config) setDefault() {
+	c.lookback = 100
+	c.prPrecision = 10
+	c.prLeader = 1000000000		// 0.1
+	c.prVerifier = 5000000000 	// 0.5
+	c.maxBBASteps = 180
+	c.maxNodesPerRound = 10
+	c.prH = 34
+	c.blockDelay = 60
+	c.verifyDelay = 10
+}
 
-	var buf bytes.Buffer
-	err := msgp.Encode(&buf, c)
-	if err != nil{
-		return nil
+// about msgcore singleton
+var (
+	instance	*config
+	once		sync.Once
+)
+// get the msgcore singleton
+func Config() *config {
+	once.Do(func() {
+		instance = &config{
+		}
+	})
+	instance.setDefault()
+	instance.Verify()
+	instance.verifier()
+	return instance
+}
+
+func (c *config) precision() *big.Int {
+	if c.prP == nil {
+		c.prP = decimal.Not(big.NewInt(0).SetUint64(c.prPrecision))
+	}
+	return c.prP
+}
+
+func (c *config) verifier() (uint64, uint64, uint64, *big.Int, *big.Int) {
+	if c.maxPotLeaders == nil {
+		c.maxPotLeaders = big.NewInt(int64(c.maxNodesPerRound))
+		c.maxPotLeaders.Mul(c.maxPotLeaders, c.precision())
+		c.maxPotLeaders.Div(c.maxPotLeaders, big.NewInt(0).SetUint64(c.prLeader))
 	}
 
-	return buf.Bytes()
-}
-
-func UnpackConsensusData(data []byte)*ConsensusData{
-	c := new(ConsensusData)
-	var buf bytes.Buffer
-	buf.Write(data)
-
-	err := msgp.Decode(&buf , c)
-	if err != nil{
-		logger.Errorf("UnpackConsensusData Err:%s",err.Error())
-		return nil
+	if c.maxPotVerifiers == nil {
+		c.maxPotVerifiers = big.NewInt(int64(c.maxNodesPerRound))
+		c.maxPotVerifiers.Mul(c.maxPotVerifiers, c.precision())
+		c.maxPotVerifiers.Div(c.maxPotVerifiers, big.NewInt(0).SetUint64(c.prVerifier))
 	}
-	return c
+
+	return c.prPrecision, c.prLeader, c.prVerifier, c.maxPotLeaders, c.maxPotVerifiers
 }
 
+func (c *config) Verify() {
+	if c.lookback <= 0 {
+		panic(fmt.Errorf("lookback <= 0 \n"))
+	}
 
-//some system param(algorand system param) for step goroutine.
-//goroutine can set param by SetXXXX,and get param by GetXXXX
-type algoParam struct {
+	if c.maxBBASteps <= 0 {
+		panic(fmt.Errorf("maxBBASteps <= 0 \n"))
+	}
 
-	lock                sync.RWMutex
-	k                   int
-	pLeader             float64
-	leaderDifficulty    *big.Int
-	pVerifier           float64
-	verifierDifficulty  *big.Int
-	maxSteps            int
-	m                   int
-	nNodes              int
-	timeDelayA          int  //time A
-	timeDelayY          int  //time λ
-	targetNum           int
-	maxLeaderNum        int
+	if c.maxNodesPerRound <= 0 {
+		panic(fmt.Errorf("maxNodesPerRound <= 0 \n"))
+	}
 
+	if c.blockDelay <= 0 {
+		panic(fmt.Errorf("blockDelay <= 0 \n"))
+	}
 
+	if c.verifyDelay <= 0 {
+		panic(fmt.Errorf("verifyDelay <= 0 \n"))
+	}
 
+	if c.prH == 0 {
+		panic(fmt.Errorf("prH == 0 \n"))
+	}
+	if big.NewInt(0).SetUint64(c.prH).Cmp(honestPercision) > 0 {
+		panic(fmt.Errorf("prH > 100 \n"))
+	}
+
+	if c.precision().Cmp(big.NewInt(2).Not(big.NewInt(256))) > 0 {
+		panic(fmt.Errorf("PrLeader > precision \n"))
+	}
+
+	if c.precision().Cmp(big.NewInt(0).SetUint64(c.prLeader)) < 0 {
+		panic(fmt.Errorf("prLeader < precision \n"))
+	}
+
+	if c.precision().Cmp(big.NewInt(0).SetUint64(c.prVerifier)) < 0 {
+		panic(fmt.Errorf("prVerifier < Precision \n"))
+	}
 }
-func (this *algoParam)SetDefault(){
-	this.lock.Lock()
-	defer this.lock.Unlock()
-	this.k = 1
-	this.pLeader = 0.1
-	this.leaderDifficulty = big.NewInt(10)
-	this.pVerifier = 0.2
-	this.leaderDifficulty = big.NewInt(5)
-	this.maxSteps = 183
-	this.m = this.maxSteps - 3
-	this.nNodes = 100
-
-}
-
-//set param k
-func (this *algoParam)SetK(k int){
-	this.lock.Lock()
-	defer this.lock.Unlock()
-
-	this.k = k
-}
-//get param k
-func (this *algoParam)GetK()int{
-	this.lock.RLock()
-	defer this.lock.RUnlock()
-
-	return this.k
-}
-
-//Set pLeader
-func (this *algoParam)SetPleader(pLeader float64){
-	this.lock.Lock()
-	defer this.lock.Unlock()
-
-	this.pLeader = pLeader
-}
-//Get pLeader
-func (this *algoParam)GetPleader()float64{
-	this.lock.RLock()
-	defer this.lock.RUnlock()
-
-	return this.pLeader
-}
-//Set pVerifier
-func (this *algoParam)SetPverifier(pVerifier float64){
-	this.lock.Lock()
-	defer this.lock.Unlock()
-
-	this.pVerifier = pVerifier
-}
-
-//Get pVerifier
-func (this *algoParam)GetPverifier()float64{
-	this.lock.RLock()
-	defer this.lock.RUnlock()
-
-	return this.pVerifier
-}
-
-//Set maxSteps
-func (this *algoParam)SetMaxSteps(ms int){
-	this.lock.Lock()
-	defer this.lock.Unlock()
-
-	this.maxSteps = ms
-}
-//Get maxSteps
-func (this *algoParam)GetMaxSteps()int{
-	this.lock.RLock()
-	defer this.lock.RUnlock()
-
-	return this.maxSteps
-}
-
-//Set nNodes
-func (this *algoParam)SetNnodes(n int){
-	this.lock.Lock()
-	defer this.lock.Unlock()
-
-	this.nNodes = n
-}
-
-//Get nNodes
-func (this *algoParam)GetNnodes()int{
-	this.lock.RLock()
-	defer this.lock.RUnlock()
-
-	return this.nNodes
-}
-
-func newAlgoParam()*algoParam{
-	n := new(algoParam)
-	n.SetDefault()
-	return n
-}
-
-
-

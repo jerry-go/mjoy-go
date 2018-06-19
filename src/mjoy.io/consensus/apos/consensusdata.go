@@ -14,42 +14,55 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-// @File: common.go
-// @Date: 2018/06/14 14:14:14
+// @File: aaa.go
+// @Date: 2018/06/15 17:12:15
 ////////////////////////////////////////////////////////////////////////////////
 
 package apos
 
 import (
-	"math/big"
+	"bytes"
+	"github.com/tinylib/msgp/msgp"
 )
 
-// Determine a potential verifier(leader) by hash
-func isPotVerifier(hash []byte, leader bool) bool {
-	h := big.NewInt(0).SetBytes(hash)
-	prVal := big.NewInt(0)
-	if leader {
-		prVal.SetUint64(Config().prLeader)
-	} else {
-		prVal.SetUint64(Config().prVerifier)
-	}
+//go:generate msgp
 
-	return h.Div(h, Config().precision()).Cmp(prVal) < 0
+const(
+	Type_Credential = iota
+	Type_BrCredential
+)
+
+//ConsensusData:the data type for sending and receiving
+type ConsensusData struct{
+	Step   int
+	Type   int  //0:just credential data 1:credential with other info
+	Para   []byte
 }
 
-func isHonest(vote, all int) bool {
-	v := big.NewInt(int64(vote))
-	a := big.NewInt(int64(all))
-	pH := big.NewInt(0).SetUint64(Config().prH)
-	return v.Div(v.Mul(v, honestPercision), a).Cmp(pH) >= 0
+func PackConsensusData(s , t int , data []byte)[]byte{
+	c := new(ConsensusData)
+	c.Step = s
+	c.Type = t
+	c.Para = append(c.Para , data...)
+
+	var buf bytes.Buffer
+	err := msgp.Encode(&buf, c)
+	if err != nil{
+		return nil
+	}
+
+	return buf.Bytes()
 }
 
-func isAbsHonest(vote int, leader bool) bool {
-	a := Config().maxPotVerifiers
-	if leader {
-		a = Config().maxPotLeaders
+func UnpackConsensusData(data []byte)*ConsensusData{
+	c := new(ConsensusData)
+	var buf bytes.Buffer
+	buf.Write(data)
+
+	err := msgp.Decode(&buf , c)
+	if err != nil{
+		logger.Errorf("UnpackConsensusData Err:%s",err.Error())
+		return nil
 	}
-	v := big.NewInt(int64(vote))
-	pH := big.NewInt(0).SetUint64(Config().prH)
-	return v.Div(v.Mul(v, honestPercision), a).Cmp(pH) >= 0
+	return c
 }

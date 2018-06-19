@@ -27,6 +27,7 @@ import (
 	"math/big"
 	"fmt"
 	"reflect"
+	"errors"
 )
 
 const (
@@ -89,7 +90,13 @@ func (this *PotentialLeader)AddVoteNumber(step uint, b uint) int {
 	return this.stepMsg[step].sum
 }
 
+type peerMsgs struct {
+	msgCommons     map[int]*MCommon
+	msg23s         map[int]*M23
 
+	//0 :default honesty peer. 1: malicious peer
+	honesty        uint
+}
 
 //round context
 type Round struct {
@@ -112,6 +119,8 @@ type Round struct {
 	curLeaderDiff  *big.Int
 	curLeader      types.Hash
 
+	msgs           map[types.Address]*peerMsgs
+
 	quitCh         chan interface{}
 	roundOverCh    chan interface{}
 }
@@ -133,6 +142,7 @@ func (this *Round)init(round int , apos *Apos , roundOverCh chan interface{}){
 	this.allStepObj = make(map[int]stepInterface)
 	this.leaders = make(map[types.Hash]*PotentialLeader)
 	this.quitCh = make(chan interface{} , 1)
+	this.msgs = make(map[types.Address]*peerMsgs)
 }
 
 func (this *Round)setSmallestBrM1(m *M1){
@@ -272,6 +282,41 @@ func (this *Round)ReceiveM1(msg *M1) {
 	this.SaveM1(msg)
 }
 
+
+func (this *Round)filterM23(msg *M23) error {
+	address, err := this.apos.getSender(msg.Credential)
+	if err != nil {
+		return err
+	}
+	step := msg.Credential.Step.IntVal.Uint64()
+
+	if peerM23s, ok := this.msgs[address]; ok {
+		if peerM23s.honesty == 1 {
+			return errors.New("not honesty peer")
+		}
+
+		if m23, ok := peerM23s.msg23s[int(step)]; ok {
+			if m23.Hash == msg.Hash {
+				return errors.New("duplicate message m23")
+			} else {
+				peerM23s.honesty = 1
+				return errors.New("receive different  vote message m23, it must a malicious peer")
+			}
+		} else {
+			peerM23s.msg23s[int(step)] = msg
+		}
+	} else {
+		ps := &peerMsgs{
+			msgCommons: make(map[int]*MCommon),
+			msg23s: make(map[int]*M23),
+			honesty: 0,
+		}
+		ps.msg23s[int(step)] = msg
+		this.msgs[address] = ps
+	}
+	return nil
+}
+
 func (this *Round)ReceiveM23(msg *M23) {
 	//verify msg
 	if msg.Credential.Round.IntVal.Cmp(&this.round.IntVal) != 0 {
@@ -289,12 +334,54 @@ func (this *Round)ReceiveM23(msg *M23) {
 		logger.Info("verify m23 fail", err)
 		return
 	}
-	//todo msg filter need
+
+	if err = this.filterM23(msg); err != nil {
+		logger.Info("filter m23 fail", err)
+		return
+	}
 
 	//send this msg to step3 or step4 goroutine
 	if stepObj, ok := this.allStepObj[int(step) + 1]; ok {
 		stepObj.sendMsg(msg, this)
 	}
+
+	//Propagate message via p2p
+	this.apos.outMsger.PropagateMsg(msg)
+}
+
+
+func (this *Round)filterMCommon(msg *MCommon) error {
+	address, err := this.apos.getSender(msg.Credential)
+	if err != nil {
+		return err
+	}
+	step := msg.Credential.Step.IntVal.Uint64()
+
+	if peerMCommons, ok := this.msgs[address]; ok {
+		if peerMCommons.honesty == 1 {
+			return errors.New("not honesty peer")
+		}
+
+		if mCommon, ok := peerMCommons.msgCommons[int(step)]; ok {
+			if mCommon.Hash == msg.Hash && mCommon.B == msg.B{
+				return errors.New("duplicate common message")
+			} else {
+				peerMCommons.honesty = 1
+				return errors.New("receive different  vote common message, it must a malicious peer")
+			}
+		} else {
+			peerMCommons.msgCommons[int(step)] = msg
+		}
+	} else {
+		ps := &peerMsgs{
+			msgCommons: make(map[int]*MCommon),
+			msg23s: make(map[int]*M23),
+			honesty: 0,
+		}
+		ps.msgCommons[int(step)] = msg
+		this.msgs[address] = ps
+	}
+	return nil
 }
 
 func (this *Round)EndCondition(voteNum int, b uint) int {
@@ -351,12 +438,19 @@ func (this *Round)ReceiveMCommon(msg *MCommon) {
 		logger.Info("verify msg common fail", err)
 		return
 	}
-	//todo msg filter need
+
+	if err = this.filterMCommon(msg); err != nil {
+		logger.Info("filter common message fail", err)
+		return
+	}
 
 	//send this msg to step other goroutine
 	if stepObj, ok := this.allStepObj[int(step) + 1]; ok {
 		stepObj.sendMsg(msg, this)
 	}
+
+	//Propagate message via p2p
+	this.apos.outMsger.PropagateMsg(msg)
 
 	//condition 0 and condition 1
 	ret := this.SaveMCommon(msg)
@@ -462,8 +556,15 @@ func (this *Apos)reset(){
 	this.stop = false
 }
 
+
+func (this *Apos)getSender(cs *CredentialSig) (types.Address, error){
+	cd := CredentialData{cs.Round,cs.Step, this.commonTools.GetQr_k(1)}
+	sig := &SignatureVal{&cs.R, &cs.S, &cs.V}
+	return this.commonTools.Sender(cd.Hash(), sig)
+}
+
 //Create The Credential
-func (this *Apos)makeCredential(s int)*CredentialSig{
+func (this *Apos)makeCredential(s int) *CredentialSig{
 	//create the credential and check i is the potential leader or verifier
 	//r := this.commonTools.GetNowBlockNum()
 	//k := this.algoParam.GetK()
