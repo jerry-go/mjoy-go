@@ -22,51 +22,33 @@ package apos
 
 import (
 	"math/big"
-	"fmt"
-	"strconv"
-	"mjoy.io/utils/crypto"
-)
-var (
-	// maxUint256 is a big integer representing 2^256-1
-	maxUint256 = new(big.Int).Exp(big.NewInt(2), big.NewInt(256), big.NewInt(0))
 )
 
-func BytesToFloat(b []byte)(float64,error){
-	bigI := new(big.Int)
-	bigI.SetBytes(b[:])
-
-	s := fmt.Sprintf("0.%d" , bigI.Uint64())
-
-	endFloat , err := strconv.ParseFloat(s , 64)
-	if err != nil {
-		endFloat = 0.0
-	}
-	return endFloat , err
-}
-
-
-
-func BytesToDifficulty(b []byte) (*big.Int){
-	bigI := new(big.Int).SetBytes(b)
-	target := new(big.Int).Div(maxUint256, bigI)
-	return target
-}
-
-func GetDifficulty(pCredentialSig *CredentialSig) *big.Int {
-	srcBytes := []byte{}
-	srcBytes = append(srcBytes , pCredentialSig.R.IntVal.Bytes()...)
-	srcBytes = append(srcBytes , pCredentialSig.S.IntVal.Bytes()...)
-	srcBytes = append(srcBytes , pCredentialSig.V.IntVal.Bytes()...)
-
-	h := crypto.Keccak256(srcBytes)
-	return BytesToDifficulty(h)
-}
-
-func EndConditon(voteNum, target int) bool {
-	if (3 * voteNum) > (2 * target) {
-		return true
+func isPotVerifier(hash []byte, leader bool) bool {
+	h := big.NewInt(0).SetBytes(hash)
+	prVal := big.NewInt(0)
+	if leader {
+		prVal.SetUint64(Config().prLeader)
 	} else {
-		return false
+		prVal.SetUint64(Config().prVerifier)
 	}
+
+	return h.Div(h, Config().precision()).Cmp(prVal) < 0
 }
 
+func isHonest(vote, all int) bool {
+	v := big.NewInt(int64(vote))
+	a := big.NewInt(int64(all))
+	pH := big.NewInt(0).SetUint64(Config().prH)
+	return v.Div(v.Mul(v, honestPercision), a).Cmp(pH) >= 0
+}
+
+func isAbsHonest(vote int, leader bool) bool {
+	a := Config().maxPotVerifiers
+	if leader {
+		a = Config().maxPotLeaders
+	}
+	v := big.NewInt(int64(vote))
+	pH := big.NewInt(0).SetUint64(Config().prH)
+	return v.Div(v.Mul(v, honestPercision), a).Cmp(pH) >= 0
+}
