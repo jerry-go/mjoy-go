@@ -81,7 +81,7 @@ func Config() *config {
 
 func (c *config) precision() *big.Int {
 	if c.prP == nil {
-		c.prP = decimal.Not(big.NewInt(0).SetUint64(c.prPrecision))
+		c.prP = new(big.Int).Exp(decimal, big.NewInt(0).SetUint64(c.prPrecision), big.NewInt(0))
 	}
 	return c.prP
 }
@@ -130,7 +130,7 @@ func (c *config) Verify() {
 		panic(fmt.Errorf("prH > 100 \n"))
 	}
 
-	if c.precision().Cmp(big.NewInt(2).Not(big.NewInt(256))) > 0 {
+	if c.precision().Cmp(new(big.Int).Exp(big.NewInt(2), big.NewInt(256), big.NewInt(0))) > 0 {
 		panic(fmt.Errorf("PrLeader > precision \n"))
 	}
 
