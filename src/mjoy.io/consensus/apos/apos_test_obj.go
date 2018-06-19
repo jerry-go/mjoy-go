@@ -20,8 +20,8 @@ type outMsgManager struct {
 
 func newMsgManager()*outMsgManager{
 	m := new(outMsgManager)
-	m.msgRcvChan = make(chan dataPack , 100)
-	m.msgSndChan = make(chan dataPack , 100)
+	m.msgRcvChan = make(chan dataPack , 100)//for node receiving msg
+	m.msgSndChan = make(chan dataPack , 100)//for node sending msg by functions
 	return m
 }
 
@@ -60,7 +60,7 @@ type allNodeManager struct {
 	lock sync.RWMutex
 	vituals []*virtualNode
 	msger *outMsgManager
-	allVNodeChan chan dataPack
+	allVNodeChan chan dataPack  //all virtual node's data send to allVNodeChan
 	//the true apos
 	actualNode *Apos
 }
