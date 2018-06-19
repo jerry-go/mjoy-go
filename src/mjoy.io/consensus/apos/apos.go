@@ -343,6 +343,44 @@ func (this *Round)ReceiveM23(msg *M23) {
 	if stepObj, ok := this.allStepObj[int(step) + 1]; ok {
 		stepObj.sendMsg(msg, this)
 	}
+
+	//Propagate message via p2p
+	this.apos.outMsger.PropagateMsg(msg)
+}
+
+
+func (this *Round)filterMCommon(msg *MCommon) error {
+	address, err := this.apos.getSender(msg.Credential)
+	if err != nil {
+		return err
+	}
+	step := msg.Credential.Step.IntVal.Uint64()
+
+	if peerMCommons, ok := this.msgs[address]; ok {
+		if peerMCommons.honesty == 1 {
+			return errors.New("not honesty peer")
+		}
+
+		if mCommon, ok := peerMCommons.msgCommons[int(step)]; ok {
+			if mCommon.Hash == msg.Hash && mCommon.B == msg.B{
+				return errors.New("duplicate common message")
+			} else {
+				peerMCommons.honesty = 1
+				return errors.New("receive different  vote common message, it must a malicious peer")
+			}
+		} else {
+			peerMCommons.msgCommons[int(step)] = msg
+		}
+	} else {
+		ps := &peerMsgs{
+			msgCommons: make(map[int]*MCommon),
+			msg23s: make(map[int]*M23),
+			honesty: 0,
+		}
+		ps.msgCommons[int(step)] = msg
+		this.msgs[address] = ps
+	}
+	return nil
 }
 
 func (this *Round)EndCondition(voteNum int, b uint) int {
@@ -399,12 +437,19 @@ func (this *Round)ReceiveMCommon(msg *MCommon) {
 		logger.Info("verify msg common fail", err)
 		return
 	}
-	//todo msg filter need
+
+	if err = this.filterMCommon(msg); err != nil {
+		logger.Info("filter common message fail", err)
+		return
+	}
 
 	//send this msg to step other goroutine
 	if stepObj, ok := this.allStepObj[int(step) + 1]; ok {
 		stepObj.sendMsg(msg, this)
 	}
+
+	//Propagate message via p2p
+	this.apos.outMsger.PropagateMsg(msg)
 
 	//condition 0 and condition 1
 	ret := this.SaveMCommon(msg)
