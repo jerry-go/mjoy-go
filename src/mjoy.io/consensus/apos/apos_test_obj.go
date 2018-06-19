@@ -13,7 +13,6 @@ import (
 	"time"
 )
 
-
 type outMsgManager struct {
 	msgRcvChan chan dataPack    //rcv the msg from p2p,and broadcast to the nodes
 	msgSndChan chan dataPack    //all node send msg
