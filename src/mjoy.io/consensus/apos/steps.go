@@ -69,16 +69,20 @@ func (this *step1BlockProposal)stop(){
 func (this *step1BlockProposal)run(wg *sync.WaitGroup){
 	wg.Add(1)
 	defer wg.Done()
-	for{
-		//new a M1 data
-		m1 := new(M1)
-		//fill struct members
-		//todo: should using interface
-		this.apos.outMsger.SendMsg(m1)
 
-		//todo:what should we dealing
-		fmt.Println("For test")
-	}
+	//new a M1 data
+	m1 := new(M1)
+	m1.Block = this.apos.makeEmptyBlock()
+	m1.Credential = this.pCredential
+	m1.Esig = this.apos.commonTools.ESIG(m1.Block.Hash())
+	//fill struct members
+	//todo: should using interface
+	this.apos.outMsger.SendMsg(m1)
+
+	//todo:what should we dealing
+
+
+
 }
 
 //step 2:First step of GC
@@ -126,13 +130,16 @@ func (this *step2FirstStepGC)run(wg *sync.WaitGroup){
 	//this step ,we should wait the time
 
 	delayT := time.Duration(Config().verifyDelay + Config().blockDelay)
-
+	fmt.Println("step2FirstStepGC  timeDelay:",Config().verifyDelay + Config().blockDelay)
 	timerT := time.Tick(delayT*time.Second)
 	for{
 		select {
 		case <-timerT:
 			//time to work now,send all
-
+			if this.smallestLBr == nil {
+				//mean we do not receive a M1 from now on
+				return
+			}
 			m2 := new(M23)
 			m2.Credential = this.pCredential
 			m2.Hash = this.smallestLBr.Block.Hash()
@@ -142,8 +149,9 @@ func (this *step2FirstStepGC)run(wg *sync.WaitGroup){
 			this.apos.outMsger.SendMsg(m2)
 			return
 		case data:=<-this.msgIn:
+			fmt.Println("step2FirstStepGC: get data")
 			m1 := new(M1)
-			*m1 = data.(M1)
+			m1 = data.(*M1)
 
 			if m1 == nil{
 				continue
@@ -214,7 +222,7 @@ func (this *step3SecondStepGC)run(wg *sync.WaitGroup){
 	defer wg.Done()
 	//this step ,we should wait the time
 	delayT := time.Duration(3*Config().verifyDelay + Config().blockDelay)
-
+	fmt.Println("timeDelay:",3*Config().verifyDelay + Config().blockDelay)
 	timerT := time.Tick(delayT*time.Second)
 	for{
 		select {
@@ -258,12 +266,13 @@ func (this *step3SecondStepGC)run(wg *sync.WaitGroup){
 
 			return
 		case data:=<-this.msgIn:
+			fmt.Println("steps:step3SecondStepGC get data......")
 			func(this *step3SecondStepGC){
 				this.lock.Lock()
 				defer this.lock.Unlock()
 
 				m2 := new(M23)
-				*m2 = data.(M23)
+				m2 = data.(*M23)
 				if m2 == nil{
 					return
 				}
@@ -407,7 +416,7 @@ func (this *step4FirstStepBBA)run(wg *sync.WaitGroup){
 				defer this.lock.Unlock()
 
 				m3 := new(M23)
-				*m3 = data.(M23)
+				m3 = data.(*M23)
 				if m3 == nil{
 					return
 				}
@@ -592,7 +601,7 @@ func (this *step567CoinGenFlipBBA)run(wg *sync.WaitGroup){
 				defer this.lock.Unlock()
 
 				m6 := new(MCommon)
-				*m6 = data.(MCommon)
+				m6 = data.(*MCommon)
 				if m6 == nil{
 					return
 				}

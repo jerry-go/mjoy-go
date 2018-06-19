@@ -53,13 +53,13 @@ type config struct {
 func (c *config) setDefault() {
 	c.lookback = 100
 	c.prPrecision = 10
-	c.prLeader = 1000000000		// 0.1
-	c.prVerifier = 5000000000 	// 0.5
+	c.prLeader = 9000000000		// 0.1
+	c.prVerifier = 9000000000 	// 0.5
 	c.maxBBASteps = 180
 	c.maxNodesPerRound = 10
 	c.prH = 34
-	c.blockDelay = 60
-	c.verifyDelay = 10
+	c.blockDelay = 10
+	c.verifyDelay = 5
 }
 
 // about msgcore singleton

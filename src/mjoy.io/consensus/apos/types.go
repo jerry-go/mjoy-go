@@ -29,6 +29,7 @@ import (
 	"mjoy.io/utils/crypto"
 	"sync"
 	"math/big"
+	"fmt"
 )
 
 // for apos1, fill block header ConsensusData filed
@@ -63,6 +64,14 @@ type CredentialSig struct {
 	V             types.BigInt
 }
 
+func (s *CredentialSig)PrintInfo(){
+	fmt.Printf("round:%d,step%d,r:%d,s:%d,v:%d\n" ,
+		s.Round.IntVal.Int64(),
+		s.Step.IntVal.Int64(),
+		s.R.IntVal.Int64(),
+		s.S.IntVal.Int64(),
+		s.V.IntVal.Int64())
+}
 
 func (s *CredentialSig)GetMsgp()[]byte{
 	var buf bytes.Buffer

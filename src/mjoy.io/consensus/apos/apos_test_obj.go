@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"mjoy.io/core/blockchain/block"
 	"time"
+	"mjoy.io/common"
 )
 
 type outMsgManager struct {
@@ -20,8 +21,8 @@ type outMsgManager struct {
 
 func newMsgManager()*outMsgManager{
 	m := new(outMsgManager)
-	m.msgRcvChan = make(chan dataPack , 100)//for node receiving msg
-	m.msgSndChan = make(chan dataPack , 100)//for node sending msg by functions
+	m.msgRcvChan = make(chan dataPack , 2000)//for node receiving msg
+	m.msgSndChan = make(chan dataPack , 2000)//for node sending msg by functions
 	return m
 }
 
@@ -73,32 +74,43 @@ func newAllNodeManager()*allNodeManager{
 
 func (this *allNodeManager)init(){
 	this.allVNodeChan = make(chan dataPack , 1000)
-
+	//only one msger,for virtual  nodes and actual node
 	this.msger = newMsgManager()
 	this.actualNode = NewApos(this.msger , newOutCommonTools())
-	this.actualNode.outMsger = this.msger
+	this.actualNode.validate.fake = true
+	this.actualNode.SetOutMsger(this.msger)
+
 	//100 virtual node
-	for i := 1 ;i < 100 ; i++ {
+	for i := 1 ;i <= 3 ; i++ {
 		vNode := newVirtualNode(i , this.allVNodeChan)
 		this.vituals = append(this.vituals , vNode)
 		go vNode.run()
 	}
 	go this.actualNode.Run()
 	go this.run()
+	fmt.Println("allNodeManager Init ok...")
 }
 
 func (this *allNodeManager)run(){
 	for{
 		select {
+		//deal all data from virtual] node,just send the virtualData to the chan(will send to actual node)
 		case virtualData:=<-this.allVNodeChan:
 			//send the data from all node to actual node
 			this.msger.msgRcvChan <- virtualData
 
-			case actualData := <-this.msger.msgSndChan:
-				for _,vNode := range this.vituals{
-					vNode.inChan <- actualData
-				}
-
+		case actualData := <-this.msger.msgSndChan:
+			for _,vNode := range this.vituals{
+				vNode.inChan <- actualData
+			}
+		case <-this.actualNode.StopCh():
+			//stop all virtualNode
+			for _,n := range this.vituals{
+				n.stop()
+			}
+			//the actualNode has a result ,exit the test
+			fmt.Println("exit allNodeManager......")
+			return
 		}
 	}
 }
@@ -167,7 +179,11 @@ func (this *outCommonTools)SigVerify(h types.Hash , sig *SignatureVal)error{
 }
 
 func (this *outCommonTools)Sender(h types.Hash , sig *SignatureVal)(types.Address , error){
-	return types.Address{} , nil
+	V := &big.Int{}
+	V = V.Sub(&sig.V.IntVal, big.NewInt(1))
+	V.Sub(V, common.Big35)
+	address , err := recoverPlain(h , &sig.R.IntVal , &sig.S.IntVal , V,true)
+	return address , err
 }
 
 
@@ -244,9 +260,15 @@ func (this *virtualNode)makeCredential(s int)*CredentialSig{
 	k := 1
 
 	Qr_k := this.commonTools.GetQr_k(k)
-	str := fmt.Sprintf("%d%d%s" , r , k , Qr_k.Hex())
+	str := fmt.Sprintf("testHash")
+	hStr := types.BytesToHash([]byte(str))
+
+	cd := CredentialData{Round:types.BigInt{*big.NewInt(int64(r))},Step:types.BigInt{*big.NewInt(int64(s))},Quantity:Qr_k}
+	_ = cd
+	//h := cd.Hash()
+	h := hStr
 	//get sig
-	R,S,V :=this.commonTools.SIG(types.BytesToHash([]byte(str)))
+	R,S,V :=this.commonTools.SIG(h)
 
 	c := new(CredentialSig)
 	c.Round = types.BigInt{IntVal:*big.NewInt(int64(r))}
@@ -282,16 +304,20 @@ func (this *virtualNode)makeM1(number int)dataPack{
 }
 
 func (this *virtualNode)dealM1(data dataPack)dataPack{
+
 	m1 := data.(*M1)
 	m2 := new(M23)
 	m2.Credential = this.makeCredential(2)
+
+	//m2.Credential.PrintInfo()
 	m2.Hash = m1.Block.Hash()
 	m2.Esig = this.commonTools.ESIG(m2.Hash)
-
+	fmt.Println("[v] dealm1-pack m2")
 	return m2
 }
 
 func (this *virtualNode)dealM23(data dataPack)dataPack{
+	fmt.Println("VNode:",this.id,"get M23 Data")
 	m := data.(*M23)
 	if 2 != m.Credential.Step.IntVal.Int64() || 3 != m.Credential.Step.IntVal.Int64() {
 		return nil
@@ -324,6 +350,7 @@ func (this *virtualNode)dealM23(data dataPack)dataPack{
 }
 
 func (this *virtualNode)dealMCommon(data dataPack)dataPack{
+	fmt.Println("VNode:",this.id,"get Common Data")
 	m := data.(*MCommon)
 	mc := new(MCommon)
 	mc.B = m.B
@@ -343,7 +370,8 @@ func (this *virtualNode)dealMCommon(data dataPack)dataPack{
 func (this *virtualNode)dataDeal(data dataPack)(dp dataPack){
 	switch v := data.(type) {
 	case *CredentialSig:
-		dp = this.makeM1(int(v.Step.IntVal.Int64()))
+		//no need to deal CredentialSig
+		//dp = this.makeM1(int(v.Step.IntVal.Int64()))
 	case *M1:
 		dp = this.dealM1(v)
 	case *M23:
@@ -356,7 +384,9 @@ func (this *virtualNode)dataDeal(data dataPack)(dp dataPack){
 }
 
 
-
+func (this *virtualNode)stop(){
+	this.exitChan<-1
+}
 
 
 

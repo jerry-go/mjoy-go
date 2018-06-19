@@ -28,6 +28,8 @@ import (
 	"fmt"
 	"reflect"
 	"errors"
+	"mjoy.io/core/blockchain/block"
+	"time"
 )
 
 const (
@@ -44,24 +46,6 @@ handle the Condition0,Condition1 and m+3,
 and Output Apos-SystemParam to the sub-goroutine
 */
 
-type Apos struct {
-	systemParam interface{} //the difference of algoParam and systemParam is that algoParam show the Apos
-							//running status,but the systemParam show the Mjoy runing
-	mainStep int
-	commonTools CommonTools
-	outMsger OutMsger
-
-	//all goroutine send msg to Apos by this Chan
-	allMsgBridge chan dataPack
-
-
-	roundCtx      *Round
-	validate      *MsgValidator
-	roundOverCh   chan interface{}
-	aposStopCh    chan interface{}  //for test if apos just deal once
-	stop bool
-	lock sync.RWMutex
-}
 
 type diffCredentialSig struct {
 	difficulty    *big.Int
@@ -169,9 +153,10 @@ func (this *Round)broadCastStop(){
 // Generate valid Credentials in current round
 func (this *Round)GenerateCredentials() {
 	for i := 1; i < Config().maxBBASteps; i++{
-		fmt.Println("step i:",i)
+
 		credential := this.apos.makeCredential(i)
 		isVerfier := this.apos.judgeVerifier(credential, i)
+		fmt.Println("GenerateCredential step:",i,"  isVerifier:",isVerfier)
 		if isVerfier {
 			this.credentials[i] = credential
 		}
@@ -320,22 +305,27 @@ func (this *Round)ReceiveM23(msg *M23) {
 	//verify msg
 	if msg.Credential.Round.IntVal.Cmp(&this.round.IntVal) != 0 {
 		logger.Warn("verify fail, M23 msg is not in current round", msg.Credential.Round.IntVal.Uint64(), this.round.IntVal.Uint64())
+		fmt.Println("verify fail, M23 msg is not in current round", msg.Credential.Round.IntVal.Uint64(), this.round.IntVal.Uint64())
 		return
 	}
 
 	step := msg.Credential.Step.IntVal.Uint64()
+	fmt.Println("[A] receiveM23 step:",step)
 	if step != 2  && step != 3 {
 		logger.Warn("verify fail, M23 msg step is not 2 or 3", msg.Credential.Round.IntVal.Uint64(), step)
+		fmt.Println("verify fail, M23 msg step is not 2 or 3", msg.Credential.Round.IntVal.Uint64(), step)
 		return
 	}
 	err := this.apos.validate.ValidateM23(msg)
 	if err != nil {
+		fmt.Println("verify m23 fail", err)
 		logger.Info("verify m23 fail", err)
 		return
 	}
 
 	if err = this.filterM23(msg); err != nil {
 		logger.Info("filter m23 fail", err)
+		fmt.Println("filter m23 fail", err)
 		return
 	}
 
@@ -346,6 +336,8 @@ func (this *Round)ReceiveM23(msg *M23) {
 
 	//Propagate message via p2p
 	this.apos.outMsger.PropagateMsg(msg)
+	logger.Info("propagete message via p2p")
+	//fmt.Println("propagate message via p2p")
 }
 
 
@@ -471,6 +463,7 @@ func (this *Round)CommonProcess() {
 		select {
 		// receive message
 		case outData := <-this.apos.outMsger.GetDataMsg():
+			fmt.Println("CommonProcess getOutData")
 			switch v := outData.(type) {
 			case *CredentialSig:
 				//fmt.Println(v)
@@ -480,6 +473,7 @@ func (this *Round)CommonProcess() {
 				this.ReceiveM1(v)
 			case *M23:
 				//fmt.Println(v)
+				fmt.Println("getMsg m23")
 				this.ReceiveM23(v)
 			case *MCommon:
 				//fmt.Println(v)
@@ -510,6 +504,25 @@ func (this *Round)Run(){
 	this.roundOverCh<-1 //inform the caller,the mission complete
 }
 
+type Apos struct {
+	systemParam interface{} //the difference of algoParam and systemParam is that algoParam show the Apos
+	//running status,but the systemParam show the Mjoy runing
+	mainStep int
+	commonTools CommonTools
+	outMsger OutMsger
+
+	//all goroutine send msg to Apos by this Chan
+	allMsgBridge chan dataPack
+
+
+	roundCtx      *Round
+	validate      *MsgValidator
+	roundOverCh   chan interface{}
+	aposStopCh    chan interface{}  //for test if apos just deal once
+	stop bool
+	lock sync.RWMutex
+}
+
 
 //Create Apos
 func NewApos(msger OutMsger ,cmTools CommonTools)*Apos{
@@ -520,12 +533,27 @@ func NewApos(msger OutMsger ,cmTools CommonTools)*Apos{
 
 	a.reset()
 
-	a.validate = NewMsgValidator(a)
+	a.validate = NewMsgValidator(a,false)
 
 	return a
 }
 
+func (this *Apos)makeEmptyBlock()*block.Block{
+	header := &block.Header{Number:types.NewBigInt(*big.NewInt(int64(this.commonTools.GetNowBlockNum()))),Time:types.NewBigInt(*big.NewInt(time.Now().Unix()))}
+	//chainId := big.NewInt(100)
+	//signer := block.NewBlockSigner(chainId)
+	R,S,V := this.commonTools.SIG(header.Hash())
+	header.R = &types.BigInt{*R}
+	header.S = &types.BigInt{*S}
+	header.V = &types.BigInt{*V}
 
+	b := block.NewBlock(header , nil , nil)
+	return b
+}
+
+func (this *Apos)SetOutMsger(outMsger OutMsger){
+	this.outMsger = outMsger
+}
 
 //this is the main loop of Apos
 func (this *Apos)Run(){
@@ -534,10 +562,11 @@ func (this *Apos)Run(){
 	//this.roundOverCh<-1
 	this.roundCtx = newRound(this.commonTools.GetNextRound(),this,this.roundOverCh)
 	go this.roundCtx.Run()
-
+	fmt.Println("Apos is running.....")
 	for{
 		select {
 		case <-this.roundOverCh:
+			fmt.Println("aposStopCh<-1")
 			this.aposStopCh<-1
 			return //if apos deal once ,stop it
 			this.roundCtx = newRound(this.commonTools.GetNextRound(),this,this.roundOverCh)

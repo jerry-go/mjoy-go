@@ -29,16 +29,21 @@ import (
 
 type MsgValidator struct {
 	apos      *Apos
+	fake      bool
 }
 
-func NewMsgValidator(apos *Apos) *MsgValidator {
+func NewMsgValidator(apos *Apos,fake bool) *MsgValidator {
 	validator := &MsgValidator{
 		apos:            apos,
+		fake:            fake,
 	}
 	return validator
 }
 
 func (v *MsgValidator)ValidateCredential(cs *CredentialSig) error{
+	if v.fake{
+		return nil
+	}
 
 	srcBytes := []byte{}
 	srcBytes = append(srcBytes , cs.R.IntVal.Bytes()...)
@@ -69,6 +74,11 @@ func (v *MsgValidator)ValidateCredential(cs *CredentialSig) error{
 }
 
 func (v *MsgValidator)ValidateM1(msg *M1) error{
+	if v.fake{
+		return nil
+	}
+
+
 	//verify Credential
 	err := v.ValidateCredential(msg.Credential)
 	if err != nil {
@@ -91,6 +101,11 @@ func (v *MsgValidator)ValidateM1(msg *M1) error{
 }
 
 func (v *MsgValidator)ValidateM23(msg *M23) error{
+	if v.fake{
+		return nil
+	}
+
+
 	//verify Credential
 	err := v.ValidateCredential(msg.Credential)
 	if err != nil {
@@ -109,6 +124,10 @@ func (v *MsgValidator)ValidateM23(msg *M23) error{
 }
 
 func (v *MsgValidator)ValidateMCommon(msg *MCommon) error{
+	if v.fake{
+		return nil
+	}
+
 	//verify Credential
 	err := v.ValidateCredential(msg.Credential)
 	if err != nil {
