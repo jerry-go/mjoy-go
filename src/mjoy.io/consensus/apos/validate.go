@@ -24,16 +24,15 @@ import (
 	"math/big"
 	"mjoy.io/common/types"
 	"errors"
+	"mjoy.io/utils/crypto"
 )
 
 type MsgValidator struct {
-	algoParam *algoParam
 	apos      *Apos
 }
 
-func NewMsgValidator(algoParam *algoParam, apos *Apos) *MsgValidator {
+func NewMsgValidator(apos *Apos) *MsgValidator {
 	validator := &MsgValidator{
-		algoParam:       algoParam,
 		apos:            apos,
 	}
 	return validator
@@ -41,16 +40,20 @@ func NewMsgValidator(algoParam *algoParam, apos *Apos) *MsgValidator {
 
 func (v *MsgValidator)ValidateCredential(cs *CredentialSig) error{
 
-	difficulty := GetDifficulty(cs)
+	srcBytes := []byte{}
+	srcBytes = append(srcBytes , cs.R.IntVal.Bytes()...)
+	srcBytes = append(srcBytes , cs.S.IntVal.Bytes()...)
+	srcBytes = append(srcBytes , cs.V.IntVal.Bytes()...)
 
-	verifierDifficulty := new(big.Int)
+	h := crypto.Keccak256(srcBytes)
+
+	leader := false
 	if 1 == cs.Step.IntVal.Uint64() {
-		verifierDifficulty = v.algoParam.leaderDifficulty
-	} else {
-		verifierDifficulty = v.algoParam.verifierDifficulty
+		leader = true
 	}
 
-	if difficulty.Cmp(verifierDifficulty) <= 0 {
+
+	if isPotVerifier(h, leader) == false {
 		return errors.New("credential has no right to verify")
 	}
 
