@@ -124,7 +124,8 @@ func (this *step2FirstStepGC)run(wg *sync.WaitGroup){
 	wg.Add(1)
 	defer wg.Done()
 	//this step ,we should wait the time
-	delayT := time.Duration(this.apos.algoParam.timeDelayY + this.apos.algoParam.timeDelayA)
+
+	delayT := time.Duration(Config().verifyDelay + Config().blockDelay)
 
 	timerT := time.Tick(delayT*time.Second)
 	for{
@@ -190,6 +191,7 @@ func makeStep3Obj(pApos *Apos , pCredential *CredentialSig , step int)*step3Seco
 
 	s.exit = make(chan int , 1)
 	s.step = step
+	s.pCredential = pCredential
 	s.allM2Index = make(map[types.Hash]map[CredentialSigForKey]bool)
 	return s
 }
@@ -211,7 +213,7 @@ func (this *step3SecondStepGC)run(wg *sync.WaitGroup){
 	wg.Add(1)
 	defer wg.Done()
 	//this step ,we should wait the time
-	delayT := time.Duration(3*this.apos.algoParam.timeDelayY + this.apos.algoParam.timeDelayA)
+	delayT := time.Duration(3*Config().verifyDelay + Config().blockDelay)
 
 	timerT := time.Tick(delayT*time.Second)
 	for{
@@ -331,7 +333,7 @@ func (this *step4FirstStepBBA)run(wg *sync.WaitGroup){
 	wg.Add(1)
 	defer wg.Done()
 	//this step ,we should wait the time
-	delayT := time.Duration(3*this.apos.algoParam.timeDelayY + this.apos.algoParam.timeDelayA)
+	delayT := time.Duration(5*Config().verifyDelay + Config().blockDelay)
 
 	timerT := time.Tick(delayT*time.Second)
 	for{
@@ -488,7 +490,8 @@ func (this *step567CoinGenFlipBBA)run(wg *sync.WaitGroup){
 	wg.Add(1)
 	defer wg.Done()
 	//this step ,we should wait the time
-	delayT := time.Duration(3*this.apos.algoParam.timeDelayY + this.apos.algoParam.timeDelayA)
+
+	delayT := time.Duration((2*this.step -3)*Config().verifyDelay + Config().blockDelay)
 
 	timerT := time.Tick(delayT*time.Second)
 	for{
@@ -664,7 +667,7 @@ func (this *stepm3LastBBA)run(wg *sync.WaitGroup){
 	wg.Add(1)
 	defer wg.Done()
 	//this step ,we should wait the time
-	delayT := time.Duration(3*this.apos.algoParam.timeDelayY + this.apos.algoParam.timeDelayA)
+	delayT := time.Duration((2*Config().maxBBASteps + 3)*Config().verifyDelay + Config().blockDelay)
 
 	timerT := time.Tick(delayT*time.Second)
 	for{

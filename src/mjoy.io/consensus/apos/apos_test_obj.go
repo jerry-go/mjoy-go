@@ -11,7 +11,6 @@ import (
 	"fmt"
 	"mjoy.io/core/blockchain/block"
 	"time"
-
 )
 
 
@@ -70,16 +69,15 @@ type allNodeManager struct {
 
 func newAllNodeManager()*allNodeManager{
 	v := new(allNodeManager)
-	v.msger = newMsgManager()
-	v.actualNode = NewApos(v.msger , newOutCommonTools())
-	v.actualNode.outMsger = v.msger
-	v.allVNodeChan = make(chan dataPack , 1000)
 	return v
 }
 
 func (this *allNodeManager)init(){
+	this.allVNodeChan = make(chan dataPack , 1000)
+
 	this.msger = newMsgManager()
 	this.actualNode = NewApos(this.msger , newOutCommonTools())
+	this.actualNode.outMsger = this.msger
 	//100 virtual node
 	for i := 1 ;i < 100 ; i++ {
 		vNode := newVirtualNode(i , this.allVNodeChan)
@@ -144,7 +142,7 @@ func newOutCommonTools()*outCommonTools{
 	//privateKey
 	o.pri = generatePrivateKey()
 	//signer with chainId
-	o.signer = NewAlgoRandSigner(big.NewInt(1))
+	o.signer = NewSigner(big.NewInt(1))
 
 	return o
 }
