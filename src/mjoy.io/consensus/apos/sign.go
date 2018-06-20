@@ -154,6 +154,70 @@ func (cret *Credential) hash() types.Hash {
 	return hash
 }
 
+// TODO: In current, EphemeralSig is the same as the Credential, need to be modified in the next version
+// ephemeral key singer
+type EphemeralSig struct {
+	Round  		uint64		// round
+	Step   		uint64		// step
+	Val		    []byte		// Val = Hash(B), or Val = 0, or Val = 1
+
+	signature
+}
+
+func (esig *EphemeralSig) sign(prv *ecdsa.PrivateKey) (R *big.Int, S *big.Int, V *big.Int, err error) {
+	if prv == nil {
+		err := errors.New(fmt.Sprintf("private key is empty"))
+		return nil, nil, nil, err
+	}
+
+	hash := esig.hash()
+	if (hash == types.Hash{}) {
+		err := errors.New(fmt.Sprintf("the hash of credential is empty"))
+		return nil, nil, nil, err
+	}
+
+	sig, err := crypto.Sign(hash[:], prv)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	err = esig.signature.get(sig)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	R = esig.signature.R
+	S = esig.signature.S
+	V = esig.signature.V
+
+	return R, S, V, nil
+}
+
+func (esig *EphemeralSig) sender() (types.Address, error) {
+	esig.signature.checkObj()
+
+	if Config().chainId != nil && deriveChainId(esig.signature.V).Cmp(Config().chainId) != 0 {
+		return types.Address{}, ErrInvalidChainId
+	}
+
+	V := &big.Int{}
+	if Config().chainId.Sign() != 0 {
+		V = V.Sub(esig.signature.V, Config().chainIdMul)
+		V.Sub(V, common.Big35)
+	} else{
+		V = V.Sub(esig.signature.V, common.Big27)
+	}
+	address, err :=  recoverPlain(esig.hash(), esig.signature.R, esig.signature.S, V, true)
+	return address, err
+}
+
+func (esig *EphemeralSig) hash() types.Hash {
+	hash, err := common.MsgpHash(esig)
+	if err != nil {
+		return types.Hash{}
+	}
+	return hash
+}
+
 func recoverPlain(sighash types.Hash, R, S, Vb *big.Int, homestead bool) (types.Address, error) {
 	if Vb.BitLen() > 8 {
 		return types.Address{}, ErrInvalidSig
