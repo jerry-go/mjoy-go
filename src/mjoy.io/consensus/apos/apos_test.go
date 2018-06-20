@@ -2,8 +2,8 @@ package apos
 
 import (
 	"testing"
-	"time"
 	"fmt"
+	"time"
 	"mjoy.io/common/types"
 	"math/big"
 )
@@ -41,4 +41,8 @@ func TestRSV(t *testing.T){
 
 	fmt.Println("err:",err)
 
+}
+
+func TestColor(t *testing.T){
+	fmt.Println("\033[35mThis text is red \033[0mThis text has default color\n");
 }

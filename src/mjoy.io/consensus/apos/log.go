@@ -35,6 +35,7 @@ var (
 
 func init() {
 	logger = log.GetLogger(logTag)
+	logger.SetLevel(log.LevelDebug)
 	if logger == nil {
 		fmt.Errorf("Can not get logger(%s)\n", logTag)
 		os.Exit(1)

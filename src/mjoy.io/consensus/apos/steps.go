@@ -27,7 +27,6 @@ import (
 	"sync"
 	"container/heap"
 	"math/big"
-	"log"
 )
 
 //steps handle
@@ -79,7 +78,7 @@ func (this *step1BlockProposal)run(wg *sync.WaitGroup){
 	//fill struct members
 	//todo: should using interface
 	this.apos.outMsger.SendMsg(m1)
-	log.Println("[A]Out M1")
+	logger.Debug("[A]Out M1")
 	//todo:what should we dealing
 
 
@@ -149,10 +148,10 @@ func (this *step2FirstStepGC)run(wg *sync.WaitGroup){
 			m2.Esig = append(m2.Esig , sigBytes...)
 
 			this.apos.outMsger.SendMsg(m2)
-			log.Println("[A]Step:",this.pCredential.Step.IntVal.Int64(),"Out M2")
+			logger.Debug("[A]Step:",this.pCredential.Step.IntVal.Int64(),"Out M2")
 			return
 		case data:=<-this.msgIn:
-			log.Println("[A]Step:",this.pCredential.Step.IntVal.Int64(),"In M1")
+			logger.Debug("[A]Step:",this.pCredential.Step.IntVal.Int64(),"In M1")
 			m1 := new(M1)
 			m1 = data.(*M1)
 
@@ -265,12 +264,12 @@ func (this *step3SecondStepGC)run(wg *sync.WaitGroup){
 				sigBytes := this.apos.commonTools.ESIG(m3.Hash)
 				m3.Esig = append(m3.Esig , sigBytes...)
 				this.apos.outMsger.SendMsg(m3)
-				log.Println("[A]Step:",this.pCredential.Step.IntVal.Int64(),"Out M3")
+				logger.Debug("[A]Step:",this.pCredential.Step.IntVal.Int64(),"Out M3")
 			}(this)
 
 			return
 		case data:=<-this.msgIn:
-			log.Println("[A]Step:",this.pCredential.Step.IntVal.Int64(),"In M2")
+			logger.Debug("[A]Step:",this.pCredential.Step.IntVal.Int64(),"In M2")
 			func(this *step3SecondStepGC){
 				this.lock.Lock()
 				defer this.lock.Unlock()
@@ -296,7 +295,7 @@ func (this *step3SecondStepGC)run(wg *sync.WaitGroup){
 			continue
 
 		case <-this.exit:
-			log.Println("[A]Step:",this.pCredential.Step.IntVal.Int64(),"  Exit")
+			logger.Debug("[A]Step:",this.pCredential.Step.IntVal.Int64(),"  Exit")
 			return
 		}
 	}
@@ -410,13 +409,13 @@ func (this *step4FirstStepBBA)run(wg *sync.WaitGroup){
 				sigBytes = this.apos.commonTools.ESIG(m4.Hash)
 				m4.EsigV = append(m4.EsigV , sigBytes...)
 				this.apos.outMsger.SendMsg(m4)
-				log.Println("[A]Step:",this.pCredential.Step.IntVal.Int64(),"Out M4")
+				logger.Debug("[A]Step:",this.pCredential.Step.IntVal.Int64(),"Out M4")
 
 			}(this)
 
 			return
 		case data:=<-this.msgIn:
-			log.Println("[A]Step:",this.pCredential.Step.IntVal.Int64(),"In M3")
+			logger.Debug("[A]Step:",this.pCredential.Step.IntVal.Int64(),"In M3")
 			func(this *step4FirstStepBBA){
 				this.lock.Lock()
 				defer this.lock.Unlock()
@@ -442,7 +441,7 @@ func (this *step4FirstStepBBA)run(wg *sync.WaitGroup){
 			continue
 
 		case <-this.exit:
-			log.Println("[A]Step:",this.pCredential.Step.IntVal.Int64(),"  Exit")
+			logger.Debug("[A]Step:",this.pCredential.Step.IntVal.Int64(),"  Exit")
 			return
 		}
 	}
@@ -598,7 +597,7 @@ func (this *step567CoinGenFlipBBA)run(wg *sync.WaitGroup){
 				mx.EsigV = append(mx.EsigV , sigBytes...)
 
 				this.apos.outMsger.SendMsg(mx)
-				log.Println("[A]Step:",this.pCredential.Step.IntVal.Int64(),"Out M",mx.Credential.Step.IntVal.Int64())
+				logger.Debug("[A]Step:",this.pCredential.Step.IntVal.Int64(),"Out M",mx.Credential.Step.IntVal.Int64())
 			}(this)
 
 			return
@@ -613,7 +612,7 @@ func (this *step567CoinGenFlipBBA)run(wg *sync.WaitGroup){
 					return
 				}
 				//add to IndexMap
-				log.Println("[A]Step:",this.pCredential.Step.IntVal.Int64(),"In M",m6.Credential.Step.IntVal.Int64())
+				logger.Debug("[A]Step:",this.pCredential.Step.IntVal.Int64(),"In M",m6.Credential.Step.IntVal.Int64())
 				var subIndex *binaryStatus
 				subIndex = this.allMxIndex[m6.Hash]
 				if subIndex == nil {
@@ -628,7 +627,8 @@ func (this *step567CoinGenFlipBBA)run(wg *sync.WaitGroup){
 			continue
 
 		case <-this.exit:
-			log.Println("[A]Step:",this.pCredential.Step.IntVal.Int64(),"  Exit")
+			logger.Debug("[A]Step:",this.pCredential.Step.IntVal.Int64(),"  Exit")
+
 			return
 		}
 	}
@@ -716,7 +716,7 @@ func (this *stepm3LastBBA)run(wg *sync.WaitGroup){
 			continue
 
 		case <-this.exit:
-			log.Println("[A]Step:",this.pCredential.Step.IntVal.Int64(),"  Exit")
+			logger.Debug("[A]Step:",this.pCredential.Step.IntVal.Int64(),"  Exit")
 			return
 		}
 	}
