@@ -24,6 +24,7 @@ import (
 	"sync"
 	"math/big"
 	"fmt"
+	"mjoy.io/common"
 )
 
 var (
@@ -35,19 +36,23 @@ var (
 
 //some system param(apos system param) for step goroutine.
 type config struct {
-	lookback            	int			`json:"lookback"`             // lookback val, r - k
-	prPrecision				uint64		`json:"precision"`            // the precision
-	prLeader				uint64		`json:"probability-leader"`   // the probability of Leaders
-	prVerifier				uint64		`json:"probability-verifier"` // the probability of Verifiers
-	maxBBASteps         	int			`json:"max-steps"`            // the max number of BBA steps
-	maxNodesPerRound    	int			`json:"max-nodes-per-round"`  // the max number of nodes per round
-	prH						uint64		`json:"probability-honest"`   // the probability of honest
-	blockDelay          	int  		`json:"block-delay"`          // time A, sec
-	verifyDelay         	int  		`json:"verify-delay"`         // time λ, sec
+	lookback                int         `json:"lookback"`             // lookback val, r - k
+	prPrecision             uint64      `json:"precision"`            // the precision
+	prLeader                uint64      `json:"probability-leader"`   // the probability of Leaders
+	prVerifier              uint64      `json:"probability-verifier"` // the probability of Verifiers
+	maxBBASteps             int         `json:"max-steps"`            // the max number of BBA steps
+	maxNodesPerRound        int         `json:"max-nodes-per-round"`  // the max number of nodes per round
+	prH                     uint64      `json:"probability-honest"`   // the probability of honest
+	blockDelay              int         `json:"block-delay"`          // time A, sec
+	verifyDelay             int         `json:"verify-delay"`         // time λ, sec
 
-	prP						*big.Int	`json:"-"`                    // 10 ^ prPrecision
-	maxPotLeaders			*big.Int	`json:"-"`                    // the max number of potential leaders
-	maxPotVerifiers			*big.Int	`json:"-"`                    // the max number of potential verifiers
+	prP                     *big.Int    `json:"-"`                    // 10 ^ prPrecision
+	maxPotLeaders           *big.Int    `json:"-"`                    // the max number of potential leaders
+	maxPotVerifiers         *big.Int    `json:"-"`                    // the max number of potential verifiers
+
+	// chain info
+	chainId                 *big.Int    `json:"-"`
+	chainIdMul              *big.Int    `json:"-"`
 }
 
 func (c *config) setDefault() {
@@ -75,7 +80,9 @@ func Config() *config {
 		instance.setDefault()
 		instance.Verify()
 		instance.verifier()
+		instance.chain()
 	})
+
 	return instance
 }
 
@@ -100,6 +107,14 @@ func (c *config) verifier() (uint64, uint64, uint64, *big.Int, *big.Int) {
 	}
 
 	return c.prPrecision, c.prLeader, c.prVerifier, c.maxPotLeaders, c.maxPotVerifiers
+}
+
+func (c *config) chain() (chainId *big.Int, chainIdMul *big.Int) {
+	if c.chainId != nil {
+		c.chainIdMul = new(big.Int).Mul(c.chainId, common.Big2)
+		return c.chainId, c.chainIdMul
+	}
+	return chainId, chainIdMul
 }
 
 func (c *config) Verify() {
