@@ -454,7 +454,7 @@ func (this *Round)ReceiveMCommon(msg *MCommon) {
 		this.broadCastStop()
 		//todo need import block to block chain
 
-		log.Println("OK Consensus....")
+		log.Println("OK Consensus....ret:",ret)
 		this.quitCh <- 1
 	}
 }
@@ -541,7 +541,7 @@ func NewApos(msger OutMsger ,cmTools CommonTools)*Apos{
 	return a
 }
 
-func (this *Apos)makeEmptyBlock()*block.Block{
+func (this *Apos)makeEmptyBlockForTest()*block.Block{
 	header := &block.Header{Number:types.NewBigInt(*big.NewInt(int64(this.commonTools.GetNowBlockNum()))),Time:types.NewBigInt(*big.NewInt(time.Now().Unix()))}
 	//chainId := big.NewInt(100)
 	//signer := block.NewBlockSigner(chainId)
