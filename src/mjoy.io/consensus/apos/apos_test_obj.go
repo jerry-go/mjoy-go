@@ -71,7 +71,7 @@ func newAllNodeManager()*allNodeManager{
 	return v
 }
 
-func (this *allNodeManager)init(){
+func (this *allNodeManager)init(notHonestNodeCnt int){
 	this.allVNodeChan = make(chan dataPack , 1000)
 	//only one msger,for virtual  nodes and actual node
 	this.msger = newMsgManager()
@@ -79,10 +79,9 @@ func (this *allNodeManager)init(){
 	this.actualNode.validate.fake = true
 	this.actualNode.SetOutMsger(this.msger)
 	//all nodes
-	allNodesCnt := 6
-	notHonestNodeCnt := 4
+	allNodesCnt := Config().maxPotVerifiers.Uint64() -1
 	//100 virtual node
-	for i := 1 ;i <= allNodesCnt ; i++ {
+	for i := 1 ;i <= int(allNodesCnt) ; i++ {
 		notHonestNodeCnt--
 		vNode := newVirtualNode(i , this.allVNodeChan)
 		if notHonestNodeCnt > 0{

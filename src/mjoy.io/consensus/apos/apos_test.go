@@ -10,13 +10,30 @@ import (
 
 func TestAposRunning(t *testing.T){
 	an := newAllNodeManager()
-	an.init()
+	an.init(0)
 	for{
 		time.Sleep(3*time.Second)
 		//fmt.Println("apos_test doing....")
 	}
 }
 
+func TestApos1(t *testing.T){
+	an := newAllNodeManager()
+	an.init(2)
+	for{
+		time.Sleep(3*time.Second)
+		//fmt.Println("apos_test doing....")
+	}
+}
+
+func TestApos2(t *testing.T){
+	an := newAllNodeManager()
+	an.init(3)
+	for{
+		time.Sleep(3*time.Second)
+		//fmt.Println("apos_test doing....")
+	}
+}
 
 func TestRSV(t *testing.T){
 	vn := newVirtualNode(1,nil)
