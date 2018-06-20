@@ -12,6 +12,7 @@ import (
 	"mjoy.io/core/blockchain/block"
 	"time"
 	"mjoy.io/common"
+	"log"
 )
 
 type outMsgManager struct {
@@ -101,6 +102,7 @@ func (this *allNodeManager)run(){
 			this.msger.msgRcvChan <- virtualData
 
 		case actualData := <-this.msger.msgSndChan:
+			//continue
 			for _,vNode := range this.vituals{
 				vNode.inChan <- actualData
 			}
@@ -313,7 +315,7 @@ func (this *virtualNode)dealM1(data dataPack)dataPack{
 	//m2.Credential.PrintInfo()
 	m2.Hash = m1.Block.Hash()
 	m2.Esig = this.commonTools.ESIG(m2.Hash)
-	fmt.Println("[v] In M1 Out M2")
+	log.Println("\033[35m [V] In M1 Out M2 \033[0m")
 	return m2
 }
 
@@ -323,14 +325,14 @@ func (this *virtualNode)dealM23(data dataPack)dataPack{
 	if 2 != m.Credential.Step.IntVal.Int64() && 3 != m.Credential.Step.IntVal.Int64() {
 		return nil
 	}
-	fmt.Println("[V]In Mx step:",m.Credential.Step.IntVal.Int64())
+	log.Println("\033[35m [V]In Mx step:",m.Credential.Step.IntVal.Int64(),"\033[0m ")
 	if 2 == m.Credential.Step.IntVal.Int64() {
 		// step 2,should make m3
 		m3 := new(M23)
 		m3.Credential = this.makeCredential(3)
 		m3.Hash = m.Hash
 		m3.Esig = this.commonTools.ESIG(m.Hash)
-		fmt.Println("[V]In M2 Out M3")
+		log.Println("\033[35m [V]In M2 Out M3 \033[0m ")
 		return m3
 	}else {
 		// step 3,should make mCommon
@@ -344,7 +346,7 @@ func (this *virtualNode)dealM23(data dataPack)dataPack{
 		str := fmt.Sprintf("%d" , m4.B)
 
 		m4.EsigB = this.commonTools.ESIG(types.BytesToHash([]byte(str)))
-		fmt.Println("[V]In M3 Out M4")
+		log.Println("\033[35m [V]In M3 Out M4  \033[0m ")
 		return m4
 	}
 	return nil
@@ -363,9 +365,9 @@ func (this *virtualNode)dealMCommon(data dataPack)dataPack{
 	mc.EsigV = this.commonTools.ESIG(mc.Hash)
 	str := fmt.Sprintf("%d" , mc.B)
 	mc.EsigB = this.commonTools.ESIG(types.BytesToHash([]byte(str)))
-	fmt.Println("[V]In M",m.Credential.Step.IntVal.Int64() ,
+	log.Println("\033[35m [V]In M",m.Credential.Step.IntVal.Int64() ,
 					"  Out M",int(m.Credential.Step.IntVal.Int64())+1 ,
-					"  time:",time.Now().Format("2006-01-02 15:04:05"))
+					"  time:",time.Now().Format("2006-01-02 15:04:05"),"\033[0m ")
 	return mc
 
 }
