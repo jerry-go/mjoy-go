@@ -403,6 +403,7 @@ func (this *Round)SaveMCommon(msg *MCommon) int {
 			b = 2
 			voteNum = pleader.AddVoteNumber(uint(step), b)
 		}
+		logger.Info("save common message: leader", hash.String(), "step", step, "vote result", b, "vote number sum", voteNum)
 		return this.EndCondition(voteNum, b)
 	}
 	return IDLE

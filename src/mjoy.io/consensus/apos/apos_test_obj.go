@@ -82,10 +82,11 @@ func (this *allNodeManager)init(notHonestNodeCnt int){
 	allNodesCnt := Config().maxPotVerifiers.Uint64() -1
 	//100 virtual node
 	for i := 1 ;i <= int(allNodesCnt) ; i++ {
-		notHonestNodeCnt--
 		vNode := newVirtualNode(i , this.allVNodeChan)
+
 		if notHonestNodeCnt > 0{
 			vNode.setIsHonest(false)
+			notHonestNodeCnt--
 		}
 		this.vituals = append(this.vituals , vNode)
 		go vNode.run()

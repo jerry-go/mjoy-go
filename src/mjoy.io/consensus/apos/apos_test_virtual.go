@@ -78,7 +78,7 @@ func (this *virtualNode)makeCredential(s int)*CredentialSig{
 }
 
 func (this *virtualNode)makeEmptyBlock()*block.Block{
-	header := &block.Header{Number:types.NewBigInt(*big.NewInt(int64(this.commonTools.GetNowBlockNum()))),Time:types.NewBigInt(*big.NewInt(time.Now().Unix()))}
+	header := &block.Header{Number:types.NewBigInt(*big.NewInt(int64(this.commonTools.GetNowBlockNum()))),Time:types.NewBigInt(*big.NewInt(0))}
 	//chainId := big.NewInt(100)
 	//signer := block.NewBlockSigner(chainId)
 	R,S,V := this.commonTools.SIG(header.Hash())

@@ -35,6 +35,15 @@ func TestApos2(t *testing.T){
 	}
 }
 
+func TestApos3(t *testing.T){
+	an := newAllNodeManager()
+	an.init(4)
+	for{
+		time.Sleep(3*time.Second)
+		//fmt.Println("apos_test doing....")
+	}
+}
+
 func TestRSV(t *testing.T){
 	vn := newVirtualNode(1,nil)
 
