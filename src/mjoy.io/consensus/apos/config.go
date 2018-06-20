@@ -30,6 +30,7 @@ import (
 var (
 	decimal = big.NewInt(10)
 	honestPercision = big.NewInt(100)
+	maxUint256 = new(big.Int).Exp(big.NewInt(2), big.NewInt(256), nil)
 )
 
 //go:generate gencodec -type config -field-override configMarshaling -out gen_config.go
@@ -58,11 +59,11 @@ type config struct {
 func (c *config) setDefault() {
 	c.lookback = 100
 	c.prPrecision = 10
-	c.prLeader = 9000000000		// 0.1
-	c.prVerifier = 9000000000 	// 0.5
+	c.prLeader = 1000000000		// 0.1
+	c.prVerifier = 5000000000 	// 0.5
 	c.maxBBASteps = 180
 	c.maxNodesPerRound = 10
-	c.prH = 34
+	c.prH = 67
 	c.blockDelay = 10
 	c.verifyDelay = 5
 }
@@ -96,14 +97,14 @@ func (c *config) precision() *big.Int {
 func (c *config) verifier() (uint64, uint64, uint64, *big.Int, *big.Int) {
 	if c.maxPotLeaders == nil {
 		c.maxPotLeaders = big.NewInt(int64(c.maxNodesPerRound))
-		c.maxPotLeaders.Mul(c.maxPotLeaders, c.precision())
-		c.maxPotLeaders.Div(c.maxPotLeaders, big.NewInt(0).SetUint64(c.prLeader))
+		c.maxPotLeaders.Mul(c.maxPotLeaders, big.NewInt(0).SetUint64(c.prLeader))
+		c.maxPotLeaders.Div(c.maxPotLeaders, c.precision())
 	}
 
 	if c.maxPotVerifiers == nil {
 		c.maxPotVerifiers = big.NewInt(int64(c.maxNodesPerRound))
-		c.maxPotVerifiers.Mul(c.maxPotVerifiers, c.precision())
-		c.maxPotVerifiers.Div(c.maxPotVerifiers, big.NewInt(0).SetUint64(c.prVerifier))
+		c.maxPotVerifiers.Mul(c.maxPotVerifiers, big.NewInt(0).SetUint64(c.prVerifier))
+		c.maxPotVerifiers.Div(c.maxPotVerifiers, c.precision())
 	}
 
 	return c.prPrecision, c.prLeader, c.prVerifier, c.maxPotLeaders, c.maxPotVerifiers
@@ -145,7 +146,7 @@ func (c *config) Verify() {
 		panic(fmt.Errorf("prH > 100 \n"))
 	}
 
-	if c.precision().Cmp(new(big.Int).Exp(big.NewInt(2), big.NewInt(256), big.NewInt(0))) > 0 {
+	if c.precision().Cmp(maxUint256) > 0 {
 		panic(fmt.Errorf("PrLeader > precision \n"))
 	}
 

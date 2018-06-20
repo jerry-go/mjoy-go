@@ -37,7 +37,8 @@ func isPotVerifier(hash []byte, leader bool) bool {
 		prVal.SetUint64(Config().prVerifier)
 	}
 
-	return h.Div(h, Config().precision()).Cmp(prVal) < 0
+	return h.Cmp(big.NewInt(0).Div(prVal.Mul(prVal, maxUint256), Config().precision())) < 0
+	//return h.Div(h, Config().precision()).Cmp(prVal) < 0
 }
 
 func isHonest(vote, all int) bool {
@@ -49,6 +50,7 @@ func isHonest(vote, all int) bool {
 
 func isAbsHonest(vote int, leader bool) bool {
 	a := Config().maxPotVerifiers
+	logger.Debug("isAbsHonest maxPotVerifiers", a ,"vote", vote)
 	if leader {
 		a = Config().maxPotLeaders
 	}

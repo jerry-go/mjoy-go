@@ -29,7 +29,6 @@ import (
 	"errors"
 	"mjoy.io/core/blockchain/block"
 	"time"
-	"log"
 )
 
 const (
@@ -373,6 +372,7 @@ func (this *Round)EndCondition(voteNum int, b uint) int {
 
 	//if voteNum >= this.targetNum {
 	if isAbsHonest(voteNum, false) {
+		logger.Info("end condition ", b, "vote number", voteNum)
 		if 0 == b{
 			return ENDCONDITION0
 		} else if 1 == b {
@@ -447,7 +447,7 @@ func (this *Round)ReceiveMCommon(msg *MCommon) {
 		this.broadCastStop()
 		//todo need import block to block chain
 
-		log.Println("OK Consensus....ret:",ret)
+		logger.Info("OK Consensus....ret:",ret)
 		this.quitCh <- 1
 	}
 }
