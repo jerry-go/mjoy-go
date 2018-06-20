@@ -322,7 +322,7 @@ func makeStep4Obj(pApos *Apos , pCredential *CredentialSig  , step int)*step4Fir
 
 	s.exit = make(chan int , 1)
 	s.step = step
-
+	s.allM2Index = make(map[types.Hash]map[CredentialSigForKey]bool)
 	s.pCredential = pCredential
 	return s
 }

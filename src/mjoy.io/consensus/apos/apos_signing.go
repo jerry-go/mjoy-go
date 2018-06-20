@@ -31,8 +31,8 @@ import (
 )
 
 var (
-	ErrInvalidSig = errors.New("invalid  v, r, s values")
-	ErrInvalidChainId = errors.New("invalid chain id for signer")
+	//ErrInvalidSig = errors.New("invalid  v, r, s values")
+	//ErrInvalidChainId = errors.New("invalid chain id for signer")
 )
 
 
@@ -125,7 +125,7 @@ func (s AlgRandSigner) SignatureValues(sig []byte) (R, S, V *big.Int, err error)
 	return R, S, V, nil
 }
 
-func recoverPlain(sighash types.Hash, R, S, Vb *big.Int, homestead bool) (types.Address, error) {
+func recoverPlain1(sighash types.Hash, R, S, Vb *big.Int, homestead bool) (types.Address, error) {
 	if Vb.BitLen() > 8 {
 		return types.Address{}, ErrInvalidSig
 	}
@@ -153,7 +153,7 @@ func recoverPlain(sighash types.Hash, R, S, Vb *big.Int, homestead bool) (types.
 }
 
 // deriveChainId derives the chain id from the given v parameter
-func deriveChainId(v *big.Int) *big.Int {
+func deriveChainId1(v *big.Int) *big.Int {
 	if v.BitLen() <= 64 {
 		v := v.Uint64()
 		if v == 27 || v == 28 {

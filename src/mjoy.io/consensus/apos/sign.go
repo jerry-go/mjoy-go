@@ -70,6 +70,7 @@ func (s *signature) checkObj() (err error) {
 	if s.R == nil || s.S == nil || s.V == nil {
 		panic(fmt.Errorf("signature obj is not initialized"))
 	}
+	return nil
 }
 
 func (s *signature) get(sig []byte) (err error) {

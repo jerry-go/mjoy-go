@@ -48,6 +48,7 @@ func (this *outMsgManager)PropagateCredential(c *CredentialSig)error{
 
 func (this *outMsgManager)SendMsg(data dataPack)error{
 	this.msgSndChan<-data
+	this.msgRcvChan<-data
 	return nil
 }
 
