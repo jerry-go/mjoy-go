@@ -78,14 +78,14 @@ func (s *signature) get(sig []byte) (err error) {
 	if len(sig) != 65 {
 		return errors.New(fmt.Sprintf("wrong size for signature: got %d, want 65", len(sig)))
 	} else {
-		s.R = new(big.Int).SetBytes(sig[:32])
-		s.S = new(big.Int).SetBytes(sig[32:64])
+		s.R.SetBytes(sig[:32])
+		s.S.SetBytes(sig[32:64])
 
 		if Config().chainId != nil && Config().chainId.Sign() != 0 {
-			s.V = big.NewInt(int64(sig[64] + 35))
+			s.V.SetInt64(int64(sig[64] + 35))
 			s.V.Add(s.V, Config().chainIdMul)
 		} else {
-			s.V = new(big.Int).SetBytes([]byte{sig[64] + 27})
+			s.V.SetBytes([]byte{sig[64] + 27})
 		}
 	}
 	return nil
