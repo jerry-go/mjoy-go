@@ -30,6 +30,7 @@ import (
 	"errors"
 	"mjoy.io/core/blockchain/block"
 	"time"
+	"log"
 )
 
 const (
@@ -310,7 +311,7 @@ func (this *Round)ReceiveM23(msg *M23) {
 	}
 
 	step := msg.Credential.Step.IntVal.Uint64()
-	fmt.Println("[A] receiveM23 step:",step)
+	//fmt.Println("[A] receiveM23 step:",step)
 	if step != 2  && step != 3 {
 		logger.Warn("verify fail, M23 msg step is not 2 or 3", msg.Credential.Round.IntVal.Uint64(), step)
 		fmt.Println("verify fail, M23 msg step is not 2 or 3", msg.Credential.Round.IntVal.Uint64(), step)
@@ -453,7 +454,7 @@ func (this *Round)ReceiveMCommon(msg *MCommon) {
 		this.broadCastStop()
 		//todo need import block to block chain
 
-
+		log.Println("OK Consensus....")
 		this.quitCh <- 1
 	}
 }
@@ -482,6 +483,8 @@ func (this *Round)CommonProcess() {
 				logger.Warn("invalid message type ",reflect.TypeOf(v))
 			}
 		case <-this.quitCh:
+
+			log.Println("Round exit")
 			logger.Info("round exit ")
 			return
 		}

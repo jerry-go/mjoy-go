@@ -27,6 +27,7 @@ import (
 	"sync"
 	"container/heap"
 	"math/big"
+	"log"
 )
 
 //steps handle
@@ -78,7 +79,7 @@ func (this *step1BlockProposal)run(wg *sync.WaitGroup){
 	//fill struct members
 	//todo: should using interface
 	this.apos.outMsger.SendMsg(m1)
-	fmt.Println("[A]Out M1")
+	log.Println("[A]Out M1")
 	//todo:what should we dealing
 
 
@@ -130,6 +131,7 @@ func (this *step2FirstStepGC)run(wg *sync.WaitGroup){
 	//this step ,we should wait the time
 
 	delayT := time.Duration(Config().verifyDelay + Config().blockDelay)
+
 	fmt.Println("step2FirstStepGC  timeDelay:",Config().verifyDelay + Config().blockDelay)
 	timerT := time.Tick(delayT*time.Second)
 	for{
@@ -147,10 +149,10 @@ func (this *step2FirstStepGC)run(wg *sync.WaitGroup){
 			m2.Esig = append(m2.Esig , sigBytes...)
 
 			this.apos.outMsger.SendMsg(m2)
-			fmt.Println("[A]Out M2")
+			log.Println("[A]Step:",this.pCredential.Step.IntVal.Int64(),"Out M2")
 			return
 		case data:=<-this.msgIn:
-			fmt.Println("[A]In M1")
+			log.Println("[A]Step:",this.pCredential.Step.IntVal.Int64(),"In M1")
 			m1 := new(M1)
 			m1 = data.(*M1)
 
@@ -223,7 +225,7 @@ func (this *step3SecondStepGC)run(wg *sync.WaitGroup){
 	defer wg.Done()
 	//this step ,we should wait the time
 	delayT := time.Duration(3*Config().verifyDelay + Config().blockDelay)
-	fmt.Println("timeDelay:",3*Config().verifyDelay + Config().blockDelay)
+	//log.Println("timeDelay:",3*Config().verifyDelay + Config().blockDelay)
 	timerT := time.Tick(delayT*time.Second)
 	for{
 		select {
@@ -258,17 +260,17 @@ func (this *step3SecondStepGC)run(wg *sync.WaitGroup){
 
 				m3 := new(M23)
 				m3.Credential = this.pCredential
-				fmt.Println("[A]Out M3 step:",m3.Credential.Step.IntVal.Int64())
+
 				m3.Hash = v
 				sigBytes := this.apos.commonTools.ESIG(m3.Hash)
 				m3.Esig = append(m3.Esig , sigBytes...)
 				this.apos.outMsger.SendMsg(m3)
-				fmt.Println("[A]Out M3")
+				log.Println("[A]Step:",this.pCredential.Step.IntVal.Int64(),"Out M3")
 			}(this)
 
 			return
 		case data:=<-this.msgIn:
-			fmt.Println("[A]In M2")
+			log.Println("[A]Step:",this.pCredential.Step.IntVal.Int64(),"In M2")
 			func(this *step3SecondStepGC){
 				this.lock.Lock()
 				defer this.lock.Unlock()
@@ -294,6 +296,7 @@ func (this *step3SecondStepGC)run(wg *sync.WaitGroup){
 			continue
 
 		case <-this.exit:
+			log.Println("[A]Step:",this.pCredential.Step.IntVal.Int64(),"  Exit")
 			return
 		}
 	}
@@ -407,13 +410,13 @@ func (this *step4FirstStepBBA)run(wg *sync.WaitGroup){
 				sigBytes = this.apos.commonTools.ESIG(m4.Hash)
 				m4.EsigV = append(m4.EsigV , sigBytes...)
 				this.apos.outMsger.SendMsg(m4)
-				fmt.Println("[A]Out M4"," time:",time.Now().String())
+				log.Println("[A]Step:",this.pCredential.Step.IntVal.Int64(),"Out M4")
 
 			}(this)
 
 			return
 		case data:=<-this.msgIn:
-			fmt.Println("[A]In M3")
+			log.Println("[A]Step:",this.pCredential.Step.IntVal.Int64(),"In M3")
 			func(this *step4FirstStepBBA){
 				this.lock.Lock()
 				defer this.lock.Unlock()
@@ -439,6 +442,7 @@ func (this *step4FirstStepBBA)run(wg *sync.WaitGroup){
 			continue
 
 		case <-this.exit:
+			log.Println("[A]Step:",this.pCredential.Step.IntVal.Int64(),"  Exit")
 			return
 		}
 	}
@@ -594,8 +598,7 @@ func (this *step567CoinGenFlipBBA)run(wg *sync.WaitGroup){
 				mx.EsigV = append(mx.EsigV , sigBytes...)
 
 				this.apos.outMsger.SendMsg(mx)
-				fmt.Println("[A]Out M",mx.Credential.Step.IntVal.Int64() ,"   thisStep:",this.step,
-					"  time:",time.Now().Format("2006-01-02 15:04:05"))
+				log.Println("[A]Step:",this.pCredential.Step.IntVal.Int64(),"Out M",mx.Credential.Step.IntVal.Int64())
 			}(this)
 
 			return
@@ -610,9 +613,7 @@ func (this *step567CoinGenFlipBBA)run(wg *sync.WaitGroup){
 					return
 				}
 				//add to IndexMap
-				fmt.Println("[A]In M",m6.Credential.Step.IntVal.Int64() ,
-					"  time:",time.Now().Format("2006-01-02 15:04:05"))
-
+				log.Println("[A]Step:",this.pCredential.Step.IntVal.Int64(),"In M",m6.Credential.Step.IntVal.Int64())
 				var subIndex *binaryStatus
 				subIndex = this.allMxIndex[m6.Hash]
 				if subIndex == nil {
@@ -627,6 +628,7 @@ func (this *step567CoinGenFlipBBA)run(wg *sync.WaitGroup){
 			continue
 
 		case <-this.exit:
+			log.Println("[A]Step:",this.pCredential.Step.IntVal.Int64(),"  Exit")
 			return
 		}
 	}
@@ -714,6 +716,7 @@ func (this *stepm3LastBBA)run(wg *sync.WaitGroup){
 			continue
 
 		case <-this.exit:
+			log.Println("[A]Step:",this.pCredential.Step.IntVal.Int64(),"  Exit")
 			return
 		}
 	}
