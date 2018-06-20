@@ -463,7 +463,7 @@ func (this *Round)CommonProcess() {
 		select {
 		// receive message
 		case outData := <-this.apos.outMsger.GetDataMsg():
-			fmt.Println("CommonProcess getOutData")
+			//fmt.Println("CommonProcess getOutData")
 			switch v := outData.(type) {
 			case *CredentialSig:
 				//fmt.Println(v)
@@ -473,7 +473,7 @@ func (this *Round)CommonProcess() {
 				this.ReceiveM1(v)
 			case *M23:
 				//fmt.Println(v)
-				fmt.Println("getMsg m23")
+				//fmt.Println("getMsg m23")
 				this.ReceiveM23(v)
 			case *MCommon:
 				//fmt.Println(v)

@@ -180,7 +180,7 @@ func (this *outCommonTools)SigVerify(h types.Hash , sig *SignatureVal)error{
 
 func (this *outCommonTools)Sender(h types.Hash , sig *SignatureVal)(types.Address , error){
 	V := &big.Int{}
-	V = V.Sub(&sig.V.IntVal, big.NewInt(1))
+	V = V.Sub(&sig.V.IntVal, big.NewInt(2))
 	V.Sub(V, common.Big35)
 	address , err := recoverPlain(h , &sig.R.IntVal , &sig.S.IntVal , V,true)
 	return address , err
@@ -312,27 +312,28 @@ func (this *virtualNode)dealM1(data dataPack)dataPack{
 	//m2.Credential.PrintInfo()
 	m2.Hash = m1.Block.Hash()
 	m2.Esig = this.commonTools.ESIG(m2.Hash)
-	fmt.Println("[v] dealm1-pack m2")
+	fmt.Println("[v] In M1 Out M2")
 	return m2
 }
 
 func (this *virtualNode)dealM23(data dataPack)dataPack{
-	fmt.Println("VNode:",this.id,"get M23 Data")
+
 	m := data.(*M23)
-	if 2 != m.Credential.Step.IntVal.Int64() || 3 != m.Credential.Step.IntVal.Int64() {
+	if 2 != m.Credential.Step.IntVal.Int64() && 3 != m.Credential.Step.IntVal.Int64() {
 		return nil
 	}
-
+	fmt.Println("[V]In Mx step:",m.Credential.Step.IntVal.Int64())
 	if 2 == m.Credential.Step.IntVal.Int64() {
 		// step 2,should make m3
 		m3 := new(M23)
 		m3.Credential = this.makeCredential(3)
 		m3.Hash = m.Hash
 		m3.Esig = this.commonTools.ESIG(m.Hash)
-
+		fmt.Println("[V]In M2 Out M3")
 		return m3
 	}else {
 		// step 3,should make mCommon
+
 		m4 := new(MCommon)
 		m4.Credential = this.makeCredential(4)
 		m4.B = 0
@@ -342,7 +343,7 @@ func (this *virtualNode)dealM23(data dataPack)dataPack{
 		str := fmt.Sprintf("%d" , m4.B)
 
 		m4.EsigB = this.commonTools.ESIG(types.BytesToHash([]byte(str)))
-
+		fmt.Println("[V]In M3 Out M4")
 		return m4
 	}
 	return nil
@@ -350,8 +351,9 @@ func (this *virtualNode)dealM23(data dataPack)dataPack{
 }
 
 func (this *virtualNode)dealMCommon(data dataPack)dataPack{
-	fmt.Println("VNode:",this.id,"get Common Data")
+
 	m := data.(*MCommon)
+
 	mc := new(MCommon)
 	mc.B = m.B
 	mc.Hash = m.Hash
@@ -360,7 +362,9 @@ func (this *virtualNode)dealMCommon(data dataPack)dataPack{
 	mc.EsigV = this.commonTools.ESIG(mc.Hash)
 	str := fmt.Sprintf("%d" , mc.B)
 	mc.EsigB = this.commonTools.ESIG(types.BytesToHash([]byte(str)))
-
+	fmt.Println("[V]In M",m.Credential.Step.IntVal.Int64() ,
+					"  Out M",int(m.Credential.Step.IntVal.Int64())+1 ,
+					"  time:",time.Now().Format("2006-01-02 15:04:05"))
 	return mc
 
 }
