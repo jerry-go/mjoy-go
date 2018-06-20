@@ -108,11 +108,9 @@ func (this *virtualNode)dealM1(data dataPack)dataPack{
 
 
 	//m2.Credential.PrintInfo()
-	if this.isHonest{
-		m2.Hash = m1.Block.Hash()
-	}else{
-		emptyBlock := this.makeEmptyBlock()
-		m2.Hash = emptyBlock.Hash()
+	m2.Hash = m1.Block.Hash()
+	if !this.isHonest{
+		m2.Hash[10] = m2.Hash[10] + 1
 	}
 
 	m2.Esig = this.commonTools.ESIG(m2.Hash)
@@ -131,10 +129,9 @@ func (this *virtualNode)dealM23(data dataPack)dataPack{
 		// step 2,should make m3
 		m3 := new(M23)
 		m3.Credential = this.makeCredential(3)
-		if this.isHonest{
-			m3.Hash = m.Hash
-		}else{
-			m3.Hash = types.Hash{}
+		m3.Hash = m.Hash
+		if !this.isHonest{
+			m3.Hash[10] = m3.Hash[10] + 1
 		}
 
 		m3.Esig = this.commonTools.ESIG(m.Hash)
@@ -149,8 +146,7 @@ func (this *virtualNode)dealM23(data dataPack)dataPack{
 			m4.B = 0
 			m4.Hash = m.Hash
 		}else{
-			emptyBlock := this.makeEmptyBlock()
-			m4.Hash = emptyBlock.Hash()
+			m4.Hash = m.Hash
 			m4.B = 1
 		}
 

@@ -79,8 +79,8 @@ func (this *allNodeManager)init(){
 	this.actualNode.validate.fake = true
 	this.actualNode.SetOutMsger(this.msger)
 	//all nodes
-	allNodesCnt := 80
-	notHonestNodeCnt := 27
+	allNodesCnt := 6
+	notHonestNodeCnt := 4
 	//100 virtual node
 	for i := 1 ;i <= allNodesCnt ; i++ {
 		notHonestNodeCnt--
