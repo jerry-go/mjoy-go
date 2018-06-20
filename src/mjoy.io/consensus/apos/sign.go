@@ -66,11 +66,10 @@ type signValue interface {
 	get(sig []byte) (err error)
 }
 
-func (s *signature) checkObj() (err error) {
+func (s *signature) checkObj() {
 	if s.R == nil || s.S == nil || s.V == nil {
 		panic(fmt.Errorf("signature obj is not initialized"))
 	}
-	return nil
 }
 
 func (s *signature) get(sig []byte) (err error) {
