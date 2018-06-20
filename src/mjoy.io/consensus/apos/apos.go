@@ -25,7 +25,6 @@ import (
 	"mjoy.io/utils/crypto"
 	"mjoy.io/common/types"
 	"math/big"
-	"fmt"
 	"reflect"
 	"errors"
 	"mjoy.io/core/blockchain/block"
@@ -157,7 +156,7 @@ func (this *Round)GenerateCredentials() {
 
 		credential := this.apos.makeCredential(i)
 		isVerfier := this.apos.judgeVerifier(credential, i)
-		fmt.Println("GenerateCredential step:",i,"  isVerifier:",isVerfier)
+		logger.Info("GenerateCredential step:",i,"  isVerifier:",isVerfier)
 		if isVerfier {
 			this.credentials[i] = credential
 		}
@@ -306,27 +305,22 @@ func (this *Round)ReceiveM23(msg *M23) {
 	//verify msg
 	if msg.Credential.Round.IntVal.Cmp(&this.round.IntVal) != 0 {
 		logger.Warn("verify fail, M23 msg is not in current round", msg.Credential.Round.IntVal.Uint64(), this.round.IntVal.Uint64())
-		fmt.Println("verify fail, M23 msg is not in current round", msg.Credential.Round.IntVal.Uint64(), this.round.IntVal.Uint64())
 		return
 	}
 
 	step := msg.Credential.Step.IntVal.Uint64()
-	//fmt.Println("[A] receiveM23 step:",step)
 	if step != 2  && step != 3 {
 		logger.Warn("verify fail, M23 msg step is not 2 or 3", msg.Credential.Round.IntVal.Uint64(), step)
-		fmt.Println("verify fail, M23 msg step is not 2 or 3", msg.Credential.Round.IntVal.Uint64(), step)
 		return
 	}
 	err := this.apos.validate.ValidateM23(msg)
 	if err != nil {
-		fmt.Println("verify m23 fail", err)
 		logger.Info("verify m23 fail", err)
 		return
 	}
 
 	if err = this.filterM23(msg); err != nil {
 		logger.Info("filter m23 fail", err)
-		fmt.Println("filter m23 fail", err)
 		return
 	}
 
@@ -338,7 +332,6 @@ func (this *Round)ReceiveM23(msg *M23) {
 	//Propagate message via p2p
 	this.apos.outMsger.PropagateMsg(msg)
 	logger.Info("propagete message via p2p")
-	//fmt.Println("propagate message via p2p")
 }
 
 
@@ -464,27 +457,19 @@ func (this *Round)CommonProcess() {
 		select {
 		// receive message
 		case outData := <-this.apos.outMsger.GetDataMsg():
-			//fmt.Println("CommonProcess getOutData")
 			switch v := outData.(type) {
 			case *CredentialSig:
-				//fmt.Println(v)
 				this.ReceiveM0(v)
 			case *M1:
-				//fmt.Println(v)
 				this.ReceiveM1(v)
 			case *M23:
-				//fmt.Println(v)
-				//fmt.Println("getMsg m23")
 				this.ReceiveM23(v)
 			case *MCommon:
-				//fmt.Println(v)
 				this.ReceiveMCommon(v)
 			default:
 				logger.Warn("invalid message type ",reflect.TypeOf(v))
 			}
 		case <-this.quitCh:
-
-			log.Println("Round exit")
 			logger.Info("round exit ")
 			return
 		}
@@ -565,11 +550,11 @@ func (this *Apos)Run(){
 	//this.roundOverCh<-1
 	this.roundCtx = newRound(this.commonTools.GetNextRound(),this,this.roundOverCh)
 	go this.roundCtx.Run()
-	fmt.Println("Apos is running.....")
+	logger.Info("Apos is running.....")
 	for{
 		select {
 		case <-this.roundOverCh:
-			fmt.Println("aposStopCh<-1")
+			logger.Info("aposStopCh<-1")
 			this.aposStopCh<-1
 			return //if apos deal once ,stop it
 			this.roundCtx = newRound(this.commonTools.GetNextRound(),this,this.roundOverCh)
@@ -605,10 +590,12 @@ func (this *Apos)makeCredential(s int) *CredentialSig{
 	k := 1
 
 	Qr_k := this.commonTools.GetQr_k(k)
-	str := fmt.Sprintf("%d%d%s",r,k,Qr_k.Hex())
+	//str := fmt.Sprintf("%d%d%s",r,k,Qr_k.Hex())
 	//get sig
+	cd := CredentialData{*types.NewBigInt(*big.NewInt(int64(r))),*types.NewBigInt(*big.NewInt(int64(s))), Qr_k}
 
-	R,S,V := this.commonTools.SIG(types.BytesToHash([]byte(str)))
+	//R,S,V := this.commonTools.SIG(types.BytesToHash([]byte(str)))
+	R,S,V := this.commonTools.SIG(cd.Hash())
 
 	//if endFloat <= this.algoParam
 	c := new(CredentialSig)

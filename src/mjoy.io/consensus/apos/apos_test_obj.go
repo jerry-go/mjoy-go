@@ -80,7 +80,7 @@ func (this *allNodeManager)init(){
 	this.actualNode.SetOutMsger(this.msger)
 	//all nodes
 	allNodesCnt := 80
-	notHonestNodeCnt := 26
+	notHonestNodeCnt := 27
 	//100 virtual node
 	for i := 1 ;i <= allNodesCnt ; i++ {
 		notHonestNodeCnt--
