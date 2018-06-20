@@ -262,13 +262,13 @@ func (this *virtualNode)makeCredential(s int)*CredentialSig{
 	k := 1
 
 	Qr_k := this.commonTools.GetQr_k(k)
-	str := fmt.Sprintf("testHash")
-	hStr := types.BytesToHash([]byte(str))
+	//str := fmt.Sprintf("testHash")
+	//hStr := types.BytesToHash([]byte(str))
 
 	cd := CredentialData{Round:types.BigInt{*big.NewInt(int64(r))},Step:types.BigInt{*big.NewInt(int64(s))},Quantity:Qr_k}
 	_ = cd
-	//h := cd.Hash()
-	h := hStr
+	h := cd.Hash()
+	//h := hStr
 	//get sig
 	R,S,V :=this.commonTools.SIG(h)
 

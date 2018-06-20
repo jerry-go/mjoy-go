@@ -25,7 +25,6 @@ import (
 	"mjoy.io/utils/crypto"
 	"mjoy.io/common/types"
 	"math/big"
-	"fmt"
 	"reflect"
 	"errors"
 	"mjoy.io/core/blockchain/block"
@@ -591,10 +590,12 @@ func (this *Apos)makeCredential(s int) *CredentialSig{
 	k := 1
 
 	Qr_k := this.commonTools.GetQr_k(k)
-	str := fmt.Sprintf("%d%d%s",r,k,Qr_k.Hex())
+	//str := fmt.Sprintf("%d%d%s",r,k,Qr_k.Hex())
 	//get sig
+	cd := CredentialData{*types.NewBigInt(*big.NewInt(int64(r))),*types.NewBigInt(*big.NewInt(int64(s))), Qr_k}
 
-	R,S,V := this.commonTools.SIG(types.BytesToHash([]byte(str)))
+	//R,S,V := this.commonTools.SIG(types.BytesToHash([]byte(str)))
+	R,S,V := this.commonTools.SIG(cd.Hash())
 
 	//if endFloat <= this.algoParam
 	c := new(CredentialSig)
