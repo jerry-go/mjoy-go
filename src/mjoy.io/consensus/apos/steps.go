@@ -262,12 +262,12 @@ func (this *step3SecondStepGC)run(wg *sync.WaitGroup){
 				sigBytes := this.apos.commonTools.ESIG(m3.Hash)
 				m3.Esig = append(m3.Esig , sigBytes...)
 				this.apos.outMsger.SendInner(m3)
-				logger.Debug(COLOR_PREFIX+COLOR_FRONT_RED+COLOR_SUFFIX,"[A]Step:",this.pCredential.Step.IntVal.Int64(),"Out M3",COLOR_SHORT_RESET)
+				logger.Debug(COLOR_PREFIX+COLOR_FRONT_RED+COLOR_SUFFIX,"[A]Step:",this.pCredential.Step.IntVal.Int64(),"Out M3 ",v.String(),COLOR_SHORT_RESET)
 			}(this)
 
 			return
 		case data:=<-this.msgIn:
-			logger.Debug(COLOR_PREFIX+COLOR_FRONT_RED+COLOR_SUFFIX,"[A]Step:",this.pCredential.Step.IntVal.Int64(),"In M2",COLOR_SHORT_RESET)
+			//logger.Debug(COLOR_PREFIX+COLOR_FRONT_RED+COLOR_SUFFIX,"[A]Step:",this.pCredential.Step.IntVal.Int64(),"In M2",COLOR_SHORT_RESET)
 			func(this *step3SecondStepGC){
 				this.lock.Lock()
 				defer this.lock.Unlock()
@@ -277,6 +277,7 @@ func (this *step3SecondStepGC)run(wg *sync.WaitGroup){
 				if m2 == nil{
 					return
 				}
+				logger.Debug(COLOR_PREFIX+COLOR_FRONT_RED+COLOR_SUFFIX,"[A]Step:",this.pCredential.Step.IntVal.Int64(),"In M2",m2.Hash.String(),COLOR_SHORT_RESET)
 				//add to IndexMap
 				var subIndex map[CredentialSigForKey]bool
 				subIndex = this.allM2Index[m2.Hash]
@@ -407,13 +408,12 @@ func (this *step4FirstStepBBA)run(wg *sync.WaitGroup){
 				sigBytes = this.apos.commonTools.ESIG(m4.Hash)
 				m4.EsigV = append(m4.EsigV , sigBytes...)
 				this.apos.outMsger.SendInner(m4)
-				logger.Debug(COLOR_PREFIX+COLOR_FRONT_RED+COLOR_SUFFIX,"[A]Step:",this.pCredential.Step.IntVal.Int64(),"Out M4",COLOR_SHORT_RESET)
+				logger.Debug(COLOR_PREFIX+COLOR_FRONT_RED+COLOR_SUFFIX,"[A]Step:",this.pCredential.Step.IntVal.Int64(),"Out M4",m4.Hash.String(),m4.B,COLOR_SHORT_RESET)
 
 			}(this)
 
 			return
 		case data:=<-this.msgIn:
-			logger.Debug(COLOR_PREFIX+COLOR_FRONT_RED+COLOR_SUFFIX,"[A]Step:",this.pCredential.Step.IntVal.Int64(),"In M3",COLOR_SHORT_RESET)
 			func(this *step4FirstStepBBA){
 				this.lock.Lock()
 				defer this.lock.Unlock()
@@ -423,6 +423,7 @@ func (this *step4FirstStepBBA)run(wg *sync.WaitGroup){
 				if m3 == nil{
 					return
 				}
+				logger.Debug(COLOR_PREFIX+COLOR_FRONT_RED+COLOR_SUFFIX,"[A]Step:",this.pCredential.Step.IntVal.Int64(),"In M3",m3.Hash.String(),COLOR_SHORT_RESET)
 				//add to IndexMap
 				var subIndex map[CredentialSigForKey]bool
 				subIndex = this.allM2Index[m3.Hash]
