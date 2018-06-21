@@ -136,17 +136,30 @@ func (v *MsgValidator)ValidateMCommon(msg *MCommon) error{
 	}
 
 	//verify esig for b
+	step := msg.Credential.Step.IntVal.Uint64()
+	if Config().maxBBASteps + 3 == int(step) {
+		// for step m +3, b must be 1 and v must be Hash(empty block(qr = last qr))
+		if msg.B != 1 {
+			logger.Info("m + 3 message b is not equal 1", err)
+			return errors.New("m + 3 message b is not equal 1")
+		}
+		// todo verify empty block hash, need get right empty block
+		//if v.apos.makeEmptyBlockForTest().Hash() != msg.Hash {
+		//	logger.Info("m + 3 message hash is not empty block hash", err)
+		//	return errors.New("m + 3 message hash is not empty block hash")
+		//}
+	}
 	bBash := types.BytesToHash(big.NewInt(int64(msg.B)).Bytes())
 	err = v.apos.commonTools.ESigVerify(bBash, msg.EsigB)
 	if err != nil {
-		logger.Info("verify M23 ephemeral signature fail", err)
+		logger.Info("verify common message ephemeral signature fail", err)
 		return err
 	}
 
 	//verify esig for v
 	err = v.apos.commonTools.ESigVerify(msg.Hash, msg.EsigV)
 	if err != nil {
-		logger.Info("verify M23 ephemeral signature fail", err)
+		logger.Info("verify common message ephemeral signature fail", err)
 		return err
 	}
 

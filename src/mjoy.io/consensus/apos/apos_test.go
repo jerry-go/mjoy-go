@@ -23,6 +23,7 @@ func TestApos1(t *testing.T){
 	an := newAllNodeManager()
 	Config().blockDelay = 2
 	Config().verifyDelay = 1
+	Config().maxBBASteps = 12
 	an.init(2)
 	for{
 		time.Sleep(3*time.Second)
