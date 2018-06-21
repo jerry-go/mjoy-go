@@ -250,7 +250,7 @@ func (this *step3SecondStepGC)run(wg *sync.WaitGroup){
 				}
 				v := types.Hash{}
 
-				if maxLen * 3 >= 2*total{
+				if maxLen * 3 > 2*total{
 					v = maxHash
 				}
 				//pack m3 Data
@@ -375,10 +375,10 @@ func (this *step4FirstStepBBA)run(wg *sync.WaitGroup){
 				//todo:should be H(Be)
 				v := types.Hash{}
 				g := 0
-				if maxLen * 3 >= 2 * total{
+				if maxLen * 3 > 2 * total{
 					v = maxHash
 					g = 2
-				}else if maxLen >= (1*total/3){
+				}else if maxLen * 3 > total{
 					v = maxHash
 					g = 1
 				}else{
@@ -549,11 +549,11 @@ func (this *step567CoinGenFlipBBA)run(wg *sync.WaitGroup){
 
 				mx := new(MCommon)
 				//check 2/3 0 and 2/3 1
-				if max0Len >= (2*total/3) {
+				if max0Len * 3 > 2 * total {
 					mx.Hash = maxHash
 					mx.Credential = this.pCredential
 					mx.B = 0
-				}else if max1Len >= (2*total/3){
+				}else if max1Len * 3 > 2 * total {
 					mx.Hash = maxHash
 					mx.Credential = this.pCredential
 					mx.B = 1
@@ -582,7 +582,7 @@ func (this *step567CoinGenFlipBBA)run(wg *sync.WaitGroup){
 
 							}
 							heap.Init(cHeap)
-							little := heap.Pop(cHeap).(CredentialSigStatus)
+							little := heap.Pop(cHeap).(*CredentialSigStatus)
 
 							mx.B = uint(little.v)
 						}
