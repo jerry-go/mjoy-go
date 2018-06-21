@@ -3,7 +3,6 @@ package apos
 import (
 	"testing"
 	"fmt"
-	"time"
 	"mjoy.io/common/types"
 	"math/big"
 )
@@ -13,10 +12,7 @@ func TestAposRunning(t *testing.T){
 	Config().blockDelay = 2
 	Config().verifyDelay = 1
 	an.init(1)
-	for{
-		time.Sleep(3*time.Second)
-		//fmt.Println("apos_test doing....")
-	}
+	an.run()
 }
 
 func TestApos1(t *testing.T){
@@ -25,28 +21,25 @@ func TestApos1(t *testing.T){
 	Config().verifyDelay = 1
 	Config().maxBBASteps = 12
 	an.init(2)
-	for{
-		time.Sleep(3*time.Second)
-		//fmt.Println("apos_test doing....")
-	}
+	an.run()
 }
 
 func TestApos2(t *testing.T){
 	an := newAllNodeManager()
+	Config().blockDelay = 2
+	Config().verifyDelay = 1
+	Config().maxBBASteps = 12
 	an.init(3)
-	for{
-		time.Sleep(3*time.Second)
-		//fmt.Println("apos_test doing....")
-	}
+	an.run()
 }
 
 func TestApos3(t *testing.T){
 	an := newAllNodeManager()
+	Config().blockDelay = 2
+	Config().verifyDelay = 1
+	Config().maxBBASteps = 12
 	an.init(4)
-	for{
-		time.Sleep(3*time.Second)
-		//fmt.Println("apos_test doing....")
-	}
+	an.run()
 }
 
 func TestRSV(t *testing.T){

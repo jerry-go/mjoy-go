@@ -135,7 +135,6 @@ func (v *MsgValidator)ValidateMCommon(msg *MCommon) error{
 		return err
 	}
 
-	//verify esig for b
 	step := msg.Credential.Step.IntVal.Uint64()
 	if Config().maxBBASteps + 3 == int(step) {
 		// for step m +3, b must be 1 and v must be Hash(empty block(qr = last qr))
@@ -149,6 +148,7 @@ func (v *MsgValidator)ValidateMCommon(msg *MCommon) error{
 		//	return errors.New("m + 3 message hash is not empty block hash")
 		//}
 	}
+	//verify esig for b
 	bBash := types.BytesToHash(big.NewInt(int64(msg.B)).Bytes())
 	err = v.apos.commonTools.ESigVerify(bBash, msg.EsigB)
 	if err != nil {

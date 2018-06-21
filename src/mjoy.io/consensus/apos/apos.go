@@ -550,6 +550,8 @@ func NewApos(msger OutMsger ,cmTools CommonTools)*Apos{
 	a.outMsger = msger
 	a.commonTools = cmTools
 	a.allMsgBridge = make(chan dataPack , 10000)
+	a.roundOverCh = make(chan interface{} , 1)
+	a.aposStopCh = make(chan interface{} , 1)
 
 	a.reset()
 
@@ -586,7 +588,7 @@ func (this *Apos)Run(){
 	for{
 		select {
 		case <-this.roundOverCh:
-			logger.Info("aposStopCh<-1")
+			logger.Info("round overs ", this.roundCtx.round.IntVal.Uint64())
 			this.aposStopCh<-1
 			return //if apos deal once ,stop it
 			this.roundCtx = newRound(this.commonTools.GetNextRound(),this,this.roundOverCh)
