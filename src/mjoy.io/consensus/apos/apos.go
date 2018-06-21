@@ -75,6 +75,7 @@ func (this *PotentialLeader)AddVoteNumber(step uint, b uint) int {
 type peerMsgs struct {
 	msgCommons     map[int]*MCommon
 	msg23s         map[int]*M23
+	m0s            map[int]*CredentialSig
 
 	//0 :default honesty peer. 1: malicious peer
 	honesty        uint
@@ -179,7 +180,36 @@ func (this *Round)StartVerify(wg *sync.WaitGroup) {
 	}
 }
 
+func (this *Round)filterM0(msg *CredentialSig) error {
+	address, err := this.apos.getSender(msg)
+	if err != nil {
+		return err
+	}
+	step := msg.Step.IntVal.Uint64()
 
+	if peermsgs, ok := this.msgs[address]; ok {
+		if peermsgs.honesty == 1 {
+			return errors.New("not honesty peer")
+		}
+		if m0, ok := peermsgs.m0s[int(step)]; ok {
+			if m0.Step.IntVal.Uint64() == step {
+				return errors.New("duplicate message m0")
+			}
+		} else {
+			peermsgs.m0s[int(step)] = msg
+		}
+	} else {
+		ps := &peerMsgs{
+			msgCommons: make(map[int]*MCommon),
+			msg23s: make(map[int]*M23),
+			m0s: make(map[int]*CredentialSig),
+			honesty: 0,
+		}
+		ps.m0s[int(step)] = msg
+		this.msgs[address] = ps
+	}
+	return nil
+}
 // hear M0 is the Credential message
 func (this *Round)ReceiveM0(msg *CredentialSig) {
 	//verify msg
@@ -188,8 +218,10 @@ func (this *Round)ReceiveM0(msg *CredentialSig) {
 		logger.Info("verify m0 fail", err)
 		return
 	}
-	//todo msg filter need
-
+	if err = this.filterM0(msg); err != nil {
+		logger.Info("filter m0 fail", err)
+		return
+	}
 	//Propagate message via p2p
 	this.apos.outMsger.PropagateCredential(msg)
 }
