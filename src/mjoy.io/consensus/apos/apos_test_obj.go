@@ -10,6 +10,11 @@ import (
 	"sync"
 	"fmt"
 	"mjoy.io/common"
+	"reflect"
+)
+
+var (
+	Flag_StepTest bool = false  //stop SendInner msg transfer
 )
 
 type outMsgManager struct {
@@ -46,7 +51,11 @@ func (this *outMsgManager)PropagateCredential(c *CredentialSig)error{
 
 func (this *outMsgManager)SendInner(data dataPack)error{
 	this.msgSndChan<-data
-	this.msgRcvChan<-data
+	if Flag_StepTest{
+
+	}else{
+		this.msgRcvChan<-data
+	}
 	return nil
 }
 
@@ -80,6 +89,8 @@ func (this *allNodeManager)init(notHonestNodeCnt int){
 	this.actualNode.SetOutMsger(this.msger)
 	//all nodes
 	allNodesCnt := Config().maxPotVerifiers.Uint64() -1
+
+
 	//100 virtual node
 	for i := 1 ;i <= int(allNodesCnt) ; i++ {
 		vNode := newVirtualNode(i , this.allVNodeChan)
@@ -95,6 +106,8 @@ func (this *allNodeManager)init(notHonestNodeCnt int){
 	go this.run()
 	fmt.Println("allNodeManager Init ok...")
 }
+
+
 
 func (this *allNodeManager)SendDataPackToActualNode(dp dataPack){
 	this.allVNodeChan <- dp
@@ -125,6 +138,76 @@ func (this *allNodeManager)run(){
 	}
 }
 
+
+func (this *allNodeManager)initTestSteps(checkStep int64)int{
+	this.allVNodeChan = make(chan dataPack , 1000)
+	//only one msger,for virtual  nodes and actual node
+	this.msger = newMsgManager()
+	this.actualNode = NewApos(this.msger , newOutCommonTools())
+	this.actualNode.validate.fake = true
+	this.actualNode.SetOutMsger(this.msger)
+
+
+	go this.actualNode.Run()
+	go this.runTestStep(checkStep)
+	fmt.Println("allNodeManager Init ok...")
+	allNodesCnt := Config().maxPotVerifiers.Uint64() -1
+	if Flag_StepTest{
+		//why here do that,because no data from n step to n+1 step,
+		allNodesCnt += 1
+	}
+	return int(allNodesCnt)
+}
+
+
+func (this *allNodeManager)runTestStep(checkStep int64){
+	for {
+		select {
+		//deal all data from virtual] node,just send the virtualData to the chan(will send to actual node)
+		case virtualData:=<-this.allVNodeChan:
+			//send the data from all node to actual node
+			this.msger.msgRcvChan <- virtualData
+
+		case actualData := <-this.msger.msgSndChan:
+
+			switch v := actualData.(type) {
+			case *CredentialSig:
+
+			case *M1:
+
+			case *M23:
+				if v.Credential.Step.IntVal.Int64() == checkStep{
+
+					logger.Debug(COLOR_PREFIX+COLOR_FRONT_BLUE+COLOR_SUFFIX,"Actual Step:",v.Credential.Step.IntVal.Int64(),"  ,Return:",v.Hash,COLOR_SHORT_RESET)
+					return
+				}
+
+			case *MCommon:
+				if v.Credential.Step.IntVal.Int64() == checkStep{
+					logger.Debug(COLOR_PREFIX+COLOR_FRONT_BLUE+COLOR_SUFFIX,"Actual Step:",v.Credential.Step.IntVal.Int64(),
+						"\r\nReturn: Hash:",v.Hash,"\r\nBStatus:",v.B,COLOR_SHORT_RESET)
+					return
+				}
+
+			default:
+				logger.Warn("invalid message type ",reflect.TypeOf(v))
+			}
+
+			//continue
+			for _,vNode := range this.vituals{
+				vNode.inChan <- actualData
+			}
+		case <-this.actualNode.StopCh():
+			//stop all virtualNode
+			for _,n := range this.vituals{
+				n.stop()
+			}
+			//the actualNode has a result ,exit the test
+			fmt.Println("exit allNodeManager......")
+			return
+		}
+	}
+}
 
 /*
 //some out tools offered by Mjoy,such as signer and blockInfo getter

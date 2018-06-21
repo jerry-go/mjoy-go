@@ -26,8 +26,13 @@ import (
 	"sync"
 	"container/heap"
 	"math/big"
+	"fmt"
 )
 
+var (
+	LessTimeDelayFlag bool = false  //let step spend less time to deal msg received
+	LessTimeDelayCnt int = 5
+)
 //steps handle
 
 //step 1:Block Proposal
@@ -129,7 +134,9 @@ func (this *step2FirstStepGC)run(wg *sync.WaitGroup){
 	//this step ,we should wait the time
 
 	delayT := time.Duration(Config().verifyDelay + Config().blockDelay)
-
+	if LessTimeDelayFlag{
+		delayT = time.Duration(LessTimeDelayCnt)
+	}
 	timerT := time.Tick(delayT*time.Second)
 	for{
 		select {
@@ -222,6 +229,9 @@ func (this *step3SecondStepGC)run(wg *sync.WaitGroup){
 	defer wg.Done()
 	//this step ,we should wait the time
 	delayT := time.Duration(3*Config().verifyDelay + Config().blockDelay)
+	if LessTimeDelayFlag{
+		delayT = time.Duration(LessTimeDelayCnt)
+	}
 	//log.Println("timeDelay:",3*Config().verifyDelay + Config().blockDelay)
 	timerT := time.Tick(delayT*time.Second)
 	for{
@@ -346,6 +356,9 @@ func (this *step4FirstStepBBA)run(wg *sync.WaitGroup){
 	defer wg.Done()
 	//this step ,we should wait the time
 	delayT := time.Duration(5*Config().verifyDelay + Config().blockDelay)
+	if LessTimeDelayFlag{
+		delayT = time.Duration(LessTimeDelayCnt)
+	}
 
 	timerT := time.Tick(delayT*time.Second)
 	for{
@@ -376,12 +389,15 @@ func (this *step4FirstStepBBA)run(wg *sync.WaitGroup){
 				v := types.Hash{}
 				g := 0
 				if maxLen * 3 > 2 * total{
+					logger.Debug(COLOR_PREFIX+COLOR_FRONT_PINK+COLOR_SUFFIX,"Step4  Do :maxLen * 3 > 2 * total,g=2",COLOR_SHORT_RESET)
 					v = maxHash
 					g = 2
 				}else if maxLen * 3 > total{
+					logger.Debug(COLOR_PREFIX+COLOR_FRONT_PINK+COLOR_SUFFIX,"Step4  Do :maxLen * 3 > total,g=1",COLOR_SHORT_RESET)
 					v = maxHash
 					g = 1
 				}else{
+					logger.Debug(COLOR_PREFIX+COLOR_FRONT_PINK+COLOR_SUFFIX,"Step4  Do :Else,g=0",COLOR_SHORT_RESET)
 					v = types.Hash{}
 					g = 0
 				}
@@ -506,6 +522,9 @@ func (this *step567CoinGenFlipBBA)run(wg *sync.WaitGroup){
 	//this step ,we should wait the time
 
 	delayT := time.Duration((2*this.step -3)*Config().verifyDelay + Config().blockDelay)
+	if LessTimeDelayFlag{
+		delayT = time.Duration(LessTimeDelayCnt)
+	}
 
 	timerT := time.Tick(delayT*time.Second)
 	for{
@@ -553,38 +572,58 @@ func (this *step567CoinGenFlipBBA)run(wg *sync.WaitGroup){
 					mx.Hash = maxHash
 					mx.Credential = this.pCredential
 					mx.B = 0
+					logger.Debug(COLOR_PREFIX+COLOR_FRONT_PINK+COLOR_SUFFIX,
+						"StepCommon  Do :max0Len * 3 > 2 * total,B=0",
+						COLOR_SHORT_RESET)
 				}else if max1Len * 3 > 2 * total {
 					mx.Hash = maxHash
 					mx.Credential = this.pCredential
 					mx.B = 1
+					logger.Debug(COLOR_PREFIX+COLOR_FRONT_PINK+COLOR_SUFFIX,
+						"StepCommon  Do :max0Len * 3 > 2 * total,B=1",
+						COLOR_SHORT_RESET)
 				}else {
 					mx.Hash = maxHash
 					mx.Credential = this.pCredential
 					switch this.stepIndex {
 					case 5:
 						mx.B = 0
+						logger.Debug(COLOR_PREFIX+COLOR_FRONT_PINK+COLOR_SUFFIX,
+							"StepCommon  Do :else %5,B=0",
+							COLOR_SHORT_RESET)
 					case 6:
 						mx.B = 1
+						logger.Debug(COLOR_PREFIX+COLOR_FRONT_PINK+COLOR_SUFFIX,
+							"StepCommon  Do :else %6,B=1",
+							COLOR_SHORT_RESET)
 					case 7:
 						{
 							cHeap := new(CredentialSigStatusHeap)
+							allCnt := 0
 							for _,bStatus := range this.allMxIndex{
 								allCredential := bStatus.export0Credential()
 								// 0 credential
 								for _,c := range allCredential{
+									allCnt++
 									*cHeap = append(*cHeap , &CredentialSigStatus{c:*c.ToCredentialSig() , v:0})
 								}
 								allCredential = bStatus.export1Credential()
 								// 1 credential
 								for _,c := range allCredential{
+									allCnt++
 									*cHeap = append(*cHeap , &CredentialSigStatus{c:*c.ToCredentialSig() , v:1})
 								}
 
 							}
+							fmt.Println("...................All Mx Index:" , allCnt)
 							heap.Init(cHeap)
 							little := heap.Pop(cHeap).(*CredentialSigStatus)
 
 							mx.B = uint(little.v)
+
+							logger.Debug(COLOR_PREFIX+COLOR_FRONT_PINK+COLOR_SUFFIX,
+								"StepCommon  Do :else %7,B=",mx.B,
+								COLOR_SHORT_RESET)
 						}
 					}
 				}
@@ -611,7 +650,8 @@ func (this *step567CoinGenFlipBBA)run(wg *sync.WaitGroup){
 					return
 				}
 				//add to IndexMap
-				logger.Debug(COLOR_PREFIX+COLOR_FRONT_RED+COLOR_SUFFIX,"[A]Step:",this.pCredential.Step.IntVal.Int64(),"In M",m6.Credential.Step.IntVal.Int64(),COLOR_SHORT_RESET)
+				//logger.Debug(COLOR_PREFIX+COLOR_FRONT_RED+COLOR_SUFFIX,"[A]Step:",this.pCredential.Step.IntVal.Int64(),"In M",m6.Credential.Step.IntVal.Int64(),COLOR_SHORT_RESET)
+				logger.Debug(COLOR_PREFIX+COLOR_FRONT_RED+COLOR_SUFFIX,"[A]Step:",this.pCredential.Step.IntVal.Int64(),"In M3 Hash:",m6.Hash.String(),"B:",m6.B,COLOR_SHORT_RESET)
 				var subIndex *binaryStatus
 				subIndex = this.allMxIndex[m6.Hash]
 				if subIndex == nil {
@@ -684,6 +724,9 @@ func (this *stepm3LastBBA)run(wg *sync.WaitGroup){
 	defer wg.Done()
 	//this step ,we should wait the time
 	delayT := time.Duration((2*Config().maxBBASteps + 3)*Config().verifyDelay + Config().blockDelay)
+	if LessTimeDelayFlag{
+		delayT = time.Duration(LessTimeDelayCnt)
+	}
 
 	timerT := time.Tick(delayT*time.Second)
 	for{
