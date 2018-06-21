@@ -250,7 +250,7 @@ func (this *step3SecondStepGC)run(wg *sync.WaitGroup){
 				}
 				v := types.Hash{}
 
-				if maxLen >= (2*total/3){
+				if maxLen * 3 >= 2*total{
 					v = maxHash
 				}
 				//pack m3 Data
@@ -374,7 +374,7 @@ func (this *step4FirstStepBBA)run(wg *sync.WaitGroup){
 				//todo:should be H(Be)
 				v := types.Hash{}
 				g := 0
-				if maxLen >= (2*total/3){
+				if maxLen * 3 >= 2 * total{
 					v = maxHash
 					g = 2
 				}else if maxLen >= (1*total/3){
