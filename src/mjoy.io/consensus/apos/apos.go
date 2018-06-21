@@ -75,6 +75,7 @@ func (this *PotentialLeader)AddVoteNumber(step uint, b uint) int {
 type peerMsgs struct {
 	msgCommons     map[int]*MCommon
 	msg23s         map[int]*M23
+	m0s            map[int]*CredentialSig
 
 	//0 :default honesty peer. 1: malicious peer
 	honesty        uint
@@ -151,8 +152,7 @@ func (this *Round)broadCastStop(){
 
 // Generate valid Credentials in current round
 func (this *Round)GenerateCredentials() {
-	for i := 1; i < Config().maxBBASteps; i++{
-
+	for i := 1; i <= Config().maxBBASteps + 3; i++{
 		credential := this.apos.makeCredential(i)
 		isVerfier := this.apos.judgeVerifier(credential, i)
 		//logger.Info("GenerateCredential step:",i,"  isVerifier:",isVerfier)
@@ -181,7 +181,36 @@ func (this *Round)StartVerify(wg *sync.WaitGroup) {
 	}
 }
 
+func (this *Round)filterM0(msg *CredentialSig) error {
+	address, err := this.apos.getSender(msg)
+	if err != nil {
+		return err
+	}
+	step := msg.Step.IntVal.Uint64()
 
+	if peermsgs, ok := this.msgs[address]; ok {
+		if peermsgs.honesty == 1 {
+			return errors.New("not honesty peer")
+		}
+		if m0, ok := peermsgs.m0s[int(step)]; ok {
+			if m0.Step.IntVal.Uint64() == step {
+				return errors.New("duplicate message m0")
+			}
+		} else {
+			peermsgs.m0s[int(step)] = msg
+		}
+	} else {
+		ps := &peerMsgs{
+			msgCommons: make(map[int]*MCommon),
+			msg23s: make(map[int]*M23),
+			m0s: make(map[int]*CredentialSig),
+			honesty: 0,
+		}
+		ps.m0s[int(step)] = msg
+		this.msgs[address] = ps
+	}
+	return nil
+}
 // hear M0 is the Credential message
 func (this *Round)ReceiveM0(msg *CredentialSig) {
 	//verify msg
@@ -190,8 +219,10 @@ func (this *Round)ReceiveM0(msg *CredentialSig) {
 		logger.Info("verify m0 fail", err)
 		return
 	}
-	//todo msg filter need
-
+	if err = this.filterM0(msg); err != nil {
+		logger.Info("filter m0 fail", err)
+		return
+	}
 	//Propagate message via p2p
 	this.apos.outMsger.PropagateCredential(msg)
 }
@@ -520,6 +551,8 @@ func NewApos(msger OutMsger ,cmTools CommonTools)*Apos{
 	a.outMsger = msger
 	a.commonTools = cmTools
 	a.allMsgBridge = make(chan dataPack , 10000)
+	a.roundOverCh = make(chan interface{} , 1)
+	a.aposStopCh = make(chan interface{} , 1)
 
 	a.reset()
 
@@ -556,7 +589,7 @@ func (this *Apos)Run(){
 	for{
 		select {
 		case <-this.roundOverCh:
-			logger.Info("aposStopCh<-1")
+			logger.Info("round overs ", this.roundCtx.round.IntVal.Uint64())
 			this.aposStopCh<-1
 			return //if apos deal once ,stop it
 			this.roundCtx = newRound(this.commonTools.GetNextRound(),this,this.roundOverCh)
@@ -646,7 +679,7 @@ func (this *Apos)stepsFactory(step int , pCredential *CredentialSig)(stepObj ste
 		stepObj = makeStep4Obj(this,pCredential,step)
 
 	default:
-		if step > Config().maxBBASteps{
+		if step > Config().maxBBASteps + 3{
 			stepObj = nil
 		}else if (step >= 5 && step <= (Config().maxBBASteps + 2)) {
 			stepObj = makeStep567Obj(this,pCredential,step)

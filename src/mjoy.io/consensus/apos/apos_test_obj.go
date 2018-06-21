@@ -103,7 +103,7 @@ func (this *allNodeManager)init(notHonestNodeCnt int){
 		go vNode.run()
 	}
 	go this.actualNode.Run()
-	go this.run()
+	//go this.run()
 	fmt.Println("allNodeManager Init ok...")
 }
 
