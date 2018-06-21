@@ -151,8 +151,7 @@ func (this *Round)broadCastStop(){
 
 // Generate valid Credentials in current round
 func (this *Round)GenerateCredentials() {
-	for i := 1; i < Config().maxBBASteps; i++{
-
+	for i := 1; i <= Config().maxBBASteps + 3; i++{
 		credential := this.apos.makeCredential(i)
 		isVerfier := this.apos.judgeVerifier(credential, i)
 		logger.Info("GenerateCredential step:",i,"  isVerifier:",isVerfier)
@@ -645,7 +644,7 @@ func (this *Apos)stepsFactory(step int , pCredential *CredentialSig)(stepObj ste
 		stepObj = makeStep4Obj(this,pCredential,step)
 
 	default:
-		if step > Config().maxBBASteps{
+		if step > Config().maxBBASteps + 3{
 			stepObj = nil
 		}else if (step >= 5 && step <= (Config().maxBBASteps + 2)) {
 			stepObj = makeStep567Obj(this,pCredential,step)

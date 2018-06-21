@@ -10,6 +10,8 @@ import (
 
 func TestAposRunning(t *testing.T){
 	an := newAllNodeManager()
+	Config().blockDelay = 2
+	Config().verifyDelay = 1
 	an.init(1)
 	for{
 		time.Sleep(3*time.Second)
@@ -19,6 +21,8 @@ func TestAposRunning(t *testing.T){
 
 func TestApos1(t *testing.T){
 	an := newAllNodeManager()
+	Config().blockDelay = 2
+	Config().verifyDelay = 1
 	an.init(2)
 	for{
 		time.Sleep(3*time.Second)
