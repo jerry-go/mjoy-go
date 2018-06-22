@@ -14,7 +14,19 @@ type StepCtxInterface interface {
 	makeEmptyBlockForTest()*block.Block
 }
 
+type StepContext struct {
+	ESIG func(hash types.Hash)([]byte)
+	SendInner func(pack dataPack)error
+	PropagateMsg func(dataPack)error
+	GetCredential func()*CredentialSig
+	SetRound func(*Round)
+	makeEmptyBlockForTest func()*block.Block
+}
 
+func makeStepContext()*StepContext{
+	s := new(StepContext)
+	return s
+}
 
 type stepCtxData struct {
 	apos        *Apos
@@ -60,3 +72,10 @@ func (this *stepCtxData)makeEmptyBlockForTest()*block.Block{
 func (this *stepCtxData)PropagateMsg(dp dataPack)error{
 	return this.apos.outMsger.PropagateMsg(dp)
 }
+
+
+
+
+
+
+

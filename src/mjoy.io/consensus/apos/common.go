@@ -23,11 +23,12 @@ package apos
 import (
 	"math/big"
 )
-
+var TestPotVerifier = 0
 // Determine a potential verifier(leader) by hash
 func isPotVerifier(hash []byte, leader bool) bool {
-
-	return true
+	if TestPotVerifier != 0 {
+		return true
+	}
 	//todo: all return false
 	h := big.NewInt(0).SetBytes(hash)
 	prVal := big.NewInt(0)
