@@ -38,7 +38,6 @@ func isPotVerifier(hash []byte, leader bool) bool {
 	}
 
 	return h.Cmp(big.NewInt(0).Div(prVal.Mul(prVal, maxUint256), Config().precision())) < 0
-	//return h.Div(h, Config().precision()).Cmp(prVal) < 0
 }
 
 func isHonest(vote, all int) bool {

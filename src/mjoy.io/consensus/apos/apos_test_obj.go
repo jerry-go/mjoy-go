@@ -107,6 +107,25 @@ func (this *allNodeManager)init(notHonestNodeCnt int){
 	fmt.Println("allNodeManager Init ok...")
 }
 
+func (this *allNodeManager)initTestCommon() int{
+	this.allVNodeChan = make(chan dataPack , 100)
+	//only one msger,for virtual  nodes and actual node
+	this.msger = newMsgManager()
+	this.actualNode = NewApos(this.msger , newOutCommonTools())
+	this.actualNode.validate.fake = true
+	this.actualNode.SetOutMsger(this.msger)
+
+
+	go this.actualNode.Run()
+	fmt.Println("allNodeManager Init ok...")
+	allNodesCnt := Config().maxPotVerifiers.Uint64() -1
+	if Flag_StepTest{
+		//why here do that,because no data from n step to n+1 step,
+		allNodesCnt += 1
+	}
+	return int(allNodesCnt)
+}
+
 
 
 func (this *allNodeManager)SendDataPackToActualNode(dp dataPack){

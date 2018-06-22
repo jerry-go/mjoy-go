@@ -59,16 +59,19 @@ func (tm *Testmsg) StopHandle() {
 }
 
 func ExampleMsg() {
-	// new
-	tm := NewTestmsg()
-	// fix and process
-	tm.A = 123
-	// send
-	tm.Send()
-	time.Sleep(5 * time.Second)
-	// close
-	tm.Close()
-	time.Sleep(1 * time.Second)
+	{
+		// new
+		tm := NewTestmsg()
+		// fix and process
+		tm.A = 123
+		// send
+		tm.Send()
+		time.Sleep(5 * time.Second)
+		// close
+		tm.Close()
+	}
+
+	time.Sleep(2 * time.Second)
 	fmt.Printf("End\n")
 
 	// Output:
