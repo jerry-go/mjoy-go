@@ -164,6 +164,7 @@ func (this *Round)GenerateCredentials() {
 		isVerfier := this.apos.judgeVerifier(credential, i)
 		//logger.Info("GenerateCredential step:",i,"  isVerifier:",isVerfier)
 		if isVerfier {
+			logger.Info("GenerateCredential step:",i,"  isVerifier:",isVerfier)
 			this.credentials[i] = credential
 		}
 	}
@@ -226,6 +227,7 @@ func (this *Round)ReceiveM0(msg *CredentialSig) {
 		logger.Info("verify m0 fail", err)
 		return
 	}
+	logger.Info("ReceiveM0")
 	if err = this.filterM0(msg); err != nil {
 		logger.Info("filter m0 fail", err)
 		return

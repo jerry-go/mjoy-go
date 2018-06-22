@@ -72,33 +72,43 @@ func TestColor(t *testing.T){
 	fmt.Println("\033[35mThis text is red \033[0mThis text has default color\n");
 }
 
-
+//m0 verify and Propagate
 func TestM0(t *testing.T){
 	Config().blockDelay = 2
 	Config().verifyDelay = 1
 	Config().maxBBASteps = 12
 	an := newAllNodeManager()
-	verifierCnt := an.initTestCommon()
+	verifierCnt := an.initTestCommon(0)
 	logger.Debug(COLOR_PREFIX+COLOR_FRONT_BLUE+COLOR_SUFFIX , "Verifier Cnt:" , verifierCnt , COLOR_SHORT_RESET)
 
-	notHonestCnt := 2
-	logger.Debug(COLOR_PREFIX+COLOR_FRONT_BLUE+COLOR_SUFFIX , "NOT HONEST CNT:",notHonestCnt , COLOR_SHORT_RESET)
-	for i := 1 ;i<=verifierCnt; i++ {
-		m2 := new(M23)
-		m2.Hash = types.Hash{}
-		if notHonestCnt > 0{
-			m2.Hash[10] = m2.Hash[10]+1
-			notHonestCnt--
-		}else{
-			m2.Hash[2] = m2.Hash[2]+1
-		}
-
+	for i := 1 ;i <= 10; i++ {
 		v := newVirtualNode(i,nil)
-		m2.Credential = v.makeCredential(2)
-		m2.Esig = v.commonTools.ESIG(m2.Hash)
-
-		an.SendDataPackToActualNode(m2)
+		m0 := v.makeCredential(i)
+		an.SendDataPackToActualNode(m0)
 	}
+
+	for{
+		time.Sleep(3*time.Second)
+		//fmt.Println("apos_test doing....")
+	}
+}
+
+//m0 filter : duplicate
+func TestM0fail(t *testing.T){
+	Config().blockDelay = 2
+	Config().verifyDelay = 1
+	Config().maxBBASteps = 12
+	an := newAllNodeManager()
+	verifierCnt := an.initTestCommon(1)
+	logger.Debug(COLOR_PREFIX+COLOR_FRONT_BLUE+COLOR_SUFFIX , "Verifier Cnt:" , verifierCnt , COLOR_SHORT_RESET)
+
+
+	v := newVirtualNode(0,nil)
+	m0 := v.makeCredential(2)
+	for i := 1 ;i <= 10; i++ {
+		an.SendDataPackToActualNode(m0)
+	}
+
 
 	for{
 		time.Sleep(3*time.Second)
