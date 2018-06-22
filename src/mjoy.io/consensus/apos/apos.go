@@ -72,8 +72,15 @@ func (this *PotentialLeader)AddVoteNumber(step uint, b uint) int {
 	return this.stepMsg[step].sum
 }
 
+type peerMCommon struct {
+	msg         *MCommon
+	//B 1: msg.b == 0; 2: msg.b == 1; 3 means that receive two messages with different B
+	B           uint
+}
+
+
 type peerMsgs struct {
-	msgCommons     map[int]*MCommon
+	msgCommons     map[int]*peerMCommon
 	msg23s         map[int]*M23
 	m0s            map[int]*CredentialSig
 
@@ -201,7 +208,7 @@ func (this *Round)filterM0(msg *CredentialSig) error {
 		}
 	} else {
 		ps := &peerMsgs{
-			msgCommons: make(map[int]*MCommon),
+			msgCommons: make(map[int]*peerMCommon),
 			msg23s: make(map[int]*M23),
 			m0s: make(map[int]*CredentialSig),
 			honesty: 0,
@@ -322,7 +329,7 @@ func (this *Round)filterM23(msg *M23) error {
 		}
 	} else {
 		ps := &peerMsgs{
-			msgCommons: make(map[int]*MCommon),
+			msgCommons: make(map[int]*peerMCommon),
 			msg23s: make(map[int]*M23),
 			honesty: 0,
 		}
@@ -379,9 +386,9 @@ func (this *Round)filterMCommon(msg *MCommon) error {
 		}
 
 		if mCommon, ok := peerMCommons.msgCommons[int(step)]; ok {
-			if mCommon.Hash == msg.Hash && (mCommon.B == 3 || mCommon.B == msg.B + 1){
+			if mCommon.msg.Hash == msg.Hash && (mCommon.B == 3 || mCommon.B == msg.B + 1){
 				return errors.New("duplicate common message")
-			} else if (mCommon.Hash == msg.Hash) {
+			} else if (mCommon.msg.Hash == msg.Hash) {
 				// for bba message, player j can send different B value
 				mCommon.B = 3
 				logger.Info("receive different vote common message!", msg.B)
@@ -391,17 +398,17 @@ func (this *Round)filterMCommon(msg *MCommon) error {
 				return errors.New("receive different hash in BBA message, it must a malicious peer")
 			}
 		} else {
-			peerMCommons.msgCommons[int(step)] = msg
-			msg.B = msg.B + 1
+			msgNew := &peerMCommon{msg, msg.B + 1}
+			peerMCommons.msgCommons[int(step)] = msgNew
 		}
 	} else {
 		ps := &peerMsgs{
-			msgCommons: make(map[int]*MCommon),
+			msgCommons: make(map[int]*peerMCommon),
 			msg23s: make(map[int]*M23),
 			honesty: 0,
 		}
-		ps.msgCommons[int(step)] = msg
-		msg.B = msg.B + 1
+		msgNew := &peerMCommon{msg, msg.B + 1}
+		ps.msgCommons[int(step)] = msgNew
 		this.msgs[address] = ps
 	}
 	return nil
