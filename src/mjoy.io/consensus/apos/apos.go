@@ -714,15 +714,13 @@ func (this *Apos)stepsFactory(step int , pCredential *CredentialSig)(stepObj ste
 
 	stepCtx := makeStepContext()
 	//GetCredential
-	stepCtx.GetCredential = func() *CredentialSig {
+	stepCtx.getCredential = func() *CredentialSig {
 		return pCredential
 	}
-	stepCtx.ESIG = this.commonTools.ESIG
-	stepCtx.SendInner = this.outMsger.SendInner
-	stepCtx.PropagateMsg = this.outMsger.PropagateMsg
-	stepCtx.SetRound = func(round *Round) {
+	stepCtx.esig = this.commonTools.ESIG
+	stepCtx.sendInner = this.outMsger.SendInner
+	stepCtx.propagateMsg = this.outMsger.PropagateMsg
 
-	}
 
 	switch step {
 	case 1:

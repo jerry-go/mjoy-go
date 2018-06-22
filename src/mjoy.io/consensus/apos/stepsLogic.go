@@ -56,7 +56,7 @@ func makeStep1ObjLogic(step int , ctx *StepContext)*step1BlockProposalLogic{
 func (this *step1BlockProposalLogic)sendMsg(data dataPack, pRound *Round)error{
 	this.lock.Lock()
 	defer this.lock.Unlock()
-	this.stepCtx.SetRound(pRound)
+	//this.stepCtx.SetRound(pRound)
 	this.msgIn <- data
 	//todo:
 	return nil
@@ -74,11 +74,11 @@ func (this *step1BlockProposalLogic)run(wg *sync.WaitGroup){
 	m1 := new(M1)
 	m1.Block = this.stepCtx.makeEmptyBlockForTest()
 
-	m1.Credential = this.stepCtx.GetCredential()
-	m1.Esig = this.stepCtx.ESIG(m1.Block.Hash())
+	m1.Credential = this.stepCtx.getCredential()
+	m1.Esig = this.stepCtx.esig(m1.Block.Hash())
 	//fill struct members
 	//todo: should using interface
-	this.stepCtx.SendInner(m1)
+	this.stepCtx.sendInner(m1)
 	logger.Debug(COLOR_PREFIX+COLOR_FRONT_RED+COLOR_SUFFIX,"[A]Out M1",COLOR_SHORT_RESET)
 	//todo:what should we dealing
 
@@ -110,7 +110,7 @@ func (this *step2FirstStepGCLogic)sendMsg(data dataPack , pRound *Round)error{
 	//todo:
 	this.lock.Lock()
 	defer this.lock.Unlock()
-	this.stepCtx.SetRound(pRound)
+	//this.stepCtx.SetRound(pRound)
 	this.msgIn <- data
 	return nil
 }
@@ -138,16 +138,16 @@ func (this *step2FirstStepGCLogic)run(wg *sync.WaitGroup){
 				return
 			}
 			m2 := new(M23)
-			m2.Credential = this.stepCtx.GetCredential()
+			m2.Credential = this.stepCtx.getCredential()
 			m2.Hash = this.smallestLBr.Block.Hash()
-			sigBytes := this.stepCtx.ESIG(m2.Hash)
+			sigBytes := this.stepCtx.esig(m2.Hash)
 			m2.Esig = append(m2.Esig , sigBytes...)
 
-			this.stepCtx.SendInner(m2)
-			logger.Debug(COLOR_PREFIX+COLOR_FRONT_RED+COLOR_SUFFIX,"[A]Step:",this.stepCtx.GetCredential().Step.IntVal.Int64(),"Out M2",COLOR_SHORT_RESET)
+			this.stepCtx.sendInner(m2)
+			logger.Debug(COLOR_PREFIX+COLOR_FRONT_RED+COLOR_SUFFIX,"[A]Step:",this.stepCtx.getCredential().Step.IntVal.Int64(),"Out M2",COLOR_SHORT_RESET)
 			return
 		case data:=<-this.msgIn:
-			logger.Debug(COLOR_PREFIX+COLOR_FRONT_RED+COLOR_SUFFIX,"[A]Step:",this.stepCtx.GetCredential().Step.IntVal.Int64(),"In M1",COLOR_SHORT_RESET)
+			logger.Debug(COLOR_PREFIX+COLOR_FRONT_RED+COLOR_SUFFIX,"[A]Step:",this.stepCtx.getCredential().Step.IntVal.Int64(),"In M1",COLOR_SHORT_RESET)
 			m1 := new(M1)
 			m1 = data.(*M1)
 
@@ -163,7 +163,7 @@ func (this *step2FirstStepGCLogic)run(wg *sync.WaitGroup){
 			if r > 0 {
 				//exchange smallestLBr and m1
 				this.smallestLBr = m1
-				this.stepCtx.PropagateMsg(m1)
+				this.stepCtx.propagateMsg(m1)
 			}
 
 		case <-this.exit:
@@ -203,7 +203,7 @@ func (this *step3SecondStepGCLogic)sendMsg(data dataPack, pRound *Round)error{
 	//todo:
 	this.lock.Lock()
 	defer this.lock.Unlock()
-	this.stepCtx.SetRound(pRound)
+	//this.stepCtx.SetRound(pRound)
 	this.msgIn <- data
 	return nil
 }
@@ -254,13 +254,13 @@ func (this *step3SecondStepGCLogic)run(wg *sync.WaitGroup){
 				//pack m3 Data
 
 				m3 := new(M23)
-				m3.Credential = this.stepCtx.GetCredential()
+				m3.Credential = this.stepCtx.getCredential()
 
 				m3.Hash = v
-				sigBytes := this.stepCtx.ESIG(m3.Hash)
+				sigBytes := this.stepCtx.esig(m3.Hash)
 				m3.Esig = append(m3.Esig , sigBytes...)
-				this.stepCtx.SendInner(m3)
-				logger.Debug(COLOR_PREFIX+COLOR_FRONT_RED+COLOR_SUFFIX,"[A]Step:",this.stepCtx.GetCredential().Step.IntVal.Int64(),"Out M3 ",v.String(),COLOR_SHORT_RESET)
+				this.stepCtx.sendInner(m3)
+				logger.Debug(COLOR_PREFIX+COLOR_FRONT_RED+COLOR_SUFFIX,"[A]Step:",this.stepCtx.getCredential().Step.IntVal.Int64(),"Out M3 ",v.String(),COLOR_SHORT_RESET)
 			}(this)
 
 			return
@@ -275,7 +275,7 @@ func (this *step3SecondStepGCLogic)run(wg *sync.WaitGroup){
 				if m2 == nil{
 					return
 				}
-				logger.Debug(COLOR_PREFIX+COLOR_FRONT_RED+COLOR_SUFFIX,"[A]Step:",this.stepCtx.GetCredential().Step.IntVal.Int64(),"In M2",m2.Hash.String(),COLOR_SHORT_RESET)
+				logger.Debug(COLOR_PREFIX+COLOR_FRONT_RED+COLOR_SUFFIX,"[A]Step:",this.stepCtx.getCredential().Step.IntVal.Int64(),"In M2",m2.Hash.String(),COLOR_SHORT_RESET)
 				//add to IndexMap
 				var subIndex map[CredentialSigForKey]bool
 				subIndex = this.allM2Index[m2.Hash]
@@ -292,7 +292,7 @@ func (this *step3SecondStepGCLogic)run(wg *sync.WaitGroup){
 			continue
 
 		case <-this.exit:
-			logger.Debug(COLOR_PREFIX+COLOR_FRONT_RED+COLOR_SUFFIX,"[A]Step:",this.stepCtx.GetCredential().Step.IntVal.Int64(),"  Exit",COLOR_SHORT_RESET)
+			logger.Debug(COLOR_PREFIX+COLOR_FRONT_RED+COLOR_SUFFIX,"[A]Step:",this.stepCtx.getCredential().Step.IntVal.Int64(),"  Exit",COLOR_SHORT_RESET)
 			return
 		}
 	}
@@ -327,7 +327,7 @@ func (this *step4FirstStepBBALogic)sendMsg(data dataPack, pRound *Round)error{
 	//todo:
 	this.lock.Lock()
 	defer this.lock.Unlock()
-	this.stepCtx.SetRound(pRound)
+	//this.stepCtx.SetRound(pRound)
 	this.msgIn <- data
 	return nil
 }
@@ -399,17 +399,17 @@ func (this *step4FirstStepBBALogic)run(wg *sync.WaitGroup){
 				m4 := new(MCommon)
 				m4.Hash = v
 				m4.B = uint(b)
-				m4.Credential = this.stepCtx.GetCredential()
+				m4.Credential = this.stepCtx.getCredential()
 
 				//b big.Int
 				h := types.BytesToHash(big.NewInt(int64(m4.B)).Bytes())
-				sigBytes := this.stepCtx.ESIG(h)
+				sigBytes := this.stepCtx.esig(h)
 				m4.EsigB = append(m4.EsigB,sigBytes...)
 				//v
-				sigBytes = this.stepCtx.ESIG(m4.Hash)
+				sigBytes = this.stepCtx.esig(m4.Hash)
 				m4.EsigV = append(m4.EsigV , sigBytes...)
-				this.stepCtx.SendInner(m4)
-				logger.Debug(COLOR_PREFIX+COLOR_FRONT_RED+COLOR_SUFFIX,"[A]Step:",this.stepCtx.GetCredential().Step.IntVal.Int64(),"Out M4",m4.Hash.String(),m4.B,COLOR_SHORT_RESET)
+				this.stepCtx.sendInner(m4)
+				logger.Debug(COLOR_PREFIX+COLOR_FRONT_RED+COLOR_SUFFIX,"[A]Step:",this.stepCtx.getCredential().Step.IntVal.Int64(),"Out M4",m4.Hash.String(),m4.B,COLOR_SHORT_RESET)
 
 			}(this)
 
@@ -424,7 +424,7 @@ func (this *step4FirstStepBBALogic)run(wg *sync.WaitGroup){
 				if m3 == nil{
 					return
 				}
-				logger.Debug(COLOR_PREFIX+COLOR_FRONT_RED+COLOR_SUFFIX,"[A]Step:",this.stepCtx.GetCredential().Step.IntVal.Int64(),"In M3",m3.Hash.String(),COLOR_SHORT_RESET)
+				logger.Debug(COLOR_PREFIX+COLOR_FRONT_RED+COLOR_SUFFIX,"[A]Step:",this.stepCtx.getCredential().Step.IntVal.Int64(),"In M3",m3.Hash.String(),COLOR_SHORT_RESET)
 				//add to IndexMap
 				var subIndex map[CredentialSigForKey]bool
 				subIndex = this.allM2Index[m3.Hash]
@@ -441,7 +441,7 @@ func (this *step4FirstStepBBALogic)run(wg *sync.WaitGroup){
 			continue
 
 		case <-this.exit:
-			logger.Debug(COLOR_PREFIX+COLOR_FRONT_RED+COLOR_SUFFIX,"[A]Step:",this.stepCtx.GetCredential().Step.IntVal.Int64(),"  Exit",COLOR_SHORT_RESET)
+			logger.Debug(COLOR_PREFIX+COLOR_FRONT_RED+COLOR_SUFFIX,"[A]Step:",this.stepCtx.getCredential().Step.IntVal.Int64(),"  Exit",COLOR_SHORT_RESET)
 			return
 		}
 	}
@@ -489,7 +489,7 @@ func (this *step567CoinGenFlipBBALogic)sendMsg(data dataPack, pRound *Round)erro
 	//todo:
 	this.lock.Lock()
 	defer this.lock.Unlock()
-	this.stepCtx.SetRound(pRound)
+	//this.stepCtx.SetRound(pRound)
 
 	this.msgIn <- data
 	return nil
@@ -553,21 +553,21 @@ func (this *step567CoinGenFlipBBALogic)run(wg *sync.WaitGroup){
 				//check 2/3 0 and 2/3 1
 				if max0Len * 3 > 2 * total {
 					mx.Hash = maxHash
-					mx.Credential = this.stepCtx.GetCredential()
+					mx.Credential = this.stepCtx.getCredential()
 					mx.B = 0
 					logger.Debug(COLOR_PREFIX+COLOR_FRONT_PINK+COLOR_SUFFIX,
 						"StepCommon  Do :max0Len * 3 > 2 * total,B=0",
 						COLOR_SHORT_RESET)
 				}else if max1Len * 3 > 2 * total {
 					mx.Hash = maxHash
-					mx.Credential = this.stepCtx.GetCredential()
+					mx.Credential = this.stepCtx.getCredential()
 					mx.B = 1
 					logger.Debug(COLOR_PREFIX+COLOR_FRONT_PINK+COLOR_SUFFIX,
 						"StepCommon  Do :max0Len * 3 > 2 * total,B=1",
 						COLOR_SHORT_RESET)
 				}else {
 					mx.Hash = maxHash
-					mx.Credential = this.stepCtx.GetCredential()
+					mx.Credential = this.stepCtx.getCredential()
 					switch this.stepIndex {
 					case 5:
 						mx.B = 0
@@ -611,14 +611,14 @@ func (this *step567CoinGenFlipBBALogic)run(wg *sync.WaitGroup){
 					}
 				}
 				h := types.BytesToHash(big.NewInt(int64(mx.B)).Bytes())
-				sigBytes := this.stepCtx.ESIG(h)
+				sigBytes := this.stepCtx.esig(h)
 				mx.EsigB = append(mx.EsigB , sigBytes...)
 				//v
-				sigBytes = this.stepCtx.ESIG(mx.Hash)
+				sigBytes = this.stepCtx.esig(mx.Hash)
 				mx.EsigV = append(mx.EsigV , sigBytes...)
 
-				this.stepCtx.SendInner(mx)
-				logger.Debug(COLOR_PREFIX+COLOR_FRONT_RED+COLOR_SUFFIX,"[A]Step:",this.stepCtx.GetCredential().Step.IntVal.Int64(),"Out M",mx.Credential.Step.IntVal.Int64(),COLOR_SHORT_RESET)
+				this.stepCtx.sendInner(mx)
+				logger.Debug(COLOR_PREFIX+COLOR_FRONT_RED+COLOR_SUFFIX,"[A]Step:",this.stepCtx.getCredential().Step.IntVal.Int64(),"Out M",mx.Credential.Step.IntVal.Int64(),COLOR_SHORT_RESET)
 			}(this)
 
 			return
@@ -634,7 +634,7 @@ func (this *step567CoinGenFlipBBALogic)run(wg *sync.WaitGroup){
 				}
 				//add to IndexMap
 				//logger.Debug(COLOR_PREFIX+COLOR_FRONT_RED+COLOR_SUFFIX,"[A]Step:",this.pCredential.Step.IntVal.Int64(),"In M",m6.Credential.Step.IntVal.Int64(),COLOR_SHORT_RESET)
-				logger.Debug(COLOR_PREFIX+COLOR_FRONT_RED+COLOR_SUFFIX,"[A]Step:",this.stepCtx.GetCredential().Step.IntVal.Int64(),"In M3 Hash:",m6.Hash.String(),"B:",m6.B,COLOR_SHORT_RESET)
+				logger.Debug(COLOR_PREFIX+COLOR_FRONT_RED+COLOR_SUFFIX,"[A]Step:",this.stepCtx.getCredential().Step.IntVal.Int64(),"In M3 Hash:",m6.Hash.String(),"B:",m6.B,COLOR_SHORT_RESET)
 				var subIndex *binaryStatus
 				subIndex = this.allMxIndex[m6.Hash]
 				if subIndex == nil {
@@ -649,7 +649,7 @@ func (this *step567CoinGenFlipBBALogic)run(wg *sync.WaitGroup){
 			continue
 
 		case <-this.exit:
-			logger.Debug(COLOR_PREFIX+COLOR_FRONT_RED+COLOR_SUFFIX,"[A]Step:",this.stepCtx.GetCredential().Step.IntVal.Int64(),"  Exit",COLOR_SHORT_RESET)
+			logger.Debug(COLOR_PREFIX+COLOR_FRONT_RED+COLOR_SUFFIX,"[A]Step:",this.stepCtx.getCredential().Step.IntVal.Int64(),"  Exit",COLOR_SHORT_RESET)
 
 			return
 		}
@@ -688,7 +688,7 @@ func (this *stepm3LastBBALogic)sendMsg(data dataPack, pRound *Round)error{
 	//todo:
 	this.lock.Lock()
 	defer this.lock.Unlock()
-	this.stepCtx.SetRound(pRound)
+	//this.stepCtx.SetRound(pRound)
 	this.msgIn <- data
 	return nil
 }
@@ -719,14 +719,14 @@ func (this *stepm3LastBBALogic)run(wg *sync.WaitGroup){
 				//todo:should be H(Be)
 				m3.Hash = types.Hash{}
 				m3.B = 1
-				m3.Credential = this.stepCtx.GetCredential()
+				m3.Credential = this.stepCtx.getCredential()
 				h := types.BytesToHash(big.NewInt(int64(m3.B)).Bytes())
-				sigBytes := this.stepCtx.ESIG(h)
+				sigBytes := this.stepCtx.esig(h)
 				m3.EsigB = append(m3.EsigB , sigBytes...)
 				//v
-				sigBytes = this.stepCtx.ESIG(m3.Hash)
+				sigBytes = this.stepCtx.esig(m3.Hash)
 				m3.EsigV = append(m3.EsigV , sigBytes...)
-				this.stepCtx.SendInner(m3)
+				this.stepCtx.sendInner(m3)
 
 			}(this)
 
@@ -736,7 +736,7 @@ func (this *stepm3LastBBALogic)run(wg *sync.WaitGroup){
 			continue
 
 		case <-this.exit:
-			logger.Debug(COLOR_PREFIX+COLOR_FRONT_RED+COLOR_SUFFIX,"[A]Step:",this.stepCtx.GetCredential().Step.IntVal.Int64(),"  Exit",COLOR_SHORT_RESET)
+			logger.Debug(COLOR_PREFIX+COLOR_FRONT_RED+COLOR_SUFFIX,"[A]Step:",this.stepCtx.getCredential().Step.IntVal.Int64(),"  Exit",COLOR_SHORT_RESET)
 			return
 		}
 	}
