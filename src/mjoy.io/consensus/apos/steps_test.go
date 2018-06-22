@@ -114,7 +114,7 @@ func TestStepCommonResult_ChangeHashAndB(t *testing.T){
 	verifierCnt := an.initTestSteps(CheckStep+1)
 	logger.Debug(COLOR_PREFIX+COLOR_FRONT_BLUE+COLOR_SUFFIX , "Verifier Cnt:" , verifierCnt , COLOR_SHORT_RESET)
 
-	notHonestCnt := 3   //change majoraty Hash
+	notHonestCnt := 2   //change majoraty Hash
 	logger.Debug(COLOR_PREFIX+COLOR_FRONT_BLUE+COLOR_SUFFIX , "NOT HONEST CNT:",notHonestCnt , COLOR_SHORT_RESET)
 
 	for i := 1 ;i<=verifierCnt;i++{
