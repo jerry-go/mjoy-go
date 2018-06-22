@@ -379,14 +379,20 @@ func (this *Round)filterMCommon(msg *MCommon) error {
 		}
 
 		if mCommon, ok := peerMCommons.msgCommons[int(step)]; ok {
-			if mCommon.Hash == msg.Hash && mCommon.B == msg.B{
+			if mCommon.Hash == msg.Hash && (mCommon.B == 3 || mCommon.B == msg.B + 1){
 				return errors.New("duplicate common message")
+			} else if (mCommon.Hash == msg.Hash) {
+				// for bba message, player j can send different B value
+				mCommon.B = 3
+				logger.Info("receive different vote common message!", msg.B)
+				return nil
 			} else {
 				peerMCommons.honesty = 1
-				return errors.New("receive different  vote common message, it must a malicious peer")
+				return errors.New("receive different hash in BBA message, it must a malicious peer")
 			}
 		} else {
 			peerMCommons.msgCommons[int(step)] = msg
+			msg.B = msg.B + 1
 		}
 	} else {
 		ps := &peerMsgs{
@@ -395,6 +401,7 @@ func (this *Round)filterMCommon(msg *MCommon) error {
 			honesty: 0,
 		}
 		ps.msgCommons[int(step)] = msg
+		msg.B = msg.B + 1
 		this.msgs[address] = ps
 	}
 	return nil

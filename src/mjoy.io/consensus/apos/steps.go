@@ -635,7 +635,7 @@ func (this *step567CoinGenFlipBBA)run(wg *sync.WaitGroup){
 				mx.EsigV = append(mx.EsigV , sigBytes...)
 
 				this.apos.outMsger.SendInner(mx)
-				logger.Debug(COLOR_PREFIX+COLOR_FRONT_RED+COLOR_SUFFIX,"[A]Step:",this.pCredential.Step.IntVal.Int64(),"Out M",mx.Credential.Step.IntVal.Int64(),COLOR_SHORT_RESET)
+				logger.Debug(COLOR_PREFIX+COLOR_FRONT_RED+COLOR_SUFFIX,"[A]Step:",this.pCredential.Step.IntVal.Int64(),"Out M",mx.Credential.Step.IntVal.Uint64(),mx.B, mx.Hash.String(),COLOR_SHORT_RESET)
 			}(this)
 
 			return
@@ -651,7 +651,7 @@ func (this *step567CoinGenFlipBBA)run(wg *sync.WaitGroup){
 				}
 				//add to IndexMap
 				//logger.Debug(COLOR_PREFIX+COLOR_FRONT_RED+COLOR_SUFFIX,"[A]Step:",this.pCredential.Step.IntVal.Int64(),"In M",m6.Credential.Step.IntVal.Int64(),COLOR_SHORT_RESET)
-				logger.Debug(COLOR_PREFIX+COLOR_FRONT_RED+COLOR_SUFFIX,"[A]Step:",this.pCredential.Step.IntVal.Int64(),"In M3 Hash:",m6.Hash.String(),"B:",m6.B,COLOR_SHORT_RESET)
+				logger.Debug(COLOR_PREFIX+COLOR_FRONT_RED+COLOR_SUFFIX,"[A]Step:",this.pCredential.Step.IntVal.Int64(),"In M",m6.Credential.Step.IntVal.Int64(), "Hash:",m6.Hash.String(),"B:",m6.B,COLOR_SHORT_RESET)
 				var subIndex *binaryStatus
 				subIndex = this.allMxIndex[m6.Hash]
 				if subIndex == nil {
