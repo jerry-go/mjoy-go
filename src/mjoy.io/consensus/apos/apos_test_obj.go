@@ -80,7 +80,7 @@ func newAllNodeManager()*allNodeManager{
 	return v
 }
 
-func (this *allNodeManager)init(notHonestNodeCnt int){
+func (this *allNodeManager)init(maliciousNodeCnt int){
 	this.allVNodeChan = make(chan dataPack , 1000)
 	//only one msger,for virtual  nodes and actual node
 	this.msger = newMsgManager()
@@ -95,9 +95,9 @@ func (this *allNodeManager)init(notHonestNodeCnt int){
 	for i := 1 ;i <= int(allNodesCnt) ; i++ {
 		vNode := newVirtualNode(i , this.allVNodeChan)
 
-		if notHonestNodeCnt > 0{
+		if maliciousNodeCnt > 0{
 			vNode.setIsHonest(false)
-			notHonestNodeCnt--
+			maliciousNodeCnt--
 		}
 		this.vituals = append(this.vituals , vNode)
 		go vNode.run()
