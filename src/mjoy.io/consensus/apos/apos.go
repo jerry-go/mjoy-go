@@ -656,7 +656,6 @@ func (this *Apos)judgeVerifier(pCredentialSig *CredentialSig, setp int) bool{
 	srcBytes = append(srcBytes , pCredentialSig.V.IntVal.Bytes()...)
 
 	h := crypto.Keccak256(srcBytes)
-
 	leader := false
 	if 1 == setp {
 		leader = true
@@ -664,36 +663,67 @@ func (this *Apos)judgeVerifier(pCredentialSig *CredentialSig, setp int) bool{
 	return isPotVerifier(h, leader)
 }
 
+//before
 
+//func (this *Apos)stepsFactory(step int , pCredential *CredentialSig)(stepObj stepInterface){
+//	stepObj = nil
+//	switch step {
+//	case 1:
+//		stepObj = makeStep1Obj(this,pCredential,step)
+//	case 2:
+//		stepObj = makeStep2Obj(this,pCredential,step)
+//	case 3:
+//		stepObj = makeStep3Obj(this,pCredential,step)
+//	case 4:
+//		stepObj = makeStep4Obj(this,pCredential,step)
+//
+//	default:
+//		if step > Config().maxBBASteps + 3{
+//			stepObj = nil
+//		}else if (step >= 5 && step <= (Config().maxBBASteps + 2)) {
+//			stepObj = makeStep567Obj(this,pCredential,step)
+//		}else if (step == (Config().maxBBASteps + 3)){
+//			stepObj = makeStepm3Obj(this,pCredential,step)
+//		}else{
+//			stepObj = nil
+//		}
+//	}
+//	return
+//}
 
+//now
 func (this *Apos)stepsFactory(step int , pCredential *CredentialSig)(stepObj stepInterface){
 	stepObj = nil
+	stepCtx := makeStepCtxData(this , pCredential)
 	switch step {
 	case 1:
-		stepObj = makeStep1Obj(this,pCredential,step)
+		//stepObj = makeStep1Obj(this,pCredential,step)
+		stepObj = makeStep1ObjLogic(step , stepCtx)
 	case 2:
-		stepObj = makeStep2Obj(this,pCredential,step)
+		//stepObj = makeStep2Obj(this,pCredential,step)
+		stepObj = makeStep2ObjLogic(step , stepCtx)
 	case 3:
-		stepObj = makeStep3Obj(this,pCredential,step)
+		//stepObj = makeStep3Obj(this,pCredential,step)
+		stepObj = makeStep3ObjLogic(step , stepCtx)
 	case 4:
-		stepObj = makeStep4Obj(this,pCredential,step)
+		//stepObj = makeStep4Obj(this,pCredential,step)
+		stepObj = makeStep4ObjLogic(step , stepCtx)
 
 	default:
 		if step > Config().maxBBASteps + 3{
 			stepObj = nil
 		}else if (step >= 5 && step <= (Config().maxBBASteps + 2)) {
-			stepObj = makeStep567Obj(this,pCredential,step)
+			//stepObj = makeStep567Obj(this,pCredential,step)
+			stepObj = makeStep567ObjLogic(step , stepCtx)
 		}else if (step == (Config().maxBBASteps + 3)){
-			stepObj = makeStepm3Obj(this,pCredential,step)
+			//stepObj = makeStepm3Obj(this,pCredential,step)
+			stepObj = makeStepm3ObjLogic(step , stepCtx)
 		}else{
 			stepObj = nil
 		}
 	}
 	return
 }
-
-
-
 
 
 
