@@ -38,10 +38,10 @@ type step1BlockProposalLogic struct {
 	step int            //which step the obj stay
 	lock sync.RWMutex
 
-	stepCtx StepCtxInterface
+	stepCtx *StepContext
 
 }
-func makeStep1ObjLogic(step int , ctx StepCtxInterface)*step1BlockProposalLogic{
+func makeStep1ObjLogic(step int , ctx *StepContext)*step1BlockProposalLogic{
 	s := new(step1BlockProposalLogic)
 
 	s.msgIn = make(chan dataPack , 100)
@@ -93,10 +93,10 @@ type step2FirstStepGCLogic struct {
 	step int
 	smallestLBr *M1 //this node regard smallestLBr as the smallest credential's block info
 	lock sync.RWMutex
-	stepCtx StepCtxInterface
+	stepCtx *StepContext
 }
 
-func makeStep2ObjLogic(step int , stepCtx StepCtxInterface)*step2FirstStepGCLogic{
+func makeStep2ObjLogic(step int , stepCtx *StepContext)*step2FirstStepGCLogic{
 	s := new(step2FirstStepGCLogic)
 	s.msgIn = make(chan dataPack , 100)
 
@@ -182,11 +182,11 @@ type step3SecondStepGCLogic struct {
 	//all M2 have received
 	allM2Index map[types.Hash]map[CredentialSigForKey]bool
 	lock sync.RWMutex
-	stepCtx StepCtxInterface
+	stepCtx *StepContext
 
 }
 
-func makeStep3ObjLogic(step int , stepCtx StepCtxInterface)*step3SecondStepGCLogic{
+func makeStep3ObjLogic(step int , stepCtx *StepContext)*step3SecondStepGCLogic{
 	s := new(step3SecondStepGCLogic)
 	s.stepCtx = stepCtx
 
@@ -307,10 +307,10 @@ type step4FirstStepBBALogic struct {
 	//all M3 have received
 	allM2Index map[types.Hash]map[CredentialSigForKey]bool
 	lock sync.RWMutex
-	stepCtx StepCtxInterface
+	stepCtx *StepContext
 }
 
-func makeStep4ObjLogic(step int , stepCtx StepCtxInterface)*step4FirstStepBBALogic{
+func makeStep4ObjLogic(step int , stepCtx *StepContext)*step4FirstStepBBALogic{
 	s := new(step4FirstStepBBALogic)
 
 
@@ -460,10 +460,10 @@ type step567CoinGenFlipBBALogic struct {
 
 	//all M6 have received
 	allMxIndex map[types.Hash]*binaryStatus
-	stepCtx StepCtxInterface
+	stepCtx *StepContext
 }
 
-func makeStep567ObjLogic(step int , stepCtx StepCtxInterface)*step567CoinGenFlipBBALogic{
+func makeStep567ObjLogic(step int , stepCtx *StepContext)*step567CoinGenFlipBBALogic{
 	s := new(step567CoinGenFlipBBALogic)
 
 
@@ -666,12 +666,12 @@ type stepm3LastBBALogic struct {
 	step int
 	stepIndex int
 	lock sync.RWMutex
-	stepCtx StepCtxInterface
+	stepCtx *StepContext
 	//all M6 have received
 
 }
 
-func makeStepm3ObjLogic(step int , stepCtx StepCtxInterface)*stepm3LastBBALogic{
+func makeStepm3ObjLogic(step int , stepCtx *StepContext)*stepm3LastBBALogic{
 	s := new(stepm3LastBBALogic)
 
 

@@ -707,10 +707,25 @@ func (this *Apos)judgeVerifier(pCredentialSig *CredentialSig, setp int) bool{
 
 //now
 func (this *Apos)stepsFactory(step int , pCredential *CredentialSig)(stepObj stepInterface){
+	logger.Debug("Call New StepFactory...")
 	stepObj = nil
-	stepCtx := makeStepCtxData(this , pCredential)
+
+	stepCtx := makeStepContext()
+	//GetCredential
+	stepCtx.GetCredential = func() *CredentialSig {
+		return pCredential
+	}
+	stepCtx.ESIG = this.commonTools.ESIG
+	stepCtx.SendInner = this.outMsger.SendInner
+	stepCtx.PropagateMsg = this.outMsger.PropagateMsg
+	stepCtx.SetRound = func(round *Round) {
+
+	}
+
 	switch step {
 	case 1:
+		stepCtx.makeEmptyBlockForTest = this.makeEmptyBlockForTest
+
 		//stepObj = makeStep1Obj(this,pCredential,step)
 		stepObj = makeStep1ObjLogic(step , stepCtx)
 	case 2:
