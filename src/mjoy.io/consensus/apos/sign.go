@@ -64,6 +64,9 @@ type signValue interface {
 	// get() computes R, S, V values corresponding to the
 	// given signature.
 	get(sig []byte) (err error)
+
+	// convert to bytes
+	toBytes() (sig []byte)
 }
 
 func (s *signature) checkObj() {
@@ -89,6 +92,32 @@ func (s *signature) get(sig []byte) (err error) {
 		}
 	}
 	return nil
+}
+
+func (s signature) toBytes() (sig []byte) {
+	s.checkObj()
+
+	V := s.V
+	if Config().chainId.Sign() != 0 {
+		V.Sub(V, Config().chainIdMul)
+		V.Sub(V, common.Big35)
+	} else{
+		V.Sub(V, common.Big27)
+	}
+
+	vb := byte(V.Uint64())
+	if !crypto.ValidateSignatureValues(vb, s.R, s.S, true) {
+		logger.Debugf("invalid signature\n")
+		return nil
+	}
+
+	rb, sb := s.R.Bytes(), s.S.Bytes()
+	sig = make([]byte, 65)
+	copy(sig[32-len(rb):32], rb)
+	copy(sig[64-len(sb):64], sb)
+	sig[64] = vb
+
+	return sig
 }
 
 // long-term key singer
