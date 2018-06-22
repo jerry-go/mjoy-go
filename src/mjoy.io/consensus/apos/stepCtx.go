@@ -15,11 +15,11 @@ type StepCtxInterface interface {
 }
 
 type StepContext struct {
-	ESIG func(hash types.Hash)([]byte)
-	SendInner func(pack dataPack)error
-	PropagateMsg func(dataPack)error
-	GetCredential func()*CredentialSig
-	SetRound func(*Round)
+	esig func(hash types.Hash)([]byte)
+	sendInner func(pack dataPack)error
+	propagateMsg func(dataPack)error
+	getCredential func()*CredentialSig
+	setRound func(*Round)
 	makeEmptyBlockForTest func()*block.Block
 }
 
