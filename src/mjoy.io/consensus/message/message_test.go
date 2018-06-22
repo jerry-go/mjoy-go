@@ -36,7 +36,7 @@ func NewTestmsg() *Testmsg {
 	tm := Testmsg{
 		A: 1,
 		stop: false,
-		MsgPriv: newMsgPriv(),
+		MsgPriv: NewMsgPriv(),
 	}
 	Msgcore().Handle(&tm)
 

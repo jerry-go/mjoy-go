@@ -57,7 +57,7 @@ type MsgPriv struct {
 	channel messageChannel
 }
 
-func newMsgPriv() *MsgPriv {
+func NewMsgPriv() *MsgPriv {
 	msg := MsgPriv{
 		channel: messageChannel{
 			data: make(chan interface{}),

@@ -87,6 +87,7 @@ func (this *allNodeManager)init(notHonestNodeCnt int){
 	this.actualNode = NewApos(this.msger , newOutCommonTools())
 	this.actualNode.validate.fake = true
 	this.actualNode.SetOutMsger(this.msger)
+	TestPotVerifier = 1
 	//all nodes
 	allNodesCnt := Config().maxPotVerifiers.Uint64() -1
 
@@ -107,16 +108,18 @@ func (this *allNodeManager)init(notHonestNodeCnt int){
 	fmt.Println("allNodeManager Init ok...")
 }
 
-func (this *allNodeManager)initTestCommon() int{
+func (this *allNodeManager)initTestCommon(testPotVerifier int) int{
 	this.allVNodeChan = make(chan dataPack , 100)
 	//only one msger,for virtual  nodes and actual node
 	this.msger = newMsgManager()
 	this.actualNode = NewApos(this.msger , newOutCommonTools())
-	this.actualNode.validate.fake = true
+	//this.actualNode.validate.fake = true
 	this.actualNode.SetOutMsger(this.msger)
+	TestPotVerifier = testPotVerifier
 
 
 	go this.actualNode.Run()
+	go this.runTestStep(0)
 	fmt.Println("allNodeManager Init ok...")
 	allNodesCnt := Config().maxPotVerifiers.Uint64() -1
 	if Flag_StepTest{
@@ -165,6 +168,7 @@ func (this *allNodeManager)initTestSteps(checkStep int64)int{
 	this.actualNode = NewApos(this.msger , newOutCommonTools())
 	this.actualNode.validate.fake = true
 	this.actualNode.SetOutMsger(this.msger)
+	TestPotVerifier = 1
 
 
 	go this.actualNode.Run()
