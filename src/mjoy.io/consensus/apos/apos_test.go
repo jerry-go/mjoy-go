@@ -353,6 +353,321 @@ func TestMCommon_filter_duplicate3(t *testing.T){
 	}
 }
 
+// End condition 0
+func TestMCommon_EndCondition0(t *testing.T){
+	Config().blockDelay = 2
+	Config().verifyDelay = 1
+	Config().maxBBASteps = 12
+	an := newAllNodeManager()
+	verifierCnt := an.initTestCommon(1)
+	logger.Debug(COLOR_PREFIX+COLOR_FRONT_BLUE+COLOR_SUFFIX , "Verifier Cnt:" , verifierCnt , COLOR_SHORT_RESET)
+
+	//send m1
+	v := newVirtualNode(1,nil)
+	m1 := &M1{}
+	m1.Credential = v.makeCredential(1)
+	m1.Block = an.actualNode.makeEmptyBlockForTest(m1.Credential)
+	fmt.Println(m1.Block)
+	hash := m1.Block.Hash()
+	m1.Esig = v.commonTools.ESIG(hash)
+	an.SendDataPackToActualNode(m1)
+
+
+	for i := 1 ;i <= 4; i++ {
+		v := newVirtualNode(i,nil)
+		mcommon := &MCommon{}
+
+		mcommon.Credential = v.makeCredential(4 + 3)
+		mcommon.B = 0
+		mcommon.EsigB = v.commonTools.ESIG(types.BytesToHash(big.NewInt(int64(mcommon.B)).Bytes()))
+		mcommon.Hash = hash
+		mcommon.EsigV = v.commonTools.ESIG(hash)
+
+		an.SendDataPackToActualNode(mcommon)
+
+	}
+	for{
+		time.Sleep(3*time.Second)
+		//fmt.Println("apos_test doing....")
+	}
+}
+
+// End condition 0
+// b =1 ignore
+// vote number sum 0
+func TestMCommon_EndCondition0_B1(t *testing.T){
+	Config().blockDelay = 2
+	Config().verifyDelay = 1
+	Config().maxBBASteps = 12
+	an := newAllNodeManager()
+	verifierCnt := an.initTestCommon(1)
+	logger.Debug(COLOR_PREFIX+COLOR_FRONT_BLUE+COLOR_SUFFIX , "Verifier Cnt:" , verifierCnt , COLOR_SHORT_RESET)
+
+	//send m1
+	v := newVirtualNode(1,nil)
+	m1 := &M1{}
+	m1.Credential = v.makeCredential(1)
+	m1.Block = an.actualNode.makeEmptyBlockForTest(m1.Credential)
+	fmt.Println(m1.Block)
+	hash := m1.Block.Hash()
+	m1.Esig = v.commonTools.ESIG(hash)
+	an.SendDataPackToActualNode(m1)
+
+
+	for i := 1 ;i <= 4; i++ {
+		v := newVirtualNode(i,nil)
+		mcommon := &MCommon{}
+
+		mcommon.Credential = v.makeCredential(4 + 3)
+		mcommon.B = 1
+		mcommon.EsigB = v.commonTools.ESIG(types.BytesToHash(big.NewInt(int64(mcommon.B)).Bytes()))
+		mcommon.Hash = hash
+		mcommon.EsigV = v.commonTools.ESIG(hash)
+
+		an.SendDataPackToActualNode(mcommon)
+
+	}
+	for{
+		time.Sleep(3*time.Second)
+		//fmt.Println("apos_test doing....")
+	}
+}
+
+// End condition 1
+func TestMCommon_EndCondition1(t *testing.T){
+	Config().blockDelay = 2
+	Config().verifyDelay = 1
+	Config().maxBBASteps = 12
+	an := newAllNodeManager()
+	verifierCnt := an.initTestCommon(1)
+	logger.Debug(COLOR_PREFIX+COLOR_FRONT_BLUE+COLOR_SUFFIX , "Verifier Cnt:" , verifierCnt , COLOR_SHORT_RESET)
+
+	//send m1
+	v := newVirtualNode(1,nil)
+	m1 := &M1{}
+	m1.Credential = v.makeCredential(1)
+	m1.Block = an.actualNode.makeEmptyBlockForTest(m1.Credential)
+	fmt.Println(m1.Block)
+	hash := m1.Block.Hash()
+	m1.Esig = v.commonTools.ESIG(hash)
+	an.SendDataPackToActualNode(m1)
+
+
+	for i := 1 ;i <= 4; i++ {
+		v := newVirtualNode(i,nil)
+		mcommon := &MCommon{}
+
+		mcommon.Credential = v.makeCredential(4 + 3 + 1)
+		mcommon.B = 1
+		mcommon.EsigB = v.commonTools.ESIG(types.BytesToHash(big.NewInt(int64(mcommon.B)).Bytes()))
+		mcommon.Hash = hash
+		mcommon.EsigV = v.commonTools.ESIG(hash)
+
+		an.SendDataPackToActualNode(mcommon)
+	}
+	for{
+		time.Sleep(3*time.Second)
+		//fmt.Println("apos_test doing....")
+	}
+}
+
+// End condition 1
+//b = 0 ignore
+// vote number sum 0
+func TestMCommon_EndCondition1_b0(t *testing.T){
+	Config().blockDelay = 2
+	Config().verifyDelay = 1
+	Config().maxBBASteps = 12
+	an := newAllNodeManager()
+	verifierCnt := an.initTestCommon(1)
+	logger.Debug(COLOR_PREFIX+COLOR_FRONT_BLUE+COLOR_SUFFIX , "Verifier Cnt:" , verifierCnt , COLOR_SHORT_RESET)
+
+	//send m1
+	v := newVirtualNode(1,nil)
+	m1 := &M1{}
+	m1.Credential = v.makeCredential(1)
+	m1.Block = an.actualNode.makeEmptyBlockForTest(m1.Credential)
+	fmt.Println(m1.Block)
+	hash := m1.Block.Hash()
+	m1.Esig = v.commonTools.ESIG(hash)
+	an.SendDataPackToActualNode(m1)
+
+
+	for i := 1 ;i <= 4; i++ {
+		v := newVirtualNode(i,nil)
+		mcommon := &MCommon{}
+
+		mcommon.Credential = v.makeCredential(4 + 3 + 1)
+		mcommon.B = 0
+		mcommon.EsigB = v.commonTools.ESIG(types.BytesToHash(big.NewInt(int64(mcommon.B)).Bytes()))
+		mcommon.Hash = hash
+		mcommon.EsigV = v.commonTools.ESIG(hash)
+
+		an.SendDataPackToActualNode(mcommon)
+	}
+	for{
+		time.Sleep(3*time.Second)
+		//fmt.Println("apos_test doing....")
+	}
+}
+
+// End condition
+//s = 7 ignore
+// vote number sum 0
+func TestMCommon_EndCondition_s7_b0(t *testing.T){
+	Config().blockDelay = 2
+	Config().verifyDelay = 1
+	Config().maxBBASteps = 12
+	an := newAllNodeManager()
+	verifierCnt := an.initTestCommon(1)
+	logger.Debug(COLOR_PREFIX+COLOR_FRONT_BLUE+COLOR_SUFFIX , "Verifier Cnt:" , verifierCnt , COLOR_SHORT_RESET)
+
+	//send m1
+	v := newVirtualNode(1,nil)
+	m1 := &M1{}
+	m1.Credential = v.makeCredential(1)
+	m1.Block = an.actualNode.makeEmptyBlockForTest(m1.Credential)
+	fmt.Println(m1.Block)
+	hash := m1.Block.Hash()
+	m1.Esig = v.commonTools.ESIG(hash)
+	an.SendDataPackToActualNode(m1)
+
+
+	for i := 1 ;i <= 4; i++ {
+		v := newVirtualNode(i,nil)
+		mcommon := &MCommon{}
+
+		mcommon.Credential = v.makeCredential(4 + 3 + 2)
+		mcommon.B = 0
+		mcommon.EsigB = v.commonTools.ESIG(types.BytesToHash(big.NewInt(int64(mcommon.B)).Bytes()))
+		mcommon.Hash = hash
+		mcommon.EsigV = v.commonTools.ESIG(hash)
+
+		an.SendDataPackToActualNode(mcommon)
+	}
+	for{
+		time.Sleep(3*time.Second)
+		//fmt.Println("apos_test doing....")
+	}
+}
+
+// End condition
+//s = 7 ignore
+// vote number sum 0
+func TestMCommon_EndCondition_s7_b1(t *testing.T){
+	Config().blockDelay = 2
+	Config().verifyDelay = 1
+	Config().maxBBASteps = 12
+	an := newAllNodeManager()
+	verifierCnt := an.initTestCommon(1)
+	logger.Debug(COLOR_PREFIX+COLOR_FRONT_BLUE+COLOR_SUFFIX , "Verifier Cnt:" , verifierCnt , COLOR_SHORT_RESET)
+
+	//send m1
+	v := newVirtualNode(1,nil)
+	m1 := &M1{}
+	m1.Credential = v.makeCredential(1)
+	m1.Block = an.actualNode.makeEmptyBlockForTest(m1.Credential)
+	fmt.Println(m1.Block)
+	hash := m1.Block.Hash()
+	m1.Esig = v.commonTools.ESIG(hash)
+	an.SendDataPackToActualNode(m1)
+
+
+	for i := 1 ;i <= 4; i++ {
+		v := newVirtualNode(i,nil)
+		mcommon := &MCommon{}
+
+		mcommon.Credential = v.makeCredential(4 + 3 + 2)
+		mcommon.B = 1
+		mcommon.EsigB = v.commonTools.ESIG(types.BytesToHash(big.NewInt(int64(mcommon.B)).Bytes()))
+		mcommon.Hash = hash
+		mcommon.EsigV = v.commonTools.ESIG(hash)
+
+		an.SendDataPackToActualNode(mcommon)
+	}
+	for{
+		time.Sleep(3*time.Second)
+		//fmt.Println("apos_test doing....")
+	}
+}
+
+// End condition max
+//OK Consensus....ret: 3
+func TestMCommon_EndConditionMax(t *testing.T){
+	Config().blockDelay = 2
+	Config().verifyDelay = 1
+	Config().maxBBASteps = 12
+	an := newAllNodeManager()
+	verifierCnt := an.initTestCommon(1)
+	logger.Debug(COLOR_PREFIX+COLOR_FRONT_BLUE+COLOR_SUFFIX , "Verifier Cnt:" , verifierCnt , COLOR_SHORT_RESET)
+
+	//send m1
+	v := newVirtualNode(1,nil)
+	m1 := &M1{}
+	m1.Credential = v.makeCredential(1)
+	m1.Block = an.actualNode.makeEmptyBlockForTest(m1.Credential)
+	fmt.Println(m1.Block)
+	hash := m1.Block.Hash()
+	m1.Esig = v.commonTools.ESIG(hash)
+	an.SendDataPackToActualNode(m1)
+
+
+	for i := 1 ;i <= 4; i++ {
+		v := newVirtualNode(i,nil)
+		mcommon := &MCommon{}
+
+		mcommon.Credential = v.makeCredential(15)
+		mcommon.B = 1
+		mcommon.EsigB = v.commonTools.ESIG(types.BytesToHash(big.NewInt(int64(mcommon.B)).Bytes()))
+		mcommon.Hash = hash
+		mcommon.EsigV = v.commonTools.ESIG(hash)
+
+		an.SendDataPackToActualNode(mcommon)
+	}
+	for{
+		time.Sleep(3*time.Second)
+		//fmt.Println("apos_test doing....")
+	}
+}
+
+//verify msg common fail m + 3 message b is not equal 1
+func TestMCommon_EndConditionMax_validate(t *testing.T){
+	Config().blockDelay = 2
+	Config().verifyDelay = 1
+	Config().maxBBASteps = 12
+	an := newAllNodeManager()
+	verifierCnt := an.initTestCommon(1)
+	logger.Debug(COLOR_PREFIX+COLOR_FRONT_BLUE+COLOR_SUFFIX , "Verifier Cnt:" , verifierCnt , COLOR_SHORT_RESET)
+
+	//send m1
+	v := newVirtualNode(1,nil)
+	m1 := &M1{}
+	m1.Credential = v.makeCredential(1)
+	m1.Block = an.actualNode.makeEmptyBlockForTest(m1.Credential)
+	fmt.Println(m1.Block)
+	hash := m1.Block.Hash()
+	m1.Esig = v.commonTools.ESIG(hash)
+	an.SendDataPackToActualNode(m1)
+
+
+	for i := 1 ;i <= 4; i++ {
+		v := newVirtualNode(i,nil)
+		mcommon := &MCommon{}
+
+		mcommon.Credential = v.makeCredential(15)
+		mcommon.B = 0
+		mcommon.EsigB = v.commonTools.ESIG(types.BytesToHash(big.NewInt(int64(mcommon.B)).Bytes()))
+		mcommon.Hash = hash
+		mcommon.EsigV = v.commonTools.ESIG(hash)
+
+		an.SendDataPackToActualNode(mcommon)
+	}
+	for{
+		time.Sleep(3*time.Second)
+		//fmt.Println("apos_test doing....")
+	}
+}
+
 
 func TestBp(t *testing.T) {
 	bp := &BlockProposal{}
