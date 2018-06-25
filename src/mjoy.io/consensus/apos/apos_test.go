@@ -210,6 +210,36 @@ func TestM23filter_malicious(t *testing.T){
 	}
 }
 
+//m common verify and Propagate
+func TestMCommon(t *testing.T){
+	Config().blockDelay = 2
+	Config().verifyDelay = 1
+	Config().maxBBASteps = 12
+	an := newAllNodeManager()
+	verifierCnt := an.initTestCommon(1)
+	logger.Debug(COLOR_PREFIX+COLOR_FRONT_BLUE+COLOR_SUFFIX , "Verifier Cnt:" , verifierCnt , COLOR_SHORT_RESET)
+
+	for i := 1 ;i <= 4; i++ {
+		v := newVirtualNode(i,nil)
+		hash := types.Hash{}
+		hash[0] = 1
+		mcommon := &MCommon{
+			Hash:hash,
+		}
+
+		mcommon.Credential = v.makeCredential(4 + 3)
+		mcommon.B = 0
+		mcommon.EsigB = v.commonTools.ESIG(types.BytesToHash(big.NewInt(int64(mcommon.B)).Bytes()))
+		mcommon.Hash = hash
+		mcommon.EsigV = v.commonTools.ESIG(hash)
+
+		an.SendDataPackToActualNode(mcommon)
+	}
+	for{
+		time.Sleep(3*time.Second)
+		//fmt.Println("apos_test doing....")
+	}
+}
 
 
 func TestBp(t *testing.T) {

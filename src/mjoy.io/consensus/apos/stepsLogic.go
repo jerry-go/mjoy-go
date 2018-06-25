@@ -72,9 +72,9 @@ func (this *step1BlockProposalLogic)run(wg *sync.WaitGroup){
 
 	//new a M1 data
 	m1 := new(M1)
-	m1.Block = this.stepCtx.makeEmptyBlockForTest()
 
 	m1.Credential = this.stepCtx.getCredential()
+	m1.Block = this.stepCtx.makeEmptyBlockForTest(m1.Credential)
 	m1.Esig = this.stepCtx.esig(m1.Block.Hash())
 	//fill struct members
 	//todo: should using interface
