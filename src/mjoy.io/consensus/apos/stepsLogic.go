@@ -72,9 +72,9 @@ func (this *step1BlockProposalLogic)run(wg *sync.WaitGroup){
 
 	//new a M1 data
 	m1 := new(M1)
-	m1.Block = this.stepCtx.makeEmptyBlockForTest()
 
 	m1.Credential = this.stepCtx.getCredential()
+	m1.Block = this.stepCtx.makeEmptyBlockForTest(m1.Credential)
 	m1.Esig = this.stepCtx.esig(m1.Block.Hash())
 	//fill struct members
 	//todo: should using interface
@@ -132,14 +132,19 @@ func (this *step2FirstStepGCLogic)run(wg *sync.WaitGroup){
 	for{
 		select {
 		case <-timerT:
-			//time to work now,send all
-			if this.smallestLBr == nil {
-				//mean we do not receive a M1 from now on
-				return
-			}
+
 			m2 := new(M23)
 			m2.Credential = this.stepCtx.getCredential()
-			m2.Hash = this.smallestLBr.Block.Hash()
+
+			//time to work now,send all
+			if this.smallestLBr == nil {
+				//mean we do not receive a M1 from now on,set Hash by a empty Hash
+				m2.Hash = types.Hash{}
+				logger.Error(COLOR_PREFIX+COLOR_FRONT_RED+COLOR_SUFFIX,"[A]Step:",this.stepCtx.getCredential().Step.IntVal.Int64(),"Out M2 By a EmptyHash",COLOR_SHORT_RESET)
+			}else{
+				m2.Hash = this.smallestLBr.Block.Hash()
+			}
+
 			sigBytes := this.stepCtx.esig(m2.Hash)
 			m2.Esig = append(m2.Esig , sigBytes...)
 

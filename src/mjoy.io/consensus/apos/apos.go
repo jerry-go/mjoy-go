@@ -324,7 +324,7 @@ func (this *Round)filterM23(msg *M23) error {
 				return errors.New("duplicate message m23")
 			} else {
 				peerM23s.honesty = 1
-				return errors.New("receive different  vote message m23, it must a malicious peer")
+				return errors.New("receive different vote message m23, it must a malicious peer")
 			}
 		} else {
 			peerM23s.msg23s[int(step)] = msg
@@ -577,11 +577,19 @@ func NewApos(msger OutMsger ,cmTools CommonTools)*Apos{
 	return a
 }
 
-func (this *Apos)makeEmptyBlockForTest()*block.Block{
+func (this *Apos)makeEmptyBlockForTest(cs *CredentialSig)*block.Block{
 	header := &block.Header{Number:types.NewBigInt(*big.NewInt(int64(this.commonTools.GetNowBlockNum()))),Time:types.NewBigInt(*big.NewInt(time.Now().Unix()))}
 	//chainId := big.NewInt(100)
 	//signer := block.NewBlockSigner(chainId)
-	R,S,V := this.commonTools.SIG(header.Hash())
+	srcBytes := []byte{}
+	srcBytes = append(srcBytes , cs.R.IntVal.Bytes()...)
+	srcBytes = append(srcBytes , cs.S.IntVal.Bytes()...)
+	srcBytes = append(srcBytes , cs.V.IntVal.Bytes()...)
+
+	h := crypto.Keccak256(srcBytes)
+	header.ConsensusData.Id = ConsensusDataId
+	header.ConsensusData.Para = h
+	R,S,V := this.commonTools.SIG(header.HashNoSig())
 	header.R = &types.BigInt{*R}
 	header.S = &types.BigInt{*S}
 	header.V = &types.BigInt{*V}

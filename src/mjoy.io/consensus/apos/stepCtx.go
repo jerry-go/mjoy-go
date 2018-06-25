@@ -20,7 +20,7 @@ type StepContext struct {
 	propagateMsg func(dataPack)error
 	getCredential func()*CredentialSig
 	setRound func(*Round)
-	makeEmptyBlockForTest func()*block.Block
+	makeEmptyBlockForTest func(cs *CredentialSig)*block.Block
 }
 
 func makeStepContext()*StepContext{
@@ -65,8 +65,8 @@ func (this *stepCtxData)SetRound(pRound *Round){
 	this.round = pRound
 }
 
-func (this *stepCtxData)makeEmptyBlockForTest()*block.Block{
-	return this.apos.makeEmptyBlockForTest()
+func (this *stepCtxData)makeEmptyBlockForTest(cs *CredentialSig)*block.Block{
+	return this.apos.makeEmptyBlockForTest(cs)
 }
 
 func (this *stepCtxData)PropagateMsg(dp dataPack)error{

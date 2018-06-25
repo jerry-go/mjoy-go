@@ -76,8 +76,8 @@ func (this *step1BlockProposal)run(wg *sync.WaitGroup){
 
 	//new a M1 data
 	m1 := new(M1)
-	m1.Block = this.apos.makeEmptyBlockForTest()
 	m1.Credential = this.pCredential
+	m1.Block = this.apos.makeEmptyBlockForTest(m1.Credential)
 	m1.Esig = this.apos.commonTools.ESIG(m1.Block.Hash())
 	//fill struct members
 	//todo: should using interface
