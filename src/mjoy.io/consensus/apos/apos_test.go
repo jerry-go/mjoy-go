@@ -109,12 +109,108 @@ func TestM0fail(t *testing.T){
 		an.SendDataPackToActualNode(m0)
 	}
 
-
 	for{
 		time.Sleep(3*time.Second)
 		//fmt.Println("apos_test doing....")
 	}
 }
+
+//m23 verify and Propagate
+func TestM23(t *testing.T){
+	Config().blockDelay = 2
+	Config().verifyDelay = 1
+	Config().maxBBASteps = 12
+	an := newAllNodeManager()
+	verifierCnt := an.initTestCommon(1)
+	logger.Debug(COLOR_PREFIX+COLOR_FRONT_BLUE+COLOR_SUFFIX , "Verifier Cnt:" , verifierCnt , COLOR_SHORT_RESET)
+
+	for i := 1 ;i <= 10; i++ {
+		v := newVirtualNode(i,nil)
+		hash := types.Hash{}
+		hash[0] = 1
+		m23 := &M23{
+			Hash:hash,
+		}
+		m23.Credential = v.makeCredential(2)
+		m23.Esig = v.commonTools.ESIG(m23.Hash)
+
+		an.SendDataPackToActualNode(m23)
+	}
+	for{
+		time.Sleep(3*time.Second)
+		//fmt.Println("apos_test doing....")
+	}
+}
+
+//m23 duplicate message
+func TestM23filter(t *testing.T){
+	Config().blockDelay = 2
+	Config().verifyDelay = 1
+	Config().maxBBASteps = 12
+	an := newAllNodeManager()
+	verifierCnt := an.initTestCommon(1)
+	logger.Debug(COLOR_PREFIX+COLOR_FRONT_BLUE+COLOR_SUFFIX , "Verifier Cnt:" , verifierCnt , COLOR_SHORT_RESET)
+
+	for i := 1 ;i <= 10; i++ {
+		v := newVirtualNode(i,nil)
+		hash := types.Hash{}
+		hash[0] = 1
+		m23 := &M23{
+			Hash:hash,
+		}
+		m23.Credential = v.makeCredential(2)
+		m23.Esig = v.commonTools.ESIG(m23.Hash)
+
+		an.SendDataPackToActualNode(m23)
+		an.SendDataPackToActualNode(m23)
+	}
+	for{
+		time.Sleep(3*time.Second)
+		//fmt.Println("apos_test doing....")
+	}
+}
+
+//m23 malicious message
+func TestM23filter_malicious(t *testing.T){
+	Config().blockDelay = 2
+	Config().verifyDelay = 1
+	Config().maxBBASteps = 12
+	an := newAllNodeManager()
+	verifierCnt := an.initTestCommon(1)
+	logger.Debug(COLOR_PREFIX+COLOR_FRONT_BLUE+COLOR_SUFFIX , "Verifier Cnt:" , verifierCnt , COLOR_SHORT_RESET)
+
+	for i := 1 ;i <= 5; i++ {
+		v := newVirtualNode(i,nil)
+		hash := types.Hash{}
+		hash[0] = 1
+		m23 := &M23{
+			Hash:hash,
+		}
+		m23.Credential = v.makeCredential(2)
+		m23.Esig = v.commonTools.ESIG(m23.Hash)
+
+		an.SendDataPackToActualNode(m23)
+
+		hash1 := types.Hash{}
+		hash1[0] = 2
+		m23_1 := &M23{
+			Hash:hash1,
+		}
+		m23_1.Credential = m23.Credential
+		m23_1.Esig = m23.Esig
+		//receive different  vote message m23, it must a malicious peer
+		an.SendDataPackToActualNode(m23_1)
+
+		//not honesty peer
+		an.SendDataPackToActualNode(m23_1)
+	}
+	for{
+		time.Sleep(3*time.Second)
+		//fmt.Println("apos_test doing....")
+	}
+}
+
+
 
 func TestBp(t *testing.T) {
 	bp := &BlockProposal{}

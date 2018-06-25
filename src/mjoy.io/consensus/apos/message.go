@@ -26,6 +26,7 @@ import (
 	"mjoy.io/consensus/message"
 	"fmt"
 )
+//go:generate msgp
 
 type msgCredentialSig struct {
 	cs    *CredentialSig
