@@ -115,3 +115,9 @@ func TestM0fail(t *testing.T){
 		//fmt.Println("apos_test doing....")
 	}
 }
+
+func TestBp(t *testing.T) {
+	bp := &BlockProposal{}
+	msgbp := NewMsgBlockProposal(bp)
+	msgbp.Send()
+}
