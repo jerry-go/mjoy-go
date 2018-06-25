@@ -242,6 +242,118 @@ func TestMCommon(t *testing.T){
 }
 
 
+func TestMCommon_filter_duplicate(t *testing.T){
+	Config().blockDelay = 2
+	Config().verifyDelay = 1
+	Config().maxBBASteps = 12
+	an := newAllNodeManager()
+	verifierCnt := an.initTestCommon(1)
+	logger.Debug(COLOR_PREFIX+COLOR_FRONT_BLUE+COLOR_SUFFIX , "Verifier Cnt:" , verifierCnt , COLOR_SHORT_RESET)
+
+	for i := 1 ;i <= 4; i++ {
+		v := newVirtualNode(i,nil)
+		hash := types.Hash{}
+		hash[0] = 1
+		mcommon := &MCommon{
+			Hash:hash,
+		}
+
+		mcommon.Credential = v.makeCredential(4 + 3)
+		mcommon.B = 0
+		mcommon.EsigB = v.commonTools.ESIG(types.BytesToHash(big.NewInt(int64(mcommon.B)).Bytes()))
+		mcommon.Hash = hash
+		mcommon.EsigV = v.commonTools.ESIG(hash)
+
+		an.SendDataPackToActualNode(mcommon)
+		an.SendDataPackToActualNode(mcommon)
+	}
+	for{
+		time.Sleep(3*time.Second)
+		//fmt.Println("apos_test doing....")
+	}
+}
+
+func TestMCommon_filter_duplicate2(t *testing.T){
+	Config().blockDelay = 2
+	Config().verifyDelay = 1
+	Config().maxBBASteps = 12
+	an := newAllNodeManager()
+	verifierCnt := an.initTestCommon(1)
+	logger.Debug(COLOR_PREFIX+COLOR_FRONT_BLUE+COLOR_SUFFIX , "Verifier Cnt:" , verifierCnt , COLOR_SHORT_RESET)
+
+	for i := 1 ;i <= 4; i++ {
+		v := newVirtualNode(i,nil)
+		hash := types.Hash{}
+		hash[0] = 1
+		mcommon := &MCommon{}
+
+		mcommon.Credential = v.makeCredential(4 + 3)
+		mcommon.B = 0
+		mcommon.EsigB = v.commonTools.ESIG(types.BytesToHash(big.NewInt(int64(mcommon.B)).Bytes()))
+		mcommon.Hash = hash
+		mcommon.EsigV = v.commonTools.ESIG(hash)
+
+		an.SendDataPackToActualNode(mcommon)
+		mcommonXX := &MCommon{}
+
+		mcommonXX.Credential = mcommon.Credential
+		mcommonXX.B = 1
+		mcommonXX.EsigB = mcommon.EsigB
+		mcommonXX.Hash = hash
+		mcommonXX.EsigV = mcommon.EsigV
+
+		//logger.Info("receive different vote common message!", msg.B)
+		an.SendDataPackToActualNode(mcommonXX)
+	}
+	for{
+		time.Sleep(3*time.Second)
+		//fmt.Println("apos_test doing....")
+	}
+}
+
+func TestMCommon_filter_duplicate3(t *testing.T){
+	Config().blockDelay = 2
+	Config().verifyDelay = 1
+	Config().maxBBASteps = 12
+	an := newAllNodeManager()
+	verifierCnt := an.initTestCommon(1)
+	logger.Debug(COLOR_PREFIX+COLOR_FRONT_BLUE+COLOR_SUFFIX , "Verifier Cnt:" , verifierCnt , COLOR_SHORT_RESET)
+
+	for i := 1 ;i <= 4; i++ {
+		v := newVirtualNode(i,nil)
+		hash := types.Hash{}
+		hash[0] = 1
+		mcommon := &MCommon{}
+
+		mcommon.Credential = v.makeCredential(4 + 3)
+		mcommon.B = 0
+		mcommon.EsigB = v.commonTools.ESIG(types.BytesToHash(big.NewInt(int64(mcommon.B)).Bytes()))
+		mcommon.Hash = hash
+		mcommon.EsigV = v.commonTools.ESIG(hash)
+
+		an.SendDataPackToActualNode(mcommon)
+		mcommonXX := &MCommon{}
+
+		mcommonXX.Credential = mcommon.Credential
+		mcommonXX.B = 0
+		mcommonXX.EsigB = mcommon.EsigB
+		hash1 := types.Hash{}
+		hash1[0] = 2
+		mcommonXX.Hash = hash1
+		mcommonXX.EsigV = mcommon.EsigV
+
+		//receive different hash in BBA message, it must a malicious peer
+		an.SendDataPackToActualNode(mcommonXX)
+		//not honesty peer
+		an.SendDataPackToActualNode(mcommonXX)
+	}
+	for{
+		time.Sleep(3*time.Second)
+		//fmt.Println("apos_test doing....")
+	}
+}
+
+
 func TestBp(t *testing.T) {
 	bp := &BlockProposal{}
 	msgbp := NewMsgBlockProposal(bp)

@@ -324,7 +324,7 @@ func (this *Round)filterM23(msg *M23) error {
 				return errors.New("duplicate message m23")
 			} else {
 				peerM23s.honesty = 1
-				return errors.New("receive different  vote message m23, it must a malicious peer")
+				return errors.New("receive different vote message m23, it must a malicious peer")
 			}
 		} else {
 			peerM23s.msg23s[int(step)] = msg
