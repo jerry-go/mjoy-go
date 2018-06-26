@@ -51,10 +51,10 @@ type signer interface {
 }
 
 // signature R, S, V
-type signature struct {
-	R *big.Int
-	S *big.Int
-	V *big.Int
+type Signature struct {
+	R *types.BigInt
+	S *types.BigInt
+	V *types.BigInt
 }
 
 type signValue interface {
@@ -69,49 +69,49 @@ type signValue interface {
 	toBytes() (sig []byte)
 }
 
-func (s *signature) checkObj() {
+func (s *Signature) checkObj() {
 	if s.R == nil || s.S == nil || s.V == nil {
-		panic(fmt.Errorf("signature obj is not initialized"))
+		panic(fmt.Errorf("Signature obj is not initialized"))
 	}
 }
 
-func (s *signature) get(sig []byte) (err error) {
+func (s *Signature) get(sig []byte) (err error) {
 	s.checkObj()
 
 	if len(sig) != 65 {
-		return errors.New(fmt.Sprintf("wrong size for signature: got %d, want 65", len(sig)))
+		return errors.New(fmt.Sprintf("wrong size for Signature: got %d, want 65", len(sig)))
 	} else {
-		s.R.SetBytes(sig[:32])
-		s.S.SetBytes(sig[32:64])
+		s.R.IntVal.SetBytes(sig[:32])
+		s.S.IntVal.SetBytes(sig[32:64])
 
 		if Config().chainId != nil && Config().chainId.Sign() != 0 {
-			s.V.SetInt64(int64(sig[64] + 35))
-			s.V.Add(s.V, Config().chainIdMul)
+			s.V.IntVal.SetInt64(int64(sig[64] + 35))
+			s.V.IntVal.Add(&s.V.IntVal, Config().chainIdMul)
 		} else {
-			s.V.SetBytes([]byte{sig[64] + 27})
+			s.V.IntVal.SetBytes([]byte{sig[64] + 27})
 		}
 	}
 	return nil
 }
 
-func (s signature) toBytes() (sig []byte) {
+func (s Signature) toBytes() (sig []byte) {
 	s.checkObj()
 
 	V := s.V
 	if Config().chainId.Sign() != 0 {
-		V.Sub(V, Config().chainIdMul)
-		V.Sub(V, common.Big35)
+		V.IntVal.Sub(&V.IntVal, Config().chainIdMul)
+		V.IntVal.Sub(&V.IntVal, common.Big35)
 	} else{
-		V.Sub(V, common.Big27)
+		V.IntVal.Sub(&V.IntVal, common.Big27)
 	}
 
-	vb := byte(V.Uint64())
-	if !crypto.ValidateSignatureValues(vb, s.R, s.S, true) {
-		logger.Debugf("invalid signature\n")
+	vb := byte(V.IntVal.Uint64())
+	if !crypto.ValidateSignatureValues(vb, &s.R.IntVal, &s.S.IntVal, true) {
+		logger.Debugf("invalid Signature\n")
 		return nil
 	}
 
-	rb, sb := s.R.Bytes(), s.S.Bytes()
+	rb, sb := s.R.IntVal.Bytes(), s.S.IntVal.Bytes()
 	sig = make([]byte, 65)
 	copy(sig[32-len(rb):32], rb)
 	copy(sig[64-len(sb):64], sb)
@@ -121,15 +121,19 @@ func (s signature) toBytes() (sig []byte) {
 }
 
 // long-term key singer
-type Credential struct {
+type CredentialSign struct {
+	Signature
+	Round  		uint64		// round
+	Step   		uint64		// step
+}
+
+type CredentialSigForHash struct {
 	Round  		uint64		// round
 	Step   		uint64		// step
 	Quantity    []byte		// quantity(seed, Qr-1)
-
-	signature
 }
 
-func (cret *Credential) sign(prv *ecdsa.PrivateKey) (R *big.Int, S *big.Int, V *big.Int, err error) {
+func (cret *CredentialSign) sign(prv *ecdsa.PrivateKey) (R *types.BigInt, S *types.BigInt, V *types.BigInt, err error) {
 	if prv == nil {
 		err := errors.New(fmt.Sprintf("private key is empty"))
 		return nil, nil, nil, err
@@ -146,37 +150,42 @@ func (cret *Credential) sign(prv *ecdsa.PrivateKey) (R *big.Int, S *big.Int, V *
 		return nil, nil, nil, err
 	}
 
-	err = cret.signature.get(sig)
+	err = cret.get(sig)
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	R = cret.signature.R
-	S = cret.signature.S
-	V = cret.signature.V
+	R = cret.R
+	S = cret.S
+	V = cret.V
 
 	return R, S, V, nil
 }
 
-func (cret *Credential) sender() (types.Address, error) {
-	cret.signature.checkObj()
+func (cret *CredentialSign) sender() (types.Address, error) {
+	cret.checkObj()
 
-	if Config().chainId != nil && deriveChainId(cret.signature.V).Cmp(Config().chainId) != 0 {
+	if Config().chainId != nil && deriveChainId(&cret.V.IntVal).Cmp(Config().chainId) != 0 {
 		return types.Address{}, ErrInvalidChainId
 	}
 
 	V := &big.Int{}
 	if Config().chainId.Sign() != 0 {
-		V = V.Sub(cret.signature.V, Config().chainIdMul)
+		V = V.Sub(&cret.V.IntVal, Config().chainIdMul)
 		V.Sub(V, common.Big35)
 	} else{
-		V = V.Sub(cret.signature.V, common.Big27)
+		V = V.Sub(&cret.V.IntVal, common.Big27)
 	}
-	address, err :=  recoverPlain(cret.hash(), cret.signature.R, cret.signature.S, V, true)
+	address, err :=  recoverPlain(cret.hash(), &cret.R.IntVal, &cret.S.IntVal, V, true)
 	return address, err
 }
 
-func (cret *Credential) hash() types.Hash {
-	hash, err := common.MsgpHash(cret)
+func (cret *CredentialSign) hash() types.Hash {
+	cretforhash := CredentialSigForHash{
+		cret.Round,
+		cret.Step,
+		[]byte{0},	// TODO: to get Quantity !!!!!!!!!!!!!!! need to implement a global function(round)
+	}
+	hash, err := common.MsgpHash(cretforhash)
 	if err != nil {
 		return types.Hash{}
 	}
@@ -185,15 +194,20 @@ func (cret *Credential) hash() types.Hash {
 
 // TODO: In current, EphemeralSig is the same as the Credential, need to be modified in the next version
 // ephemeral key singer
-type EphemeralSig struct {
+type EphemeralSign struct {
+	Signature
+	round  		uint64		// round
+	step   		uint64		// step
+	val		    []byte		// Val = Hash(B), or Val = 0, or Val = 1
+}
+
+type EphemeralSigForHash struct {
 	Round  		uint64		// round
 	Step   		uint64		// step
 	Val		    []byte		// Val = Hash(B), or Val = 0, or Val = 1
-
-	signature
 }
 
-func (esig *EphemeralSig) sign(prv *ecdsa.PrivateKey) (R *big.Int, S *big.Int, V *big.Int, err error) {
+func (esig *EphemeralSign) sign(prv *ecdsa.PrivateKey) (R *types.BigInt, S *types.BigInt, V *types.BigInt, err error) {
 	if prv == nil {
 		err := errors.New(fmt.Sprintf("private key is empty"))
 		return nil, nil, nil, err
@@ -210,37 +224,45 @@ func (esig *EphemeralSig) sign(prv *ecdsa.PrivateKey) (R *big.Int, S *big.Int, V
 		return nil, nil, nil, err
 	}
 
-	err = esig.signature.get(sig)
+	err = esig.get(sig)
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	R = esig.signature.R
-	S = esig.signature.S
-	V = esig.signature.V
+	R = esig.R
+	S = esig.S
+	V = esig.V
 
 	return R, S, V, nil
 }
 
-func (esig *EphemeralSig) sender() (types.Address, error) {
-	esig.signature.checkObj()
+func (esig *EphemeralSign) sender() (types.Address, error) {
+	esig.checkObj()
 
-	if Config().chainId != nil && deriveChainId(esig.signature.V).Cmp(Config().chainId) != 0 {
+	if Config().chainId != nil && deriveChainId(&esig.V.IntVal).Cmp(Config().chainId) != 0 {
 		return types.Address{}, ErrInvalidChainId
 	}
 
 	V := &big.Int{}
 	if Config().chainId.Sign() != 0 {
-		V = V.Sub(esig.signature.V, Config().chainIdMul)
+		V = V.Sub(&esig.V.IntVal, Config().chainIdMul)
 		V.Sub(V, common.Big35)
 	} else{
-		V = V.Sub(esig.signature.V, common.Big27)
+		V = V.Sub(&esig.V.IntVal, common.Big27)
 	}
-	address, err :=  recoverPlain(esig.hash(), esig.signature.R, esig.signature.S, V, true)
+	address, err :=  recoverPlain(esig.hash(), &esig.R.IntVal, &esig.S.IntVal, V, true)
 	return address, err
 }
 
-func (esig *EphemeralSig) hash() types.Hash {
-	hash, err := common.MsgpHash(esig)
+func (esig *EphemeralSign) hash() types.Hash {
+	if esig.val == nil {
+		panic(fmt.Errorf("EphemeralSign obj is not initialized"))
+	}
+	eisgforhash := EphemeralSigForHash{
+		esig.round,
+		esig.step,
+		esig.val,
+	}
+	hash, err := common.MsgpHash(eisgforhash)
 	if err != nil {
 		return types.Hash{}
 	}

@@ -119,6 +119,7 @@ type stepCtx struct {
 	getStep   func() int	// get the number of step in the round
 	stopStep  func()        // stop the step
 	stopRound func()		// stop all the step in the round, and end the round
+
 	//getCredential func() signature
 	//getEphemeralSig func(signed []byte) signature
 	esig func(hash types.Hash)([]byte)
@@ -127,6 +128,7 @@ type stepCtx struct {
 	getCredential func()*CredentialSig
 	setRound func(*Round)
 	makeEmptyBlockForTest func(cs *CredentialSig)*block.Block
+	getEphemeralSig func(signed []byte) Signature
 
 }
 
