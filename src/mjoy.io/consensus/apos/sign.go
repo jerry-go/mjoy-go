@@ -124,6 +124,13 @@ func (s signature) toBytes() (sig []byte) {
 type Credential struct {
 	Round  		uint64		// round
 	Step   		uint64		// step
+
+	signature
+}
+
+type CredentialForHash struct {
+	Round  		uint64		// round
+	Step   		uint64		// step
 	Quantity    []byte		// quantity(seed, Qr-1)
 
 	signature
@@ -176,7 +183,13 @@ func (cret *Credential) sender() (types.Address, error) {
 }
 
 func (cret *Credential) hash() types.Hash {
-	hash, err := common.MsgpHash(cret)
+	cretforhash := CredentialForHash{
+		cret.Round,
+		cret.Step,
+		[]byte{0},	// TODO: to get Quantity !!!!!!!!!!!!!!! need to implement a global function(round, step)
+		cret.signature,
+	}
+	hash, err := common.MsgpHash(cretforhash)
 	if err != nil {
 		return types.Hash{}
 	}

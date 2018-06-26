@@ -34,6 +34,122 @@ func (z *Credential) DecodeMsg(dc *msgp.Reader) (err error) {
 			if err != nil {
 				return
 			}
+		default:
+			err = dc.Skip()
+			if err != nil {
+				return
+			}
+		}
+	}
+	return
+}
+
+// EncodeMsg implements msgp.Encodable
+func (z Credential) EncodeMsg(en *msgp.Writer) (err error) {
+	// map header, size 2
+	// write "Round"
+	err = en.Append(0x82, 0xa5, 0x52, 0x6f, 0x75, 0x6e, 0x64)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint64(z.Round)
+	if err != nil {
+		return
+	}
+	// write "Step"
+	err = en.Append(0xa4, 0x53, 0x74, 0x65, 0x70)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint64(z.Step)
+	if err != nil {
+		return
+	}
+	return
+}
+
+// MarshalMsg implements msgp.Marshaler
+func (z Credential) MarshalMsg(b []byte) (o []byte, err error) {
+	o = msgp.Require(b, z.Msgsize())
+	// map header, size 2
+	// string "Round"
+	o = append(o, 0x82, 0xa5, 0x52, 0x6f, 0x75, 0x6e, 0x64)
+	o = msgp.AppendUint64(o, z.Round)
+	// string "Step"
+	o = append(o, 0xa4, 0x53, 0x74, 0x65, 0x70)
+	o = msgp.AppendUint64(o, z.Step)
+	return
+}
+
+// UnmarshalMsg implements msgp.Unmarshaler
+func (z *Credential) UnmarshalMsg(bts []byte) (o []byte, err error) {
+	var field []byte
+	_ = field
+	var zb0001 uint32
+	zb0001, bts, err = msgp.ReadMapHeaderBytes(bts)
+	if err != nil {
+		return
+	}
+	for zb0001 > 0 {
+		zb0001--
+		field, bts, err = msgp.ReadMapKeyZC(bts)
+		if err != nil {
+			return
+		}
+		switch msgp.UnsafeString(field) {
+		case "Round":
+			z.Round, bts, err = msgp.ReadUint64Bytes(bts)
+			if err != nil {
+				return
+			}
+		case "Step":
+			z.Step, bts, err = msgp.ReadUint64Bytes(bts)
+			if err != nil {
+				return
+			}
+		default:
+			bts, err = msgp.Skip(bts)
+			if err != nil {
+				return
+			}
+		}
+	}
+	o = bts
+	return
+}
+
+// Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
+func (z Credential) Msgsize() (s int) {
+	s = 1 + 6 + msgp.Uint64Size + 5 + msgp.Uint64Size
+	return
+}
+
+// DecodeMsg implements msgp.Decodable
+func (z *CredentialForHash) DecodeMsg(dc *msgp.Reader) (err error) {
+	var field []byte
+	_ = field
+	var zb0001 uint32
+	zb0001, err = dc.ReadMapHeader()
+	if err != nil {
+		return
+	}
+	for zb0001 > 0 {
+		zb0001--
+		field, err = dc.ReadMapKeyPtr()
+		if err != nil {
+			return
+		}
+		switch msgp.UnsafeString(field) {
+		case "Round":
+			z.Round, err = dc.ReadUint64()
+			if err != nil {
+				return
+			}
+		case "Step":
+			z.Step, err = dc.ReadUint64()
+			if err != nil {
+				return
+			}
 		case "Quantity":
 			z.Quantity, err = dc.ReadBytes(z.Quantity)
 			if err != nil {
@@ -50,7 +166,7 @@ func (z *Credential) DecodeMsg(dc *msgp.Reader) (err error) {
 }
 
 // EncodeMsg implements msgp.Encodable
-func (z *Credential) EncodeMsg(en *msgp.Writer) (err error) {
+func (z *CredentialForHash) EncodeMsg(en *msgp.Writer) (err error) {
 	// map header, size 3
 	// write "Round"
 	err = en.Append(0x83, 0xa5, 0x52, 0x6f, 0x75, 0x6e, 0x64)
@@ -83,7 +199,7 @@ func (z *Credential) EncodeMsg(en *msgp.Writer) (err error) {
 }
 
 // MarshalMsg implements msgp.Marshaler
-func (z *Credential) MarshalMsg(b []byte) (o []byte, err error) {
+func (z *CredentialForHash) MarshalMsg(b []byte) (o []byte, err error) {
 	o = msgp.Require(b, z.Msgsize())
 	// map header, size 3
 	// string "Round"
@@ -99,7 +215,7 @@ func (z *Credential) MarshalMsg(b []byte) (o []byte, err error) {
 }
 
 // UnmarshalMsg implements msgp.Unmarshaler
-func (z *Credential) UnmarshalMsg(bts []byte) (o []byte, err error) {
+func (z *CredentialForHash) UnmarshalMsg(bts []byte) (o []byte, err error) {
 	var field []byte
 	_ = field
 	var zb0001 uint32
@@ -141,7 +257,7 @@ func (z *Credential) UnmarshalMsg(bts []byte) (o []byte, err error) {
 }
 
 // Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
-func (z *Credential) Msgsize() (s int) {
+func (z *CredentialForHash) Msgsize() (s int) {
 	s = 1 + 6 + msgp.Uint64Size + 5 + msgp.Uint64Size + 9 + msgp.BytesPrefixSize + len(z.Quantity)
 	return
 }
