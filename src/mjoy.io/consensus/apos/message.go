@@ -29,7 +29,7 @@ import (
 //go:generate msgp
 
 type msgCredentialSig struct {
-	cs    *CredentialSig
+	cs    *Credential
 	*message.MsgPriv
 }
 
@@ -54,8 +54,8 @@ func (tm *msgCredentialSig) StopHandle() {
 // m(r,1) = (Br, esig(H(Br)), σr1)
 type BlockProposal struct {
 	Block         *block.Block
-	Esig          []byte
-	Credential    *CredentialSig
+	Esig          Signature
+	Credential    *Credential
 }
 type msgBlockProposal struct {
 	bp    *BlockProposal
@@ -88,8 +88,8 @@ func (tm *msgBlockProposal) StopHandle() {
 type GradedConsensus struct {
 	//hash is v′, the hash of the next block
 	Hash          types.Hash    //the Br's hash
-	Esig          []byte        //the signature of somebody's ephemeral secret key
-	Credential    *CredentialSig
+	Esig          Signature     //the signature of somebody's ephemeral secret key
+	Credential    *Credential
 }
 
 type msgGradedConsensus struct {
@@ -119,11 +119,11 @@ func (tm *msgGradedConsensus) StopHandle() {
 type BinaryByzantineAgreement struct {
 	//B is the BBA⋆ input b, 0 or 1
 	B             uint
-	EsigB         []byte
+	EsigB         Signature
 	//hash is v′, the hash of the next block
 	Hash          types.Hash
-	EsigV         []byte
-	Credential    *CredentialSig
+	EsigV         Signature
+	Credential    *Credential
 }
 
 type msgBinaryByzantineAgreement struct {

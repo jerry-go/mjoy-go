@@ -31,6 +31,7 @@ import (
 )
 
 //go:generate msgp
+//msgp:ignore Signature
 
 var (
 	ErrInvalidSig = errors.New("invalid  v, r, s values")
@@ -51,7 +52,7 @@ type signer interface {
 }
 
 // signature R, S, V
-type signature struct {
+type Signature struct {
 	R *big.Int
 	S *big.Int
 	V *big.Int
@@ -69,13 +70,13 @@ type signValue interface {
 	toBytes() (sig []byte)
 }
 
-func (s *signature) checkObj() {
+func (s *Signature) checkObj() {
 	if s.R == nil || s.S == nil || s.V == nil {
 		panic(fmt.Errorf("signature obj is not initialized"))
 	}
 }
 
-func (s *signature) get(sig []byte) (err error) {
+func (s *Signature) get(sig []byte) (err error) {
 	s.checkObj()
 
 	if len(sig) != 65 {
@@ -94,7 +95,7 @@ func (s *signature) get(sig []byte) (err error) {
 	return nil
 }
 
-func (s signature) toBytes() (sig []byte) {
+func (s Signature) toBytes() (sig []byte) {
 	s.checkObj()
 
 	V := s.V
@@ -125,7 +126,7 @@ type Credential struct {
 	Round  		uint64		// round
 	Step   		uint64		// step
 
-	signature
+	signature   Signature
 }
 
 type CredentialForHash struct {
@@ -133,7 +134,7 @@ type CredentialForHash struct {
 	Step   		uint64		// step
 	Quantity    []byte		// quantity(seed, Qr-1)
 
-	signature
+	signature   Signature
 }
 
 func (cret *Credential) sign(prv *ecdsa.PrivateKey) (R *big.Int, S *big.Int, V *big.Int, err error) {
@@ -203,7 +204,7 @@ type EphemeralSig struct {
 	Step   		uint64		// step
 	Val		    []byte		// Val = Hash(B), or Val = 0, or Val = 1
 
-	signature
+	signature   Signature
 }
 
 func (esig *EphemeralSig) sign(prv *ecdsa.PrivateKey) (R *big.Int, S *big.Int, V *big.Int, err error) {
