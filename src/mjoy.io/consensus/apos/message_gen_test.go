@@ -11,8 +11,8 @@ import (
 	"github.com/tinylib/msgp/msgp"
 )
 
-func TestMarshalUnmarshalCredential(t *testing.T) {
-	v := Credential{}
+func TestMarshalUnmarshalBinaryByzantineAgreement(t *testing.T) {
+	v := BinaryByzantineAgreement{}
 	bts, err := v.MarshalMsg(nil)
 	if err != nil {
 		t.Fatal(err)
@@ -34,8 +34,8 @@ func TestMarshalUnmarshalCredential(t *testing.T) {
 	}
 }
 
-func BenchmarkMarshalMsgCredential(b *testing.B) {
-	v := Credential{}
+func BenchmarkMarshalMsgBinaryByzantineAgreement(b *testing.B) {
+	v := BinaryByzantineAgreement{}
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -43,8 +43,8 @@ func BenchmarkMarshalMsgCredential(b *testing.B) {
 	}
 }
 
-func BenchmarkAppendMsgCredential(b *testing.B) {
-	v := Credential{}
+func BenchmarkAppendMsgBinaryByzantineAgreement(b *testing.B) {
+	v := BinaryByzantineAgreement{}
 	bts := make([]byte, 0, v.Msgsize())
 	bts, _ = v.MarshalMsg(bts[0:0])
 	b.SetBytes(int64(len(bts)))
@@ -55,8 +55,8 @@ func BenchmarkAppendMsgCredential(b *testing.B) {
 	}
 }
 
-func BenchmarkUnmarshalCredential(b *testing.B) {
-	v := Credential{}
+func BenchmarkUnmarshalBinaryByzantineAgreement(b *testing.B) {
+	v := BinaryByzantineAgreement{}
 	bts, _ := v.MarshalMsg(nil)
 	b.ReportAllocs()
 	b.SetBytes(int64(len(bts)))
@@ -69,8 +69,8 @@ func BenchmarkUnmarshalCredential(b *testing.B) {
 	}
 }
 
-func TestEncodeDecodeCredential(t *testing.T) {
-	v := Credential{}
+func TestEncodeDecodeBinaryByzantineAgreement(t *testing.T) {
+	v := BinaryByzantineAgreement{}
 	var buf bytes.Buffer
 	msgp.Encode(&buf, &v)
 
@@ -79,7 +79,7 @@ func TestEncodeDecodeCredential(t *testing.T) {
 		t.Logf("WARNING: Msgsize() for %v is inaccurate", v)
 	}
 
-	vn := Credential{}
+	vn := BinaryByzantineAgreement{}
 	err := msgp.Decode(&buf, &vn)
 	if err != nil {
 		t.Error(err)
@@ -93,8 +93,8 @@ func TestEncodeDecodeCredential(t *testing.T) {
 	}
 }
 
-func BenchmarkEncodeCredential(b *testing.B) {
-	v := Credential{}
+func BenchmarkEncodeBinaryByzantineAgreement(b *testing.B) {
+	v := BinaryByzantineAgreement{}
 	var buf bytes.Buffer
 	msgp.Encode(&buf, &v)
 	b.SetBytes(int64(buf.Len()))
@@ -107,8 +107,8 @@ func BenchmarkEncodeCredential(b *testing.B) {
 	en.Flush()
 }
 
-func BenchmarkDecodeCredential(b *testing.B) {
-	v := Credential{}
+func BenchmarkDecodeBinaryByzantineAgreement(b *testing.B) {
+	v := BinaryByzantineAgreement{}
 	var buf bytes.Buffer
 	msgp.Encode(&buf, &v)
 	b.SetBytes(int64(buf.Len()))
@@ -124,8 +124,8 @@ func BenchmarkDecodeCredential(b *testing.B) {
 	}
 }
 
-func TestMarshalUnmarshalCredentialForHash(t *testing.T) {
-	v := CredentialForHash{}
+func TestMarshalUnmarshalBlockProposal(t *testing.T) {
+	v := BlockProposal{}
 	bts, err := v.MarshalMsg(nil)
 	if err != nil {
 		t.Fatal(err)
@@ -147,8 +147,8 @@ func TestMarshalUnmarshalCredentialForHash(t *testing.T) {
 	}
 }
 
-func BenchmarkMarshalMsgCredentialForHash(b *testing.B) {
-	v := CredentialForHash{}
+func BenchmarkMarshalMsgBlockProposal(b *testing.B) {
+	v := BlockProposal{}
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -156,8 +156,8 @@ func BenchmarkMarshalMsgCredentialForHash(b *testing.B) {
 	}
 }
 
-func BenchmarkAppendMsgCredentialForHash(b *testing.B) {
-	v := CredentialForHash{}
+func BenchmarkAppendMsgBlockProposal(b *testing.B) {
+	v := BlockProposal{}
 	bts := make([]byte, 0, v.Msgsize())
 	bts, _ = v.MarshalMsg(bts[0:0])
 	b.SetBytes(int64(len(bts)))
@@ -168,8 +168,8 @@ func BenchmarkAppendMsgCredentialForHash(b *testing.B) {
 	}
 }
 
-func BenchmarkUnmarshalCredentialForHash(b *testing.B) {
-	v := CredentialForHash{}
+func BenchmarkUnmarshalBlockProposal(b *testing.B) {
+	v := BlockProposal{}
 	bts, _ := v.MarshalMsg(nil)
 	b.ReportAllocs()
 	b.SetBytes(int64(len(bts)))
@@ -182,8 +182,8 @@ func BenchmarkUnmarshalCredentialForHash(b *testing.B) {
 	}
 }
 
-func TestEncodeDecodeCredentialForHash(t *testing.T) {
-	v := CredentialForHash{}
+func TestEncodeDecodeBlockProposal(t *testing.T) {
+	v := BlockProposal{}
 	var buf bytes.Buffer
 	msgp.Encode(&buf, &v)
 
@@ -192,7 +192,7 @@ func TestEncodeDecodeCredentialForHash(t *testing.T) {
 		t.Logf("WARNING: Msgsize() for %v is inaccurate", v)
 	}
 
-	vn := CredentialForHash{}
+	vn := BlockProposal{}
 	err := msgp.Decode(&buf, &vn)
 	if err != nil {
 		t.Error(err)
@@ -206,8 +206,8 @@ func TestEncodeDecodeCredentialForHash(t *testing.T) {
 	}
 }
 
-func BenchmarkEncodeCredentialForHash(b *testing.B) {
-	v := CredentialForHash{}
+func BenchmarkEncodeBlockProposal(b *testing.B) {
+	v := BlockProposal{}
 	var buf bytes.Buffer
 	msgp.Encode(&buf, &v)
 	b.SetBytes(int64(buf.Len()))
@@ -220,8 +220,8 @@ func BenchmarkEncodeCredentialForHash(b *testing.B) {
 	en.Flush()
 }
 
-func BenchmarkDecodeCredentialForHash(b *testing.B) {
-	v := CredentialForHash{}
+func BenchmarkDecodeBlockProposal(b *testing.B) {
+	v := BlockProposal{}
 	var buf bytes.Buffer
 	msgp.Encode(&buf, &v)
 	b.SetBytes(int64(buf.Len()))
@@ -237,8 +237,8 @@ func BenchmarkDecodeCredentialForHash(b *testing.B) {
 	}
 }
 
-func TestMarshalUnmarshalEphemeralSig(t *testing.T) {
-	v := EphemeralSig{}
+func TestMarshalUnmarshalGradedConsensus(t *testing.T) {
+	v := GradedConsensus{}
 	bts, err := v.MarshalMsg(nil)
 	if err != nil {
 		t.Fatal(err)
@@ -260,8 +260,8 @@ func TestMarshalUnmarshalEphemeralSig(t *testing.T) {
 	}
 }
 
-func BenchmarkMarshalMsgEphemeralSig(b *testing.B) {
-	v := EphemeralSig{}
+func BenchmarkMarshalMsgGradedConsensus(b *testing.B) {
+	v := GradedConsensus{}
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -269,8 +269,8 @@ func BenchmarkMarshalMsgEphemeralSig(b *testing.B) {
 	}
 }
 
-func BenchmarkAppendMsgEphemeralSig(b *testing.B) {
-	v := EphemeralSig{}
+func BenchmarkAppendMsgGradedConsensus(b *testing.B) {
+	v := GradedConsensus{}
 	bts := make([]byte, 0, v.Msgsize())
 	bts, _ = v.MarshalMsg(bts[0:0])
 	b.SetBytes(int64(len(bts)))
@@ -281,8 +281,8 @@ func BenchmarkAppendMsgEphemeralSig(b *testing.B) {
 	}
 }
 
-func BenchmarkUnmarshalEphemeralSig(b *testing.B) {
-	v := EphemeralSig{}
+func BenchmarkUnmarshalGradedConsensus(b *testing.B) {
+	v := GradedConsensus{}
 	bts, _ := v.MarshalMsg(nil)
 	b.ReportAllocs()
 	b.SetBytes(int64(len(bts)))
@@ -295,8 +295,8 @@ func BenchmarkUnmarshalEphemeralSig(b *testing.B) {
 	}
 }
 
-func TestEncodeDecodeEphemeralSig(t *testing.T) {
-	v := EphemeralSig{}
+func TestEncodeDecodeGradedConsensus(t *testing.T) {
+	v := GradedConsensus{}
 	var buf bytes.Buffer
 	msgp.Encode(&buf, &v)
 
@@ -305,7 +305,7 @@ func TestEncodeDecodeEphemeralSig(t *testing.T) {
 		t.Logf("WARNING: Msgsize() for %v is inaccurate", v)
 	}
 
-	vn := EphemeralSig{}
+	vn := GradedConsensus{}
 	err := msgp.Decode(&buf, &vn)
 	if err != nil {
 		t.Error(err)
@@ -319,8 +319,8 @@ func TestEncodeDecodeEphemeralSig(t *testing.T) {
 	}
 }
 
-func BenchmarkEncodeEphemeralSig(b *testing.B) {
-	v := EphemeralSig{}
+func BenchmarkEncodeGradedConsensus(b *testing.B) {
+	v := GradedConsensus{}
 	var buf bytes.Buffer
 	msgp.Encode(&buf, &v)
 	b.SetBytes(int64(buf.Len()))
@@ -333,121 +333,8 @@ func BenchmarkEncodeEphemeralSig(b *testing.B) {
 	en.Flush()
 }
 
-func BenchmarkDecodeEphemeralSig(b *testing.B) {
-	v := EphemeralSig{}
-	var buf bytes.Buffer
-	msgp.Encode(&buf, &v)
-	b.SetBytes(int64(buf.Len()))
-	rd := msgp.NewEndlessReader(buf.Bytes(), b)
-	dc := msgp.NewReader(rd)
-	b.ReportAllocs()
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		err := v.DecodeMsg(dc)
-		if err != nil {
-			b.Fatal(err)
-		}
-	}
-}
-
-func TestMarshalUnmarshalSignature(t *testing.T) {
-	v := Signature{}
-	bts, err := v.MarshalMsg(nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	left, err := v.UnmarshalMsg(bts)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(left) > 0 {
-		t.Errorf("%d bytes left over after UnmarshalMsg(): %q", len(left), left)
-	}
-
-	left, err = msgp.Skip(bts)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(left) > 0 {
-		t.Errorf("%d bytes left over after Skip(): %q", len(left), left)
-	}
-}
-
-func BenchmarkMarshalMsgSignature(b *testing.B) {
-	v := Signature{}
-	b.ReportAllocs()
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		v.MarshalMsg(nil)
-	}
-}
-
-func BenchmarkAppendMsgSignature(b *testing.B) {
-	v := Signature{}
-	bts := make([]byte, 0, v.Msgsize())
-	bts, _ = v.MarshalMsg(bts[0:0])
-	b.SetBytes(int64(len(bts)))
-	b.ReportAllocs()
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		bts, _ = v.MarshalMsg(bts[0:0])
-	}
-}
-
-func BenchmarkUnmarshalSignature(b *testing.B) {
-	v := Signature{}
-	bts, _ := v.MarshalMsg(nil)
-	b.ReportAllocs()
-	b.SetBytes(int64(len(bts)))
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		_, err := v.UnmarshalMsg(bts)
-		if err != nil {
-			b.Fatal(err)
-		}
-	}
-}
-
-func TestEncodeDecodeSignature(t *testing.T) {
-	v := Signature{}
-	var buf bytes.Buffer
-	msgp.Encode(&buf, &v)
-
-	m := v.Msgsize()
-	if buf.Len() > m {
-		t.Logf("WARNING: Msgsize() for %v is inaccurate", v)
-	}
-
-	vn := Signature{}
-	err := msgp.Decode(&buf, &vn)
-	if err != nil {
-		t.Error(err)
-	}
-
-	buf.Reset()
-	msgp.Encode(&buf, &v)
-	err = msgp.NewReader(&buf).Skip()
-	if err != nil {
-		t.Error(err)
-	}
-}
-
-func BenchmarkEncodeSignature(b *testing.B) {
-	v := Signature{}
-	var buf bytes.Buffer
-	msgp.Encode(&buf, &v)
-	b.SetBytes(int64(buf.Len()))
-	en := msgp.NewWriter(msgp.Nowhere)
-	b.ReportAllocs()
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		v.EncodeMsg(en)
-	}
-	en.Flush()
-}
-
-func BenchmarkDecodeSignature(b *testing.B) {
-	v := Signature{}
+func BenchmarkDecodeGradedConsensus(b *testing.B) {
+	v := GradedConsensus{}
 	var buf bytes.Buffer
 	msgp.Encode(&buf, &v)
 	b.SetBytes(int64(buf.Len()))

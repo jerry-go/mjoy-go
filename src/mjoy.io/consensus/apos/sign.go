@@ -31,7 +31,6 @@ import (
 )
 
 //go:generate msgp
-//msgp:ignore Signature
 
 var (
 	ErrInvalidSig = errors.New("invalid  v, r, s values")
@@ -53,9 +52,9 @@ type signer interface {
 
 // signature R, S, V
 type Signature struct {
-	R *big.Int
-	S *big.Int
-	V *big.Int
+	R *types.BigInt
+	S *types.BigInt
+	V *types.BigInt
 }
 
 type signValue interface {
@@ -82,14 +81,14 @@ func (s *Signature) get(sig []byte) (err error) {
 	if len(sig) != 65 {
 		return errors.New(fmt.Sprintf("wrong size for signature: got %d, want 65", len(sig)))
 	} else {
-		s.R.SetBytes(sig[:32])
-		s.S.SetBytes(sig[32:64])
+		s.R.IntVal.SetBytes(sig[:32])
+		s.S.IntVal.SetBytes(sig[32:64])
 
 		if Config().chainId != nil && Config().chainId.Sign() != 0 {
-			s.V.SetInt64(int64(sig[64] + 35))
-			s.V.Add(s.V, Config().chainIdMul)
+			s.V.IntVal.SetInt64(int64(sig[64] + 35))
+			s.V.IntVal.Add(&s.V.IntVal, Config().chainIdMul)
 		} else {
-			s.V.SetBytes([]byte{sig[64] + 27})
+			s.V.IntVal.SetBytes([]byte{sig[64] + 27})
 		}
 	}
 	return nil
@@ -100,19 +99,19 @@ func (s Signature) toBytes() (sig []byte) {
 
 	V := s.V
 	if Config().chainId.Sign() != 0 {
-		V.Sub(V, Config().chainIdMul)
-		V.Sub(V, common.Big35)
+		V.IntVal.Sub(&V.IntVal, Config().chainIdMul)
+		V.IntVal.Sub(&V.IntVal, common.Big35)
 	} else{
-		V.Sub(V, common.Big27)
+		V.IntVal.Sub(&V.IntVal, common.Big27)
 	}
 
-	vb := byte(V.Uint64())
-	if !crypto.ValidateSignatureValues(vb, s.R, s.S, true) {
+	vb := byte(V.IntVal.Uint64())
+	if !crypto.ValidateSignatureValues(vb, &s.R.IntVal, &s.S.IntVal, true) {
 		logger.Debugf("invalid signature\n")
 		return nil
 	}
 
-	rb, sb := s.R.Bytes(), s.S.Bytes()
+	rb, sb := s.R.IntVal.Bytes(), s.S.IntVal.Bytes()
 	sig = make([]byte, 65)
 	copy(sig[32-len(rb):32], rb)
 	copy(sig[64-len(sb):64], sb)
@@ -137,7 +136,7 @@ type CredentialForHash struct {
 	signature   Signature
 }
 
-func (cret *Credential) sign(prv *ecdsa.PrivateKey) (R *big.Int, S *big.Int, V *big.Int, err error) {
+func (cret *Credential) sign(prv *ecdsa.PrivateKey) (R *types.BigInt, S *types.BigInt, V *types.BigInt, err error) {
 	if prv == nil {
 		err := errors.New(fmt.Sprintf("private key is empty"))
 		return nil, nil, nil, err
@@ -168,18 +167,18 @@ func (cret *Credential) sign(prv *ecdsa.PrivateKey) (R *big.Int, S *big.Int, V *
 func (cret *Credential) sender() (types.Address, error) {
 	cret.signature.checkObj()
 
-	if Config().chainId != nil && deriveChainId(cret.signature.V).Cmp(Config().chainId) != 0 {
+	if Config().chainId != nil && deriveChainId(&cret.signature.V.IntVal).Cmp(Config().chainId) != 0 {
 		return types.Address{}, ErrInvalidChainId
 	}
 
 	V := &big.Int{}
 	if Config().chainId.Sign() != 0 {
-		V = V.Sub(cret.signature.V, Config().chainIdMul)
+		V = V.Sub(&cret.signature.V.IntVal, Config().chainIdMul)
 		V.Sub(V, common.Big35)
 	} else{
-		V = V.Sub(cret.signature.V, common.Big27)
+		V = V.Sub(&cret.signature.V.IntVal, common.Big27)
 	}
-	address, err :=  recoverPlain(cret.hash(), cret.signature.R, cret.signature.S, V, true)
+	address, err :=  recoverPlain(cret.hash(), &cret.signature.R.IntVal, &cret.signature.S.IntVal, V, true)
 	return address, err
 }
 
@@ -207,7 +206,7 @@ type EphemeralSig struct {
 	signature   Signature
 }
 
-func (esig *EphemeralSig) sign(prv *ecdsa.PrivateKey) (R *big.Int, S *big.Int, V *big.Int, err error) {
+func (esig *EphemeralSig) sign(prv *ecdsa.PrivateKey) (R *types.BigInt, S *types.BigInt, V *types.BigInt, err error) {
 	if prv == nil {
 		err := errors.New(fmt.Sprintf("private key is empty"))
 		return nil, nil, nil, err
@@ -238,18 +237,18 @@ func (esig *EphemeralSig) sign(prv *ecdsa.PrivateKey) (R *big.Int, S *big.Int, V
 func (esig *EphemeralSig) sender() (types.Address, error) {
 	esig.signature.checkObj()
 
-	if Config().chainId != nil && deriveChainId(esig.signature.V).Cmp(Config().chainId) != 0 {
+	if Config().chainId != nil && deriveChainId(&esig.signature.V.IntVal).Cmp(Config().chainId) != 0 {
 		return types.Address{}, ErrInvalidChainId
 	}
 
 	V := &big.Int{}
 	if Config().chainId.Sign() != 0 {
-		V = V.Sub(esig.signature.V, Config().chainIdMul)
+		V = V.Sub(&esig.signature.V.IntVal, Config().chainIdMul)
 		V.Sub(V, common.Big35)
 	} else{
-		V = V.Sub(esig.signature.V, common.Big27)
+		V = V.Sub(&esig.signature.V.IntVal, common.Big27)
 	}
-	address, err :=  recoverPlain(esig.hash(), esig.signature.R, esig.signature.S, V, true)
+	address, err :=  recoverPlain(esig.hash(), &esig.signature.R.IntVal, &esig.signature.S.IntVal, V, true)
 	return address, err
 }
 

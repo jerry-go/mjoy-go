@@ -33,9 +33,9 @@ type msgCredentialSig struct {
 	*message.MsgPriv
 }
 
-func NewMsgCredentialSig(cs *CredentialSig) *msgCredentialSig{
+func NewMsgCredential(c *Credential) *msgCredentialSig{
 	msgCs := &msgCredentialSig{
-		cs:      cs,
+		cs:      c,
 		MsgPriv: message.NewMsgPriv(),
 	}
 	message.Msgcore().Handle(msgCs)
