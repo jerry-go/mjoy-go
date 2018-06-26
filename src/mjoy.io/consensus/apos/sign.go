@@ -71,7 +71,7 @@ type signValue interface {
 
 func (s *Signature) checkObj() {
 	if s.R == nil || s.S == nil || s.V == nil {
-		panic(fmt.Errorf("signature obj is not initialized"))
+		panic(fmt.Errorf("Signature obj is not initialized"))
 	}
 }
 
@@ -79,7 +79,7 @@ func (s *Signature) get(sig []byte) (err error) {
 	s.checkObj()
 
 	if len(sig) != 65 {
-		return errors.New(fmt.Sprintf("wrong size for signature: got %d, want 65", len(sig)))
+		return errors.New(fmt.Sprintf("wrong size for Signature: got %d, want 65", len(sig)))
 	} else {
 		s.R.IntVal.SetBytes(sig[:32])
 		s.S.IntVal.SetBytes(sig[32:64])
@@ -107,7 +107,7 @@ func (s Signature) toBytes() (sig []byte) {
 
 	vb := byte(V.IntVal.Uint64())
 	if !crypto.ValidateSignatureValues(vb, &s.R.IntVal, &s.S.IntVal, true) {
-		logger.Debugf("invalid signature\n")
+		logger.Debugf("invalid Signature\n")
 		return nil
 	}
 
@@ -196,9 +196,15 @@ func (cret *CredentialSign) hash() types.Hash {
 // ephemeral key singer
 type EphemeralSign struct {
 	Signature
-	round  		*uint64		// round
-	step   		*uint64		// step
+	round  		uint64		// round
+	step   		uint64		// step
 	val		    []byte		// Val = Hash(B), or Val = 0, or Val = 1
+}
+
+type EphemeralSigForHash struct {
+	Round  		uint64		// round
+	Step   		uint64		// step
+	Val		    []byte		// Val = Hash(B), or Val = 0, or Val = 1
 }
 
 func (esig *EphemeralSign) sign(prv *ecdsa.PrivateKey) (R *types.BigInt, S *types.BigInt, V *types.BigInt, err error) {
@@ -248,7 +254,15 @@ func (esig *EphemeralSign) sender() (types.Address, error) {
 }
 
 func (esig *EphemeralSign) hash() types.Hash {
-	hash, err := common.MsgpHash(esig)
+	if esig.val == nil {
+		panic(fmt.Errorf("EphemeralSign obj is not initialized"))
+	}
+	eisgforhash := EphemeralSigForHash{
+		esig.round,
+		esig.step,
+		esig.val,
+	}
+	hash, err := common.MsgpHash(eisgforhash)
 	if err != nil {
 		return types.Hash{}
 	}
