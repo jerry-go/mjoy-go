@@ -809,12 +809,17 @@ func (z *M1) DecodeMsg(dc *msgp.Reader) (err error) {
 				z.Credential = nil
 			} else {
 				if z.Credential == nil {
-					z.Credential = new(CredentialSig)
+					z.Credential = new(CredentialSign)
 				}
 				err = z.Credential.DecodeMsg(dc)
 				if err != nil {
 					return
 				}
+			}
+		case "CredentialSig":
+			err = z.CredentialSig.DecodeMsg(dc)
+			if err != nil {
+				return
 			}
 		default:
 			err = dc.Skip()
@@ -828,9 +833,9 @@ func (z *M1) DecodeMsg(dc *msgp.Reader) (err error) {
 
 // EncodeMsg implements msgp.Encodable
 func (z *M1) EncodeMsg(en *msgp.Writer) (err error) {
-	// map header, size 3
+	// map header, size 4
 	// write "Block"
-	err = en.Append(0x83, 0xa5, 0x42, 0x6c, 0x6f, 0x63, 0x6b)
+	err = en.Append(0x84, 0xa5, 0x42, 0x6c, 0x6f, 0x63, 0x6b)
 	if err != nil {
 		return
 	}
@@ -870,15 +875,24 @@ func (z *M1) EncodeMsg(en *msgp.Writer) (err error) {
 			return
 		}
 	}
+	// write "CredentialSig"
+	err = en.Append(0xad, 0x43, 0x72, 0x65, 0x64, 0x65, 0x6e, 0x74, 0x69, 0x61, 0x6c, 0x53, 0x69, 0x67)
+	if err != nil {
+		return
+	}
+	err = z.CredentialSig.EncodeMsg(en)
+	if err != nil {
+		return
+	}
 	return
 }
 
 // MarshalMsg implements msgp.Marshaler
 func (z *M1) MarshalMsg(b []byte) (o []byte, err error) {
 	o = msgp.Require(b, z.Msgsize())
-	// map header, size 3
+	// map header, size 4
 	// string "Block"
-	o = append(o, 0x83, 0xa5, 0x42, 0x6c, 0x6f, 0x63, 0x6b)
+	o = append(o, 0x84, 0xa5, 0x42, 0x6c, 0x6f, 0x63, 0x6b)
 	if z.Block == nil {
 		o = msgp.AppendNil(o)
 	} else {
@@ -899,6 +913,12 @@ func (z *M1) MarshalMsg(b []byte) (o []byte, err error) {
 		if err != nil {
 			return
 		}
+	}
+	// string "CredentialSig"
+	o = append(o, 0xad, 0x43, 0x72, 0x65, 0x64, 0x65, 0x6e, 0x74, 0x69, 0x61, 0x6c, 0x53, 0x69, 0x67)
+	o, err = z.CredentialSig.MarshalMsg(o)
+	if err != nil {
+		return
 	}
 	return
 }
@@ -949,12 +969,17 @@ func (z *M1) UnmarshalMsg(bts []byte) (o []byte, err error) {
 				z.Credential = nil
 			} else {
 				if z.Credential == nil {
-					z.Credential = new(CredentialSig)
+					z.Credential = new(CredentialSign)
 				}
 				bts, err = z.Credential.UnmarshalMsg(bts)
 				if err != nil {
 					return
 				}
+			}
+		case "CredentialSig":
+			bts, err = z.CredentialSig.UnmarshalMsg(bts)
+			if err != nil {
+				return
 			}
 		default:
 			bts, err = msgp.Skip(bts)
@@ -981,6 +1006,7 @@ func (z *M1) Msgsize() (s int) {
 	} else {
 		s += z.Credential.Msgsize()
 	}
+	s += 14 + z.CredentialSig.Msgsize()
 	return
 }
 

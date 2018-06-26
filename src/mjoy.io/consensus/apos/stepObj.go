@@ -9,6 +9,12 @@ import (
 	"container/heap"
 )
 
+
+var (
+	LessTimeDelayFlag bool = false  //let step spend less time to deal msg received
+	LessTimeDelayCnt int = 5
+)
+
 //step 1
 type stepObj1 struct {
 	lock sync.RWMutex
@@ -34,15 +40,34 @@ func (this *stepObj1)getTTL()time.Duration{
 
 func (this *stepObj1)timerHandle(){
 	//new a M1 data
-	m1 := new(M1)
+	m1 := new(BlockProposal)
+
 
 	m1.Credential = this.ctx.getCredential()
 	m1.Block = this.ctx.makeEmptyBlockForTest(m1.Credential)
-	m1.Esig = this.ctx.esig(m1.Block.Hash())
+
+	m1.Esig.round = m1.Credential.Round
+	m1.Esig.step = 1
+	m1.Esig.val = make([]byte,0)
+	h := m1.Block.Hash()
+	m1.Esig.val = append(m1.Esig.val , h[:]...)
+	R,S,V := this.ctx.esig(m1.Block.Hash())
+	m1.Esig.Signature.R = new(types.BigInt)
+	m1.Esig.Signature.R.IntVal = *R
+
+	m1.Esig.Signature.S = new(types.BigInt)
+	m1.Esig.Signature.S.IntVal = *S
+
+	m1.Esig.Signature.V = new(types.BigInt)
+	m1.Esig.Signature.V.IntVal = *V
+
 	//fill struct members
 	//todo: should using interface
 	this.ctx.sendInner(m1)
 	logger.Debug(COLOR_PREFIX+COLOR_FRONT_RED+COLOR_SUFFIX,"[A]Out M1",COLOR_SHORT_RESET)
+
+
+
 
 	go func(this *stepObj1){
 		this.stopCh<-1
@@ -61,7 +86,7 @@ func (this *stepObj1)stopHandle(){
 
 //step 2
 type stepObj2 struct {
-	smallestLBr *M1 //this node regard smallestLBr as the smallest credential's block info
+	smallestLBr *BlockProposal //this node regard smallestLBr as the smallest credential's block info
 	lock sync.RWMutex
 	ctx *stepCtx
 	timeEnd time.Duration
@@ -84,20 +109,34 @@ func (this *stepObj2)getTTL()time.Duration{
 }
 
 func (this *stepObj2)timerHandle(){
-	m2 := new(M23)
+	m2 := new(GradedConsensus)
 	m2.Credential = this.ctx.getCredential()
 
 	if this.smallestLBr == nil {
 		m2.Hash = types.Hash{}
-		logger.Error(COLOR_PREFIX+COLOR_FRONT_RED+COLOR_SUFFIX,"[A]Step:",this.ctx.getCredential().Step.IntVal.Int64(),"Out M2 By a EmptyHash",COLOR_SHORT_RESET)
+		logger.Error(COLOR_PREFIX+COLOR_FRONT_RED+COLOR_SUFFIX,"[A]Step:",this.ctx.getCredential().Step,"Out M2 By a EmptyHash",COLOR_SHORT_RESET)
 	}else{
 		m2.Hash = this.smallestLBr.Block.Hash()
 	}
 
-	sigBytes := this.ctx.esig(m2.Hash)
-	m2.Esig = append(m2.Esig , sigBytes...)
+	m2.Esig.round = m2.Credential.Round
+	m2.Esig.step = m2.Credential.Step
+	m2.Esig.val = make([]byte , 0)
+	m2.Esig.val = append(m2.Esig.val , m2.Hash[:]...)
+
+	R,S,V := this.ctx.esig(m2.Hash)
+
+	m2.Esig.Signature.R = new(types.BigInt)
+	m2.Esig.Signature.R.IntVal = *R
+
+	m2.Esig.Signature.S = new(types.BigInt)
+	m2.Esig.Signature.S.IntVal = *S
+
+	m2.Esig.Signature.V = new(types.BigInt)
+	m2.Esig.Signature.V.IntVal = *V
+
 	this.ctx.sendInner(m2)
-	logger.Debug(COLOR_PREFIX+COLOR_FRONT_RED+COLOR_SUFFIX,"[A]Step:",this.ctx.getCredential().Step.IntVal.Int64(),"Out M2",COLOR_SHORT_RESET)
+	logger.Debug(COLOR_PREFIX+COLOR_FRONT_RED+COLOR_SUFFIX,"[A]Step:",this.ctx.getCredential().Step,"Out M2",COLOR_SHORT_RESET)
 	//turn to stop
 	go func(this *stepObj2){
 		this.stopCh<-1
@@ -105,9 +144,9 @@ func (this *stepObj2)timerHandle(){
 }
 
 func (this *stepObj2)dataHandle(data interface{}){
-	logger.Debug(COLOR_PREFIX+COLOR_FRONT_RED+COLOR_SUFFIX,"[A]Step:",this.ctx.getCredential().Step.IntVal.Int64(),"In M1",COLOR_SHORT_RESET)
-	m1 := new(M1)
-	m1 = data.(*M1)
+	logger.Debug(COLOR_PREFIX+COLOR_FRONT_RED+COLOR_SUFFIX,"[A]Step:",this.ctx.getCredential().Step,"In M1",COLOR_SHORT_RESET)
+	m1 := new(BlockProposal)
+	m1 = data.(*BlockProposal)
 
 	if m1 == nil{
 		return
@@ -183,14 +222,28 @@ func (this *stepObj3)timerHandle(){
 	}
 	//pack m3 Data
 
-	m3 := new(M23)
+	m3 := new(GradedConsensus)
 	m3.Credential = this.ctx.getCredential()
 
 	m3.Hash = v
-	sigBytes := this.ctx.esig(m3.Hash)
-	m3.Esig = append(m3.Esig , sigBytes...)
+	m3.Esig.round = m3.Credential.Round
+	m3.Esig.step = m3.Credential.Step
+	m3.Esig.val = make([]byte , 0)
+	m3.Esig.val = append(m3.Esig.val , m3.Hash[:]...)
+
+	R,S,V := this.ctx.esig(m3.Hash)
+
+	m3.Esig.R = new(types.BigInt)
+	m3.Esig.R.IntVal = *R
+
+	m3.Esig.S = new(types.BigInt)
+	m3.Esig.S.IntVal = *S
+
+	m3.Esig.V = new(types.BigInt)
+	m3.Esig.V.IntVal = *V
+
 	this.ctx.sendInner(m3)
-	logger.Debug(COLOR_PREFIX+COLOR_FRONT_RED+COLOR_SUFFIX,"[A]Step:",this.ctx.getCredential().Step.IntVal.Int64(),"Out M3 ",v.String(),COLOR_SHORT_RESET)
+	logger.Debug(COLOR_PREFIX+COLOR_FRONT_RED+COLOR_SUFFIX,"[A]Step:",this.ctx.getCredential().Step,"Out M3 ",v.String(),COLOR_SHORT_RESET)
 	go func(this *stepObj3){
 		this.stopCh<-1
 	}(this)
@@ -200,12 +253,12 @@ func (this *stepObj3)dataHandle(data interface{}){
 	this.lock.Lock()
 	defer this.lock.Unlock()
 
-	m2 := new(M23)
-	m2 = data.(*M23)
+	m2 := new(GradedConsensus)
+	m2 = data.(*GradedConsensus)
 	if m2 == nil{
 		return
 	}
-	logger.Debug(COLOR_PREFIX+COLOR_FRONT_RED+COLOR_SUFFIX,"[A]Step:",this.ctx.getCredential().Step.IntVal.Int64(),"In M2",m2.Hash.String(),COLOR_SHORT_RESET)
+	logger.Debug(COLOR_PREFIX+COLOR_FRONT_RED+COLOR_SUFFIX,"[A]Step:",this.ctx.getCredential().Step,"In M2",m2.Hash.String(),COLOR_SHORT_RESET)
 	//add to IndexMap
 	var subIndex map[CredentialSigForKey]bool
 	subIndex = this.allM2Index[m2.Hash]
@@ -213,6 +266,7 @@ func (this *stepObj3)dataHandle(data interface{}){
 		this.allM2Index[m2.Hash] = make(map[CredentialSigForKey]bool)
 		subIndex = this.allM2Index[m2.Hash]
 	}
+
 	sigKey := *m2.Credential.ToCredentialSigKey()
 	if _ , ok := subIndex[sigKey];!ok{
 		subIndex[sigKey] = true
@@ -297,20 +351,37 @@ func (this *stepObj4)timerHandle(){
 	}
 
 	//pack m4 Data
-	m4 := new(MCommon)
+	m4 := new(BinaryByzantineAgreement)
 	m4.Hash = v
 	m4.B = uint(b)
 	m4.Credential = this.ctx.getCredential()
 
 	//b big.Int
-	h := types.BytesToHash(big.NewInt(int64(m4.B)).Bytes())
-	sigBytes := this.ctx.esig(h)
-	m4.EsigB = append(m4.EsigB,sigBytes...)
+	R,S,V := this.ctx.esig(types.BytesToHash(big.NewInt(int64(m4.B)).Bytes()))
+	m4.EsigB.R = new(types.BigInt)
+	m4.EsigB.R.IntVal = *R
+
+	m4.EsigB.S = new(types.BigInt)
+	m4.EsigB.R.IntVal = *S
+
+	m4.EsigB.V = new(types.BigInt)
+	m4.EsigB.V.IntVal = *V
+
+
 	//v
-	sigBytes = this.ctx.esig(m4.Hash)
-	m4.EsigV = append(m4.EsigV , sigBytes...)
+	R,S,V = this.ctx.esig(m4.Hash)
+	m4.EsigV.R = new(types.BigInt)
+	m4.EsigV.R.IntVal = *R
+
+	m4.EsigV.S = new(types.BigInt)
+	m4.EsigV.S.IntVal = *S
+
+	m4.EsigV.V = new(types.BigInt)
+	m4.EsigV.V.IntVal = *V
+
+
 	this.ctx.sendInner(m4)
-	logger.Debug(COLOR_PREFIX+COLOR_FRONT_RED+COLOR_SUFFIX,"[A]Step:",this.ctx.getCredential().Step.IntVal.Int64(),"Out M4",m4.Hash.String(),m4.B,COLOR_SHORT_RESET)
+	logger.Debug(COLOR_PREFIX+COLOR_FRONT_RED+COLOR_SUFFIX,"[A]Step:",this.ctx.getCredential().Step,"Out M4",m4.Hash.String(),m4.B,COLOR_SHORT_RESET)
 
 	go func(this *stepObj4){
 		this.stopCh<-1
@@ -321,13 +392,12 @@ func (this *stepObj4)timerHandle(){
 func (this *stepObj4)dataHandle(data interface{}){
 	this.lock.Lock()
 	defer this.lock.Unlock()
-
-	m3 := new(M23)
-	m3 = data.(*M23)
+	m3 := new(GradedConsensus)
+	m3 = data.(*GradedConsensus)
 	if m3 == nil{
 		return
 	}
-	logger.Debug(COLOR_PREFIX+COLOR_FRONT_RED+COLOR_SUFFIX,"[A]Step:",this.ctx.getCredential().Step.IntVal.Int64(),"In M3",m3.Hash.String(),COLOR_SHORT_RESET)
+	logger.Debug(COLOR_PREFIX+COLOR_FRONT_RED+COLOR_SUFFIX,"[A]Step:",this.ctx.getCredential().Step,"In M3",m3.Hash.String(),COLOR_SHORT_RESET)
 	//add to IndexMap
 	var subIndex map[CredentialSigForKey]bool
 	subIndex = this.allM2Index[m3.Hash]
@@ -422,7 +492,8 @@ func (this *stepObj567)timerHandle(){
 
 
 
-	mx := new(MCommon)
+	mx := new(BinaryByzantineAgreement)
+
 	//check 2/3 0 and 2/3 1
 	if max0Len * 3 > 2 * total {
 		mx.Hash = maxHash
@@ -483,15 +554,34 @@ func (this *stepObj567)timerHandle(){
 			}
 		}
 	}
-	h := types.BytesToHash(big.NewInt(int64(mx.B)).Bytes())
-	sigBytes := this.ctx.esig(h)
-	mx.EsigB = append(mx.EsigB , sigBytes...)
+
+
+	//b big.Int
+	R,S,V := this.ctx.esig(types.BytesToHash(big.NewInt(int64(mx.B)).Bytes()))
+	mx.EsigB.R = new(types.BigInt)
+	mx.EsigB.R.IntVal = *R
+
+	mx.EsigB.S = new(types.BigInt)
+	mx.EsigB.R.IntVal = *S
+
+	mx.EsigB.V = new(types.BigInt)
+	mx.EsigB.V.IntVal = *V
+
+
 	//v
-	sigBytes = this.ctx.esig(mx.Hash)
-	mx.EsigV = append(mx.EsigV , sigBytes...)
+	R,S,V = this.ctx.esig(mx.Hash)
+	mx.EsigV.R = new(types.BigInt)
+	mx.EsigV.R.IntVal = *R
+
+	mx.EsigV.S = new(types.BigInt)
+	mx.EsigV.S.IntVal = *S
+
+	mx.EsigV.V = new(types.BigInt)
+	mx.EsigV.V.IntVal = *V
+
 
 	this.ctx.sendInner(mx)
-	logger.Debug(COLOR_PREFIX+COLOR_FRONT_RED+COLOR_SUFFIX,"[A]Step:",this.ctx.getCredential().Step.IntVal.Int64(),"Out M",mx.Credential.Step.IntVal.Int64(),COLOR_SHORT_RESET)
+	logger.Debug(COLOR_PREFIX+COLOR_FRONT_RED+COLOR_SUFFIX,"[A]Step:",this.ctx.getCredential().Step,"Out M",mx.Credential.Step,COLOR_SHORT_RESET)
 
 	go func(this *stepObj567){
 		this.stopCh<-1
@@ -502,15 +592,14 @@ func (this *stepObj567)timerHandle(){
 func (this *stepObj567)dataHandle(data interface{}){
 	this.lock.Lock()
 	defer this.lock.Unlock()
-
-	m6 := new(MCommon)
-	m6 = data.(*MCommon)
+	m6 := new(BinaryByzantineAgreement)
+	m6 = data.(*BinaryByzantineAgreement)
 	if m6 == nil{
 		return
 	}
 	//add to IndexMap
 	//logger.Debug(COLOR_PREFIX+COLOR_FRONT_RED+COLOR_SUFFIX,"[A]Step:",this.pCredential.Step.IntVal.Int64(),"In M",m6.Credential.Step.IntVal.Int64(),COLOR_SHORT_RESET)
-	logger.Debug(COLOR_PREFIX+COLOR_FRONT_RED+COLOR_SUFFIX,"[A]Step:",this.ctx.getCredential().Step.IntVal.Int64(),"In M3 Hash:",m6.Hash.String(),"B:",m6.B,COLOR_SHORT_RESET)
+	logger.Debug(COLOR_PREFIX+COLOR_FRONT_RED+COLOR_SUFFIX,"[A]Step:",this.ctx.getCredential().Step,"In M3 Hash:",m6.Hash.String(),"B:",m6.B,COLOR_SHORT_RESET)
 	var subIndex *binaryStatus
 	subIndex = this.allMxIndex[m6.Hash]
 	if subIndex == nil {
@@ -558,18 +647,39 @@ func (this *stepObjm3)timerHandle(){
 	this.lock.Lock()
 	defer this.lock.Unlock()
 
-
-	m3 := new(MCommon)
+	m3 := new(BinaryByzantineAgreement)
 	//todo:should be H(Be)
 	m3.Hash = types.Hash{}
 	m3.B = 1
 	m3.Credential = this.ctx.getCredential()
-	h := types.BytesToHash(big.NewInt(int64(m3.B)).Bytes())
-	sigBytes := this.ctx.esig(h)
-	m3.EsigB = append(m3.EsigB , sigBytes...)
+
+	//b big.Int
+	R,S,V := this.ctx.esig(types.BytesToHash(big.NewInt(int64(m3.B)).Bytes()))
+	m3.EsigB.R = new(types.BigInt)
+	m3.EsigB.R.IntVal = *R
+
+	m3.EsigB.S = new(types.BigInt)
+	m3.EsigB.R.IntVal = *S
+
+	m3.EsigB.V = new(types.BigInt)
+	m3.EsigB.V.IntVal = *V
+
+
 	//v
-	sigBytes = this.ctx.esig(m3.Hash)
-	m3.EsigV = append(m3.EsigV , sigBytes...)
+	R,S,V = this.ctx.esig(m3.Hash)
+	m3.EsigV.R = new(types.BigInt)
+	m3.EsigV.R.IntVal = *R
+
+	m3.EsigV.S = new(types.BigInt)
+	m3.EsigV.S.IntVal = *S
+
+	m3.EsigV.V = new(types.BigInt)
+	m3.EsigV.V.IntVal = *V
+
+
+
+
+
 	this.ctx.sendInner(m3)
 
 	go func(this *stepObjm3){

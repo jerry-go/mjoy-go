@@ -55,7 +55,7 @@ type CommonTools interface {
 	SigVerify(hash types.Hash, sig *SignatureVal) (error)
 	Sender(hash types.Hash, sig *SignatureVal) (types.Address, error)
 
-	ESIG(hash types.Hash)([]byte)
+	ESIG(hash types.Hash)(R,S,V *big.Int)
 	ESigVerify(hash types.Hash, sig []byte) (error)
 	ESender(hash types.Hash, sig []byte) (types.Address, error)
 

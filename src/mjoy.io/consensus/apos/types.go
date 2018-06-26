@@ -213,7 +213,7 @@ func (this *binaryStatus)getCnt(b int)int{
 	return 0
 }
 
-func (this *binaryStatus)setToStatus(c CredentialSig , b int){
+func (this *binaryStatus)setToStatus(c CredentialSign , b int){
 	this.lock.Lock()
 	defer this.lock.Unlock()
 	ck := c.ToCredentialSigKey()
@@ -262,7 +262,8 @@ func (c *CredentialData) Hash() types.Hash {
 type M1 struct {
 	Block         *block.Block
 	Esig          []byte
-	Credential    *CredentialSig
+	Credential    *CredentialSign
+	CredentialSig
 }
 func (s *M1)GetMsgp()[]byte{
 	var buf bytes.Buffer

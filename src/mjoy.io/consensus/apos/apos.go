@@ -502,7 +502,7 @@ func NewApos(msger OutMsger ,cmTools CommonTools)*Apos{
 	return a
 }
 
-func (this *Apos)makeEmptyBlockForTest(cs *CredentialSig)*block.Block{
+func (this *Apos)makeEmptyBlockForTest(cs *CredentialSign)*block.Block{
 	header := &block.Header{Number:types.NewBigInt(*big.NewInt(int64(this.commonTools.GetNowBlockNum()))),Time:types.NewBigInt(*big.NewInt(time.Now().Unix()))}
 	//chainId := big.NewInt(100)
 	//signer := block.NewBlockSigner(chainId)

@@ -25,6 +25,7 @@ import (
 	"sync"
 	"mjoy.io/common/types"
 	"mjoy.io/core/blockchain/block"
+	"math/big"
 )
 
 type step interface {
@@ -122,12 +123,12 @@ type stepCtx struct {
 
 	//getCredential func() signature
 	//getEphemeralSig func(signed []byte) signature
-	esig func(hash types.Hash)([]byte)
+	esig func(hash types.Hash)(R,S,V *big.Int)
 	sendInner func(pack dataPack)error
 	propagateMsg func(dataPack)error
 	getCredential func()*CredentialSign
 	setRound func(*Round)
-	makeEmptyBlockForTest func(cs *CredentialSig)*block.Block
+	makeEmptyBlockForTest func(cs *CredentialSign)*block.Block
 	getEphemeralSig func(signed []byte) Signature
 
 }

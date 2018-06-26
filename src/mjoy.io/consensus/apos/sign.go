@@ -75,6 +75,19 @@ func (s *Signature) checkObj() {
 	}
 }
 
+func (s *Signature)hashBytes()[]byte{
+	srcBytes := s.toBytes()
+	h := crypto.Keccak256(srcBytes)
+	return h
+}
+
+func (s *Signature)hash()types.Hash{
+	srcBytes := s.toBytes()
+	h := crypto.Keccak256(srcBytes)
+	hash := types.Hash{}
+	copy(hash[:] , h)
+	return hash
+}
 func (s *Signature) get(sig []byte) (err error) {
 	s.checkObj()
 
@@ -131,6 +144,26 @@ type CredentialSigForHash struct {
 	Round  		uint64		// round
 	Step   		uint64		// step
 	Quantity    []byte		// quantity(seed, Qr-1)
+}
+
+func (a *CredentialSign)Cmp(b *CredentialSign)int{
+	h := a.Signature.hashBytes()
+	aInt := new(big.Int).SetBytes(h)
+
+	h = b.Signature.hashBytes()
+	bInt := new(big.Int).SetBytes(h)
+
+	return aInt.Cmp(bInt)
+}
+
+func (this *CredentialSign)ToCredentialSigKey()*CredentialSigForKey{
+	r := new(CredentialSigForKey)
+	r.Round = this.Round
+	r.Step  = this.Step
+	r.R     = this.R.IntVal.Uint64()
+	r.S     = this.S.IntVal.Uint64()
+	r.V     = this.V.IntVal.Uint64()
+	return r
 }
 
 func (cret *CredentialSign) sign(prv *ecdsa.PrivateKey) (R *types.BigInt, S *types.BigInt, V *types.BigInt, err error) {

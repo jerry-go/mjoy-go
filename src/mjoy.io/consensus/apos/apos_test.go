@@ -47,16 +47,16 @@ func TestRSV(t *testing.T){
 	vn := newVirtualNode(1,nil)
 
 	vnCredential := vn.makeCredential(2)
-	fmt.Println("round:",vnCredential.Round.IntVal.Int64() ,
-					"step:",vnCredential.Step.IntVal.Int64())
+	fmt.Println("round:",vnCredential.Round ,
+					"step:",vnCredential.Step)
 	//testStr := "testStr"
 	//h := types.BytesToHash([]byte(testStr))
 	//esig := vn.commonTools.ESIG(h)
 	//_ = esig
 	//
 	//cd := CredentialData{vnCredential.Round,vnCredential.Step, vn.commonTools.GetQr_k(1)}
-	cd := CredentialData{Round:types.BigInt{*big.NewInt(int64(vnCredential.Round.IntVal.Int64()))},Step:types.BigInt{*big.NewInt(int64(vnCredential.Step.IntVal.Int64()))},Quantity:vn.commonTools.GetQr_k(1)}
-	sig := &SignatureVal{&vnCredential.R, &vnCredential.S, &vnCredential.V}
+	cd := CredentialData{Round:types.BigInt{*big.NewInt(int64(vnCredential.Round))},Step:types.BigInt{*big.NewInt(int64(vnCredential.Step))},Quantity:vn.commonTools.GetQr_k(1)}
+	sig := &SignatureVal{vnCredential.R, vnCredential.S, vnCredential.V}
 
 	str := fmt.Sprintf("testHash")
 	hStr := types.BytesToHash([]byte(str))

@@ -41,11 +41,11 @@ func (this *outMsgManager)GetDataMsg()<-chan dataPack{
 	return this.msgRcvChan
 }
 
-func (this *outMsgManager)SendCredential(c *CredentialSig)error{
+func (this *outMsgManager)SendCredential(c *CredentialSign)error{
 	return nil
 }
 
-func (this *outMsgManager)PropagateCredential(c *CredentialSig)error{
+func (this *outMsgManager)PropagateCredential(c *CredentialSign)error{
 	return nil
 }
 
@@ -303,14 +303,19 @@ func (this *outCommonTools)Sender(h types.Hash , sig *SignatureVal)(types.Addres
 }
 
 
-func (this *outCommonTools)ESIG(hash types.Hash)([]byte){
+func (this *outCommonTools)ESIG(hash types.Hash)(R,S,V *big.Int){
 	sig , err := crypto.Sign(hash[:] , this.pri)
 	if err != nil{
 		logger.Errorf("outCommonTools ESIG:" , err.Error())
-		return nil
+		return nil,nil,nil
 	}
 
-	return sig
+	R,S,V,err = this.signer.SignatureValues(sig)
+	if err != nil{
+		logger.Error(err.Error())
+		R,S,V = nil,nil,nil
+	}
+	return
 }
 
 func (this *outCommonTools)ESigVerify(h types.Hash , sig []byte)error{

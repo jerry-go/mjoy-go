@@ -3,6 +3,7 @@ package apos
 import (
 	"mjoy.io/common/types"
 	"mjoy.io/core/blockchain/block"
+	"math/big"
 )
 
 type StepCtxInterface interface {
@@ -43,7 +44,7 @@ func makeStepCtxData(apos *Apos , pCredential *CredentialSig)*stepCtxData{
 
 
 
-func (this *stepCtxData) ESIG(h types.Hash) ([]byte) {
+func (this *stepCtxData) ESIG(h types.Hash) (R,S,V *big.Int) {
 	return this.apos.commonTools.ESIG(h)
 }
 
@@ -65,7 +66,7 @@ func (this *stepCtxData)SetRound(pRound *Round){
 	this.round = pRound
 }
 
-func (this *stepCtxData)makeEmptyBlockForTest(cs *CredentialSig)*block.Block{
+func (this *stepCtxData)makeEmptyBlockForTest(cs *CredentialSign)*block.Block{
 	return this.apos.makeEmptyBlockForTest(cs)
 }
 
