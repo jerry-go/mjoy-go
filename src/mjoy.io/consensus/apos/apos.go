@@ -29,6 +29,7 @@ import (
 	"errors"
 	"mjoy.io/core/blockchain/block"
 	"time"
+	"fmt"
 )
 
 const (
@@ -98,7 +99,7 @@ type Round struct {
 
 	credentials    map[int]*CredentialSig
 
-	allStepObj     map[int]stepInterface
+	allStepObj     map[int]*stepRoutine
 
 	smallestLBr    *M1
 	lock           sync.RWMutex
@@ -128,7 +129,7 @@ func (this *Round)init(round int , apos *Apos , roundOverCh chan interface{}){
 
 	// this.maxLeaderNum = this.apos.algoParam.maxLeaderNum
 	this.credentials = make(map[int]*CredentialSig)
-	this.allStepObj = make(map[int]stepInterface)
+	this.allStepObj = make(map[int]*stepRoutine)
 	this.leaders = make(map[types.Hash]*PotentialLeader)
 	this.quitCh = make(chan interface{} , 1)
 	this.msgs = make(map[types.Address]*peerMsgs)
@@ -141,7 +142,7 @@ func (this *Round)setSmallestBrM1(m *M1){
 	this.smallestLBr = m
 }
 
-func (this *Round)addStepObj(step int , stepObj stepInterface){
+func (this *Round)addStepObj(step int , stepObj *stepRoutine){
 	this.lock.Lock()
 	defer this.lock.Unlock()
 
@@ -181,10 +182,10 @@ func (this *Round)BroadcastCredentials() {
 
 func (this *Round)StartVerify(wg *sync.WaitGroup) {
 	for i, credential := range this.credentials {
-		stepObj := this.apos.stepsFactory(i, credential)
-		if stepObj != nil {
-			this.addStepObj(i, stepObj)
-			go stepObj.run(wg)
+		stepRoutineObj,stepObj := this.apos.stepsFactory(i, credential)
+		if stepRoutineObj != nil && stepObj != nil{
+			this.addStepObj(i, stepRoutineObj)
+			go stepRoutineObj.run(stepObj)
 		}
 	}
 }
@@ -298,7 +299,7 @@ func (this *Round)ReceiveM1(msg *M1) {
 
 	//send this msg to step2 goroutine
 	if stepObj, ok := this.allStepObj[2]; ok {
-		stepObj.sendMsg(msg, this)
+		stepObj.sendMsg(msg)
 	}
 
 	// for M1 Propagate process will in stepObj
@@ -366,7 +367,7 @@ func (this *Round)ReceiveM23(msg *M23) {
 
 	//send this msg to step3 or step4 goroutine
 	if stepObj, ok := this.allStepObj[int(step) + 1]; ok {
-		stepObj.sendMsg(msg, this)
+		stepObj.sendMsg(msg)
 	}
 
 	//Propagate message via p2p
@@ -482,9 +483,10 @@ func (this *Round)ReceiveMCommon(msg *MCommon) {
 
 	//send this msg to step other goroutine
 	if stepObj, ok := this.allStepObj[int(step) + 1]; ok {
-		stepObj.sendMsg(msg, this)
+		stepObj.sendMsg(msg)
+	}else{
+		fmt.Println("Not Find Obj in all step obj = " , step + 1)
 	}
-
 	//Propagate message via p2p
 	this.apos.outMsger.PropagateMsg(msg)
 
@@ -506,6 +508,7 @@ func (this *Round)CommonProcess() {
 		select {
 		// receive message
 		case outData := <-this.apos.outMsger.GetDataMsg():
+
 			switch v := outData.(type) {
 			case *CredentialSig:
 				this.ReceiveM0(v)
@@ -716,11 +719,9 @@ func (this *Apos)judgeVerifier(pCredentialSig *CredentialSig, setp int) bool{
 //}
 
 //now
-func (this *Apos)stepsFactory(step int , pCredential *CredentialSig)(stepObj stepInterface){
-	logger.Debug("Call New StepFactory...")
-	stepObj = nil
+func (this *Apos)stepsFactory(step int , pCredential *CredentialSig)(stepRoutineObj *stepRoutine , stepObj step){
 
-	stepCtx := makeStepContext()
+	stepCtx := makeStepCtx()
 	//GetCredential
 	stepCtx.getCredential = func() *CredentialSig {
 		return pCredential
@@ -728,34 +729,92 @@ func (this *Apos)stepsFactory(step int , pCredential *CredentialSig)(stepObj ste
 	stepCtx.esig = this.commonTools.ESIG
 	stepCtx.sendInner = this.outMsger.SendInner
 	stepCtx.propagateMsg = this.outMsger.PropagateMsg
+	stepCtx.getStep = func()int{
+		return step
+	}
+	stepRoutineObj = nil   // if anyWrong ,return a nil obj
+	stepObj = nil
 
 
 	switch step {
 	case 1:
+
+		stepRoutineObj = newStepRoutine()
 		stepCtx.makeEmptyBlockForTest = this.makeEmptyBlockForTest
 
-		//stepObj = makeStep1Obj(this,pCredential,step)
-		stepObj = makeStep1ObjLogic(step , stepCtx)
+		delayT := time.Duration(3)
+
+		stepObj = makeStepObj1(delayT*time.Second , stepRoutineObj.stopCh)
+		stepObj.setCtx(stepCtx)
+
+
 	case 2:
-		//stepObj = makeStep2Obj(this,pCredential,step)
-		stepObj = makeStep2ObjLogic(step , stepCtx)
+		stepRoutineObj = newStepRoutine()
+
+		delayT := time.Duration(Config().verifyDelay + Config().blockDelay)
+		if LessTimeDelayFlag{
+			delayT = time.Duration(LessTimeDelayCnt)
+		}
+
+
+		stepObj = makeStepObj2(delayT*time.Second , stepRoutineObj.stopCh)
+		stepObj.setCtx(stepCtx)
+
+
 	case 3:
-		//stepObj = makeStep3Obj(this,pCredential,step)
-		stepObj = makeStep3ObjLogic(step , stepCtx)
+		stepRoutineObj = newStepRoutine()
+
+		delayT := time.Duration(3*Config().verifyDelay + Config().blockDelay)
+		if LessTimeDelayFlag{
+			delayT = time.Duration(LessTimeDelayCnt)
+		}
+
+		stepObj = makeStepObj3(delayT*time.Second , stepRoutineObj.stopCh)
+		stepObj.setCtx(stepCtx)
+
 	case 4:
-		//stepObj = makeStep4Obj(this,pCredential,step)
-		stepObj = makeStep4ObjLogic(step , stepCtx)
+		stepRoutineObj = newStepRoutine()
+
+		delayT := time.Duration(5*Config().verifyDelay + Config().blockDelay)
+		if LessTimeDelayFlag{
+			delayT = time.Duration(LessTimeDelayCnt)
+		}
+
+		stepObj = makeStepObj4(delayT*time.Second , stepRoutineObj.stopCh)
+		stepObj.setCtx(stepCtx)
+
 
 	default:
+
 		if step > Config().maxBBASteps + 3{
-			stepObj = nil
+			stepRoutineObj = nil
+
 		}else if (step >= 5 && step <= (Config().maxBBASteps + 2)) {
-			//stepObj = makeStep567Obj(this,pCredential,step)
-			stepObj = makeStep567ObjLogic(step , stepCtx)
+			stepRoutineObj = newStepRoutine()
+
+			delayT := time.Duration((2*step -3)*Config().verifyDelay + Config().blockDelay)
+			if LessTimeDelayFlag{
+				delayT = time.Duration(LessTimeDelayCnt)
+			}
+
+			stepObj = makeStepObj567(delayT*time.Second , stepRoutineObj.stopCh)
+			stepObj.setCtx(stepCtx)
+
+
 		}else if (step == (Config().maxBBASteps + 3)){
 			//stepObj = makeStepm3Obj(this,pCredential,step)
-			stepObj = makeStepm3ObjLogic(step , stepCtx)
+			stepRoutineObj = newStepRoutine()
+
+			delayT := time.Duration((2*Config().maxBBASteps + 3)*Config().verifyDelay + Config().blockDelay)
+			if LessTimeDelayFlag{
+				delayT = time.Duration(LessTimeDelayCnt)
+			}
+
+			stepObj = makeStepObjm3(delayT*time.Second , stepRoutineObj.stopCh)
+			stepObj.setCtx(stepCtx)
+
 		}else{
+			stepRoutineObj = nil
 			stepObj = nil
 		}
 	}

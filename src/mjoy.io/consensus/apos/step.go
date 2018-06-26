@@ -23,20 +23,22 @@ package apos
 import (
 	"time"
 	"sync"
+	"mjoy.io/common/types"
+	"mjoy.io/core/blockchain/block"
 )
 
 type step interface {
 	setCtx(ctx *stepCtx)         // set the context of step
 	getTTL() time.Duration       // get the ttl of step
-	timerHandle()
-	dataHandle(data interface{})
-	stopHandle()
+	timerHandle()               //timerout handle when time's up
+	dataHandle(data interface{})    //data handle when data in
+	stopHandle()                //deal the last work
 }
 
 // the routine of step
 type stepRoutine struct {
 	inputCh chan interface{}
-	stopCh  chan struct{}
+	stopCh  chan interface{}
 	timer   *time.Timer
 	s       step
 	wg     *sync.WaitGroup
@@ -45,21 +47,32 @@ type stepRoutine struct {
 func newStepRoutine() *stepRoutine {
 	return &stepRoutine{
 		make(chan interface{}),
-		make(chan struct{}),
+		make(chan interface{}),
 		nil,
 		nil,
 		&sync.WaitGroup{},
 	}
 }
 
+func (sr *stepRoutine)setStep(s step){
+	sr.s = s
+}
+
 func (sr *stepRoutine) reset() {
-	sr.inputCh = make(chan interface{})
-	sr.stopCh = make(chan struct{})
+	sr.inputCh = make(chan interface{} , 100)
+	sr.stopCh = make(chan interface{})
 	sr.timer = nil
 	sr.s = nil
 	sr.wg =  &sync.WaitGroup{}
 }
 
+//func (sr *stepRoutine)sendMsg(dataPack,*Round) error{
+//
+//}
+func (sr *stepRoutine)sendMsg(dp dataPack)error{
+	sr.inputCh<-dp
+	return nil
+}
 // run the routine of step
 func (sr *stepRoutine) run(s step) {
 	sr.s = s
@@ -72,12 +85,10 @@ func (sr *stepRoutine) run(s step) {
 		}()
 
 		// start timer
-		sr.timer = time.NewTimer(0)
-		<-sr.timer.C
+		timeDelay := sr.s.getTTL()
+		sr.timer = time.NewTimer(timeDelay)
 		defer sr.timer.Stop()
-		if sr.s.getTTL() != 0 {
-			sr.timer.Reset(sr.s.getTTL() * time.Second)
-		}
+
 		for {
 			select {
 			case data := <-sr.inputCh:
@@ -103,13 +114,25 @@ func (sr *stepRoutine) stop() {
 	sr.wg.Wait()
 }
 
+//stepCtx contains all functions the stepObj will use
 type stepCtx struct {
 	getStep   func() int	// get the number of step in the round
 	stopStep  func()        // stop the step
 	stopRound func()		// stop all the step in the round, and end the round
-	getCredential func() signature
-	getEphemeralSig func(signed []byte) signature
+	//getCredential func() signature
+	//getEphemeralSig func(signed []byte) signature
+	esig func(hash types.Hash)([]byte)
+	sendInner func(pack dataPack)error
+	propagateMsg func(dataPack)error
+	getCredential func()*CredentialSig
+	setRound func(*Round)
+	makeEmptyBlockForTest func(cs *CredentialSig)*block.Block
+
 }
 
+func makeStepCtx()*stepCtx{
+	s := new(stepCtx)
+	return s
+}
 
 
