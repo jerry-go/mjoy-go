@@ -478,7 +478,7 @@ type Apos struct {
 
 
 	roundCtx      *Round
-	validate      *MsgValidator
+
 	roundOverCh   chan interface{}
 	aposStopCh    chan interface{}  //for test if apos just deal once
 	stop bool
@@ -496,8 +496,6 @@ func NewApos(msger OutMsger ,cmTools CommonTools)*Apos{
 	a.aposStopCh = make(chan interface{} , 1)
 
 	a.reset()
-
-	a.validate = NewMsgValidator(a,false)
 
 	return a
 }
