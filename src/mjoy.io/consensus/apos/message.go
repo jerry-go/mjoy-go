@@ -29,11 +29,11 @@ import (
 //go:generate msgp
 
 type msgCredentialSig struct {
-	cs    *Credential
+	cs    *CredentialSig
 	*message.MsgPriv
 }
 
-func NewMsgCredential(c *Credential) *msgCredentialSig{
+func NewMsgCredential(c *CredentialSig) *msgCredentialSig{
 	msgCs := &msgCredentialSig{
 		cs:      c,
 		MsgPriv: message.NewMsgPriv(),
@@ -54,8 +54,8 @@ func (tm *msgCredentialSig) StopHandle() {
 // m(r,1) = (Br, esig(H(Br)), σr1)
 type BlockProposal struct {
 	Block         *block.Block
-	Esig          Signature
-	Credential    *Credential
+	Esig          *EphemeralSign
+	Credential    *CredentialSign
 }
 type msgBlockProposal struct {
 	bp    *BlockProposal
@@ -88,8 +88,8 @@ func (tm *msgBlockProposal) StopHandle() {
 type GradedConsensus struct {
 	//hash is v′, the hash of the next block
 	Hash          types.Hash    //the Br's hash
-	Esig          Signature     //the signature of somebody's ephemeral secret key
-	Credential    *Credential
+	Esig          *EphemeralSign     //the signature of somebody's ephemeral secret key
+	Credential    *CredentialSign
 }
 
 type msgGradedConsensus struct {
@@ -119,11 +119,11 @@ func (tm *msgGradedConsensus) StopHandle() {
 type BinaryByzantineAgreement struct {
 	//B is the BBA⋆ input b, 0 or 1
 	B             uint
-	EsigB         Signature
+	EsigB         *EphemeralSign
 	//hash is v′, the hash of the next block
 	Hash          types.Hash
-	EsigV         Signature
-	Credential    *Credential
+	EsigV         *EphemeralSign
+	Credential    *CredentialSign
 }
 
 type msgBinaryByzantineAgreement struct {

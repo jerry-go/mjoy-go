@@ -11,8 +11,8 @@ import (
 	"github.com/tinylib/msgp/msgp"
 )
 
-func TestMarshalUnmarshalCredential(t *testing.T) {
-	v := Credential{}
+func TestMarshalUnmarshalCredentialSigForHash(t *testing.T) {
+	v := CredentialSigForHash{}
 	bts, err := v.MarshalMsg(nil)
 	if err != nil {
 		t.Fatal(err)
@@ -34,8 +34,8 @@ func TestMarshalUnmarshalCredential(t *testing.T) {
 	}
 }
 
-func BenchmarkMarshalMsgCredential(b *testing.B) {
-	v := Credential{}
+func BenchmarkMarshalMsgCredentialSigForHash(b *testing.B) {
+	v := CredentialSigForHash{}
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -43,8 +43,8 @@ func BenchmarkMarshalMsgCredential(b *testing.B) {
 	}
 }
 
-func BenchmarkAppendMsgCredential(b *testing.B) {
-	v := Credential{}
+func BenchmarkAppendMsgCredentialSigForHash(b *testing.B) {
+	v := CredentialSigForHash{}
 	bts := make([]byte, 0, v.Msgsize())
 	bts, _ = v.MarshalMsg(bts[0:0])
 	b.SetBytes(int64(len(bts)))
@@ -55,8 +55,8 @@ func BenchmarkAppendMsgCredential(b *testing.B) {
 	}
 }
 
-func BenchmarkUnmarshalCredential(b *testing.B) {
-	v := Credential{}
+func BenchmarkUnmarshalCredentialSigForHash(b *testing.B) {
+	v := CredentialSigForHash{}
 	bts, _ := v.MarshalMsg(nil)
 	b.ReportAllocs()
 	b.SetBytes(int64(len(bts)))
@@ -69,8 +69,8 @@ func BenchmarkUnmarshalCredential(b *testing.B) {
 	}
 }
 
-func TestEncodeDecodeCredential(t *testing.T) {
-	v := Credential{}
+func TestEncodeDecodeCredentialSigForHash(t *testing.T) {
+	v := CredentialSigForHash{}
 	var buf bytes.Buffer
 	msgp.Encode(&buf, &v)
 
@@ -79,7 +79,7 @@ func TestEncodeDecodeCredential(t *testing.T) {
 		t.Logf("WARNING: Msgsize() for %v is inaccurate", v)
 	}
 
-	vn := Credential{}
+	vn := CredentialSigForHash{}
 	err := msgp.Decode(&buf, &vn)
 	if err != nil {
 		t.Error(err)
@@ -93,8 +93,8 @@ func TestEncodeDecodeCredential(t *testing.T) {
 	}
 }
 
-func BenchmarkEncodeCredential(b *testing.B) {
-	v := Credential{}
+func BenchmarkEncodeCredentialSigForHash(b *testing.B) {
+	v := CredentialSigForHash{}
 	var buf bytes.Buffer
 	msgp.Encode(&buf, &v)
 	b.SetBytes(int64(buf.Len()))
@@ -107,8 +107,8 @@ func BenchmarkEncodeCredential(b *testing.B) {
 	en.Flush()
 }
 
-func BenchmarkDecodeCredential(b *testing.B) {
-	v := Credential{}
+func BenchmarkDecodeCredentialSigForHash(b *testing.B) {
+	v := CredentialSigForHash{}
 	var buf bytes.Buffer
 	msgp.Encode(&buf, &v)
 	b.SetBytes(int64(buf.Len()))
@@ -124,8 +124,8 @@ func BenchmarkDecodeCredential(b *testing.B) {
 	}
 }
 
-func TestMarshalUnmarshalCredentialForHash(t *testing.T) {
-	v := CredentialForHash{}
+func TestMarshalUnmarshalCredentialSign(t *testing.T) {
+	v := CredentialSign{}
 	bts, err := v.MarshalMsg(nil)
 	if err != nil {
 		t.Fatal(err)
@@ -147,8 +147,8 @@ func TestMarshalUnmarshalCredentialForHash(t *testing.T) {
 	}
 }
 
-func BenchmarkMarshalMsgCredentialForHash(b *testing.B) {
-	v := CredentialForHash{}
+func BenchmarkMarshalMsgCredentialSign(b *testing.B) {
+	v := CredentialSign{}
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -156,8 +156,8 @@ func BenchmarkMarshalMsgCredentialForHash(b *testing.B) {
 	}
 }
 
-func BenchmarkAppendMsgCredentialForHash(b *testing.B) {
-	v := CredentialForHash{}
+func BenchmarkAppendMsgCredentialSign(b *testing.B) {
+	v := CredentialSign{}
 	bts := make([]byte, 0, v.Msgsize())
 	bts, _ = v.MarshalMsg(bts[0:0])
 	b.SetBytes(int64(len(bts)))
@@ -168,8 +168,8 @@ func BenchmarkAppendMsgCredentialForHash(b *testing.B) {
 	}
 }
 
-func BenchmarkUnmarshalCredentialForHash(b *testing.B) {
-	v := CredentialForHash{}
+func BenchmarkUnmarshalCredentialSign(b *testing.B) {
+	v := CredentialSign{}
 	bts, _ := v.MarshalMsg(nil)
 	b.ReportAllocs()
 	b.SetBytes(int64(len(bts)))
@@ -182,8 +182,8 @@ func BenchmarkUnmarshalCredentialForHash(b *testing.B) {
 	}
 }
 
-func TestEncodeDecodeCredentialForHash(t *testing.T) {
-	v := CredentialForHash{}
+func TestEncodeDecodeCredentialSign(t *testing.T) {
+	v := CredentialSign{}
 	var buf bytes.Buffer
 	msgp.Encode(&buf, &v)
 
@@ -192,7 +192,7 @@ func TestEncodeDecodeCredentialForHash(t *testing.T) {
 		t.Logf("WARNING: Msgsize() for %v is inaccurate", v)
 	}
 
-	vn := CredentialForHash{}
+	vn := CredentialSign{}
 	err := msgp.Decode(&buf, &vn)
 	if err != nil {
 		t.Error(err)
@@ -206,8 +206,8 @@ func TestEncodeDecodeCredentialForHash(t *testing.T) {
 	}
 }
 
-func BenchmarkEncodeCredentialForHash(b *testing.B) {
-	v := CredentialForHash{}
+func BenchmarkEncodeCredentialSign(b *testing.B) {
+	v := CredentialSign{}
 	var buf bytes.Buffer
 	msgp.Encode(&buf, &v)
 	b.SetBytes(int64(buf.Len()))
@@ -220,8 +220,8 @@ func BenchmarkEncodeCredentialForHash(b *testing.B) {
 	en.Flush()
 }
 
-func BenchmarkDecodeCredentialForHash(b *testing.B) {
-	v := CredentialForHash{}
+func BenchmarkDecodeCredentialSign(b *testing.B) {
+	v := CredentialSign{}
 	var buf bytes.Buffer
 	msgp.Encode(&buf, &v)
 	b.SetBytes(int64(buf.Len()))
@@ -237,8 +237,8 @@ func BenchmarkDecodeCredentialForHash(b *testing.B) {
 	}
 }
 
-func TestMarshalUnmarshalEphemeralSig(t *testing.T) {
-	v := EphemeralSig{}
+func TestMarshalUnmarshalEphemeralSign(t *testing.T) {
+	v := EphemeralSign{}
 	bts, err := v.MarshalMsg(nil)
 	if err != nil {
 		t.Fatal(err)
@@ -260,8 +260,8 @@ func TestMarshalUnmarshalEphemeralSig(t *testing.T) {
 	}
 }
 
-func BenchmarkMarshalMsgEphemeralSig(b *testing.B) {
-	v := EphemeralSig{}
+func BenchmarkMarshalMsgEphemeralSign(b *testing.B) {
+	v := EphemeralSign{}
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -269,8 +269,8 @@ func BenchmarkMarshalMsgEphemeralSig(b *testing.B) {
 	}
 }
 
-func BenchmarkAppendMsgEphemeralSig(b *testing.B) {
-	v := EphemeralSig{}
+func BenchmarkAppendMsgEphemeralSign(b *testing.B) {
+	v := EphemeralSign{}
 	bts := make([]byte, 0, v.Msgsize())
 	bts, _ = v.MarshalMsg(bts[0:0])
 	b.SetBytes(int64(len(bts)))
@@ -281,8 +281,8 @@ func BenchmarkAppendMsgEphemeralSig(b *testing.B) {
 	}
 }
 
-func BenchmarkUnmarshalEphemeralSig(b *testing.B) {
-	v := EphemeralSig{}
+func BenchmarkUnmarshalEphemeralSign(b *testing.B) {
+	v := EphemeralSign{}
 	bts, _ := v.MarshalMsg(nil)
 	b.ReportAllocs()
 	b.SetBytes(int64(len(bts)))
@@ -295,8 +295,8 @@ func BenchmarkUnmarshalEphemeralSig(b *testing.B) {
 	}
 }
 
-func TestEncodeDecodeEphemeralSig(t *testing.T) {
-	v := EphemeralSig{}
+func TestEncodeDecodeEphemeralSign(t *testing.T) {
+	v := EphemeralSign{}
 	var buf bytes.Buffer
 	msgp.Encode(&buf, &v)
 
@@ -305,7 +305,7 @@ func TestEncodeDecodeEphemeralSig(t *testing.T) {
 		t.Logf("WARNING: Msgsize() for %v is inaccurate", v)
 	}
 
-	vn := EphemeralSig{}
+	vn := EphemeralSign{}
 	err := msgp.Decode(&buf, &vn)
 	if err != nil {
 		t.Error(err)
@@ -319,8 +319,8 @@ func TestEncodeDecodeEphemeralSig(t *testing.T) {
 	}
 }
 
-func BenchmarkEncodeEphemeralSig(b *testing.B) {
-	v := EphemeralSig{}
+func BenchmarkEncodeEphemeralSign(b *testing.B) {
+	v := EphemeralSign{}
 	var buf bytes.Buffer
 	msgp.Encode(&buf, &v)
 	b.SetBytes(int64(buf.Len()))
@@ -333,8 +333,8 @@ func BenchmarkEncodeEphemeralSig(b *testing.B) {
 	en.Flush()
 }
 
-func BenchmarkDecodeEphemeralSig(b *testing.B) {
-	v := EphemeralSig{}
+func BenchmarkDecodeEphemeralSign(b *testing.B) {
+	v := EphemeralSign{}
 	var buf bytes.Buffer
 	msgp.Encode(&buf, &v)
 	b.SetBytes(int64(buf.Len()))
