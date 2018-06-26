@@ -128,8 +128,9 @@ type CredentialSign struct {
 }
 
 type CredentialSigForHash struct {
-	CredentialSign
-	Quantity       []byte		// quantity(seed, Qr-1)
+	Round  		uint64		// round
+	Step   		uint64		// step
+	Quantity    []byte		// quantity(seed, Qr-1)
 }
 
 func (cret *CredentialSign) sign(prv *ecdsa.PrivateKey) (R *types.BigInt, S *types.BigInt, V *types.BigInt, err error) {
@@ -180,7 +181,8 @@ func (cret *CredentialSign) sender() (types.Address, error) {
 
 func (cret *CredentialSign) hash() types.Hash {
 	cretforhash := CredentialSigForHash{
-		*cret,
+		cret.Round,
+		cret.Step,
 		[]byte{0},	// TODO: to get Quantity !!!!!!!!!!!!!!! need to implement a global function(round)
 	}
 	hash, err := common.MsgpHash(cretforhash)

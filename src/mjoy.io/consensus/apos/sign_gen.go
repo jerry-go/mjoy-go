@@ -25,40 +25,15 @@ func (z *CredentialSigForHash) DecodeMsg(dc *msgp.Reader) (err error) {
 			return
 		}
 		switch msgp.UnsafeString(field) {
-		case "CredentialSign":
-			var zb0002 uint32
-			zb0002, err = dc.ReadMapHeader()
+		case "Round":
+			z.Round, err = dc.ReadUint64()
 			if err != nil {
 				return
 			}
-			for zb0002 > 0 {
-				zb0002--
-				field, err = dc.ReadMapKeyPtr()
-				if err != nil {
-					return
-				}
-				switch msgp.UnsafeString(field) {
-				case "Signature":
-					err = z.CredentialSign.Signature.DecodeMsg(dc)
-					if err != nil {
-						return
-					}
-				case "Round":
-					z.CredentialSign.Round, err = dc.ReadUint64()
-					if err != nil {
-						return
-					}
-				case "Step":
-					z.CredentialSign.Step, err = dc.ReadUint64()
-					if err != nil {
-						return
-					}
-				default:
-					err = dc.Skip()
-					if err != nil {
-						return
-					}
-				}
+		case "Step":
+			z.Step, err = dc.ReadUint64()
+			if err != nil {
+				return
 			}
 		case "Quantity":
 			z.Quantity, err = dc.ReadBytes(z.Quantity)
@@ -77,24 +52,13 @@ func (z *CredentialSigForHash) DecodeMsg(dc *msgp.Reader) (err error) {
 
 // EncodeMsg implements msgp.Encodable
 func (z *CredentialSigForHash) EncodeMsg(en *msgp.Writer) (err error) {
-	// map header, size 2
-	// write "CredentialSign"
 	// map header, size 3
-	// write "Signature"
-	err = en.Append(0x82, 0xae, 0x43, 0x72, 0x65, 0x64, 0x65, 0x6e, 0x74, 0x69, 0x61, 0x6c, 0x53, 0x69, 0x67, 0x6e, 0x83, 0xa9, 0x53, 0x69, 0x67, 0x6e, 0x61, 0x74, 0x75, 0x72, 0x65)
-	if err != nil {
-		return
-	}
-	err = z.CredentialSign.Signature.EncodeMsg(en)
-	if err != nil {
-		return
-	}
 	// write "Round"
-	err = en.Append(0xa5, 0x52, 0x6f, 0x75, 0x6e, 0x64)
+	err = en.Append(0x83, 0xa5, 0x52, 0x6f, 0x75, 0x6e, 0x64)
 	if err != nil {
 		return
 	}
-	err = en.WriteUint64(z.CredentialSign.Round)
+	err = en.WriteUint64(z.Round)
 	if err != nil {
 		return
 	}
@@ -103,7 +67,7 @@ func (z *CredentialSigForHash) EncodeMsg(en *msgp.Writer) (err error) {
 	if err != nil {
 		return
 	}
-	err = en.WriteUint64(z.CredentialSign.Step)
+	err = en.WriteUint64(z.Step)
 	if err != nil {
 		return
 	}
@@ -122,21 +86,13 @@ func (z *CredentialSigForHash) EncodeMsg(en *msgp.Writer) (err error) {
 // MarshalMsg implements msgp.Marshaler
 func (z *CredentialSigForHash) MarshalMsg(b []byte) (o []byte, err error) {
 	o = msgp.Require(b, z.Msgsize())
-	// map header, size 2
-	// string "CredentialSign"
 	// map header, size 3
-	// string "Signature"
-	o = append(o, 0x82, 0xae, 0x43, 0x72, 0x65, 0x64, 0x65, 0x6e, 0x74, 0x69, 0x61, 0x6c, 0x53, 0x69, 0x67, 0x6e, 0x83, 0xa9, 0x53, 0x69, 0x67, 0x6e, 0x61, 0x74, 0x75, 0x72, 0x65)
-	o, err = z.CredentialSign.Signature.MarshalMsg(o)
-	if err != nil {
-		return
-	}
 	// string "Round"
-	o = append(o, 0xa5, 0x52, 0x6f, 0x75, 0x6e, 0x64)
-	o = msgp.AppendUint64(o, z.CredentialSign.Round)
+	o = append(o, 0x83, 0xa5, 0x52, 0x6f, 0x75, 0x6e, 0x64)
+	o = msgp.AppendUint64(o, z.Round)
 	// string "Step"
 	o = append(o, 0xa4, 0x53, 0x74, 0x65, 0x70)
-	o = msgp.AppendUint64(o, z.CredentialSign.Step)
+	o = msgp.AppendUint64(o, z.Step)
 	// string "Quantity"
 	o = append(o, 0xa8, 0x51, 0x75, 0x61, 0x6e, 0x74, 0x69, 0x74, 0x79)
 	o = msgp.AppendBytes(o, z.Quantity)
@@ -159,40 +115,15 @@ func (z *CredentialSigForHash) UnmarshalMsg(bts []byte) (o []byte, err error) {
 			return
 		}
 		switch msgp.UnsafeString(field) {
-		case "CredentialSign":
-			var zb0002 uint32
-			zb0002, bts, err = msgp.ReadMapHeaderBytes(bts)
+		case "Round":
+			z.Round, bts, err = msgp.ReadUint64Bytes(bts)
 			if err != nil {
 				return
 			}
-			for zb0002 > 0 {
-				zb0002--
-				field, bts, err = msgp.ReadMapKeyZC(bts)
-				if err != nil {
-					return
-				}
-				switch msgp.UnsafeString(field) {
-				case "Signature":
-					bts, err = z.CredentialSign.Signature.UnmarshalMsg(bts)
-					if err != nil {
-						return
-					}
-				case "Round":
-					z.CredentialSign.Round, bts, err = msgp.ReadUint64Bytes(bts)
-					if err != nil {
-						return
-					}
-				case "Step":
-					z.CredentialSign.Step, bts, err = msgp.ReadUint64Bytes(bts)
-					if err != nil {
-						return
-					}
-				default:
-					bts, err = msgp.Skip(bts)
-					if err != nil {
-						return
-					}
-				}
+		case "Step":
+			z.Step, bts, err = msgp.ReadUint64Bytes(bts)
+			if err != nil {
+				return
 			}
 		case "Quantity":
 			z.Quantity, bts, err = msgp.ReadBytesBytes(bts, z.Quantity)
@@ -212,7 +143,7 @@ func (z *CredentialSigForHash) UnmarshalMsg(bts []byte) (o []byte, err error) {
 
 // Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
 func (z *CredentialSigForHash) Msgsize() (s int) {
-	s = 1 + 15 + 1 + 10 + z.CredentialSign.Signature.Msgsize() + 6 + msgp.Uint64Size + 5 + msgp.Uint64Size + 9 + msgp.BytesPrefixSize + len(z.Quantity)
+	s = 1 + 6 + msgp.Uint64Size + 5 + msgp.Uint64Size + 9 + msgp.BytesPrefixSize + len(z.Quantity)
 	return
 }
 
