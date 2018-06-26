@@ -125,7 +125,7 @@ type stepCtx struct {
 	esig func(hash types.Hash)([]byte)
 	sendInner func(pack dataPack)error
 	propagateMsg func(dataPack)error
-	getCredential func()*CredentialSig
+	getCredential func()*CredentialSign
 	setRound func(*Round)
 	makeEmptyBlockForTest func(cs *CredentialSig)*block.Block
 	getEphemeralSig func(signed []byte) Signature

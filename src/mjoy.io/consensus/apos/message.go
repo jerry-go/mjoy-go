@@ -82,6 +82,11 @@ type BlockProposal struct {
 }
 
 func (bp *BlockProposal) validate() error{
+	//verify step
+	if bp.Credential.Step != 1 {
+		return errors.New(fmt.Sprintf("Block Proposal step is not 1: %d", bp.Credential.Step))
+	}
+
 	//verify Credential
 	if err := bp.Credential.validate(); err != nil {
 		return err
@@ -135,6 +140,10 @@ type GradedConsensus struct {
 }
 
 func (gc *GradedConsensus) validate() error{
+	step := gc.Credential.Step
+	if step != 2  && step != 3 {
+		return errors.New(fmt.Sprintf("Graded Consensus step is not 2 or 3: %d", gc.Credential.Step))
+	}
 	//verify Credential
 	if err := gc.Credential.validate(); err != nil {
 		return err
@@ -186,6 +195,10 @@ type BinaryByzantineAgreement struct {
 }
 
 func (bba *BinaryByzantineAgreement) validate() error{
+	//verify step
+	if bba.Credential.Step < 4 {
+		return errors.New(fmt.Sprintf("Binary Byzantine Agreement step is not right: %d", bba.Credential.Step))
+	}
 	//verify Credential
 	if err := bba.Credential.validate(); err != nil {
 		return err
