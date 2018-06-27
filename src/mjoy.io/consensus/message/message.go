@@ -23,6 +23,7 @@ package message
 import (
 	"sync"
 	"mjoy.io/utils/event"
+	"fmt"
 )
 
 // the channel of consensus' message
@@ -80,6 +81,7 @@ func (msg MsgPriv) Handle(h Handleable) {
 	for {
 		select {
 		case data := <-msg.channel.data:
+			fmt.Println("GetData....")
 			h.DataHandle(data)
 		case <-msg.channel.stop:
 			h.StopHandle()

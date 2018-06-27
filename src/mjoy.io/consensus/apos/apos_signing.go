@@ -110,7 +110,7 @@ func (s AlgRandSigner) Sender(cdata *CredentialData, sig *SignatureVal) (types.A
 // SignatureValues returns a  R S V based given signature. This signature
 // needs to be in the [R || S || V] format where V is 0 or 1.
 func (s AlgRandSigner) SignatureValues(sig []byte) (R, S, V *big.Int, err error) {
-	fmt.Println("SignatureValue sig Len:" , len(sig))
+	//fmt.Println("SignatureValue sig Len:" , len(sig))
 	if len(sig) != 65 {
 		errStr:=fmt.Sprintf("wrong size for signature: got %d, want 65", len(sig))
 		err = errors.New(errStr)
@@ -119,7 +119,7 @@ func (s AlgRandSigner) SignatureValues(sig []byte) (R, S, V *big.Int, err error)
 		R = new(big.Int).SetBytes(sig[:32])
 		S = new(big.Int).SetBytes(sig[32:64])
 
-		fmt.Println("s.chainId.Sign:",s.chainId.Sign())
+		//fmt.Println("s.chainId.Sign:",s.chainId.Sign())
 		if s.chainId.Sign() != 0 {
 			V = big.NewInt(int64(sig[64] + 35))
 			V.Add(V, s.chainIdMul)

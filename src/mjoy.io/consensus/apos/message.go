@@ -307,6 +307,7 @@ func (bba *msgBinaryByzantineAgreement) StopHandle() {
 
 //message transfer between msg and Apos
 type msgTransfer struct {
+	receiveSubChan chan dataPack
 	receiveChan chan dataPack    //receive message from BBa, Gc, Bp and etc.
 	sendChan    chan dataPack
 }
@@ -321,6 +322,7 @@ func MsgTransfer() *msgTransfer {
 	msgTransferOnce.Do(func() {
 		msgTransferInstance = &msgTransfer{
 			receiveChan: make(chan dataPack, 10),
+			receiveSubChan:make(chan dataPack , 10),
 			sendChan: make(chan dataPack, 10),
 		}
 	})
@@ -340,6 +342,11 @@ func (mt *msgTransfer) GetDataMsg() (<-chan dataPack) {
 	return mt.receiveChan
 }
 
+//return the chan sub chan,just for test
+func (mt *msgTransfer) GetSubDataMsg()<-chan dataPack{
+	return mt.receiveSubChan
+}
+
 func (mt *msgTransfer) SendCredential(c *CredentialSign) error {
 	return nil
 }
@@ -350,6 +357,7 @@ func (mt *msgTransfer) PropagateCredential(c *CredentialSign) error {
 
 func (mt *msgTransfer) SendInner(data dataPack) error {
 	mt.receiveChan<-data
+	//send the data to receiveSubCh
 	return nil
 }
 

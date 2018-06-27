@@ -331,6 +331,8 @@ func (this *stepObj4)timerHandle(){
 	//todo:should be H(Be)
 	v := types.Hash{}
 	g := 0
+	fmt.Println("MaxLen:" , maxLen)
+	fmt.Println("total:" , total)
 	if maxLen * 3 > 2 * total{
 		logger.Debug(COLOR_PREFIX+COLOR_FRONT_PINK+COLOR_SUFFIX,"Step4  Do :maxLen * 3 > 2 * total,g=2",COLOR_SHORT_RESET)
 		v = maxHash

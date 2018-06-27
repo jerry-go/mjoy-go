@@ -68,7 +68,7 @@ func (this *outMsgManager)PropagateMsg(data dataPack)error{
 type allNodeManager struct {
 	lock sync.RWMutex
 	vituals []*virtualNode
-	msger *outMsgManager
+	msger OutMsger
 	allVNodeChan chan dataPack  //all virtual node's data send to allVNodeChan
 	//the true apos
 	actualNode *Apos
@@ -83,7 +83,7 @@ func newAllNodeManager()*allNodeManager{
 func (this *allNodeManager)init(maliciousNodeCnt int){
 	this.allVNodeChan = make(chan dataPack , 1000)
 	//only one msger,for virtual  nodes and actual node
-	this.msger = newMsgManager()
+	this.msger = MsgTransfer()
 	this.actualNode = NewApos(this.msger , newOutCommonTools())
 	this.actualNode.SetOutMsger(this.msger)
 	TestPotVerifier = 1
@@ -110,7 +110,7 @@ func (this *allNodeManager)init(maliciousNodeCnt int){
 func (this *allNodeManager)initTestCommon(testPotVerifier int) int{
 	this.allVNodeChan = make(chan dataPack , 100)
 	//only one msger,for virtual  nodes and actual node
-	this.msger = newMsgManager()
+	this.msger = MsgTransfer()
 	this.actualNode = NewApos(this.msger , newOutCommonTools())
 	//this.actualNode.validate.fake = true
 	this.actualNode.SetOutMsger(this.msger)
@@ -153,8 +153,9 @@ func (this *allNodeManager)run(){
 		select {
 		//deal all data from virtual] node,just send the virtualData to the chan(will send to actual node)
 		case virtualData:=<-this.allVNodeChan:
+			this.msger.SendInner(virtualData)
 			//send the data from all node to actual node
-			this.msger.msgRcvChan <- virtualData
+
 
 		case actualData := <-this.msger.msgSndChan:
 			//continue

@@ -157,7 +157,7 @@ func (this *Round)generateCredentials() {
 		isVerfier := this.apos.judgeVerifier(credential, i)
 		//logger.Info("GenerateCredential step:",i,"  isVerifier:",isVerfier)
 		if isVerfier {
-			logger.Info("GenerateCredential step:",i,"  isVerifier:",isVerfier)
+			//logger.Info("GenerateCredential step:",i,"  isVerifier:",isVerfier)
 			this.credentials[i] = credential
 		}
 	}
