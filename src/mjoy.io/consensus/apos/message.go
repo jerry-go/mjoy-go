@@ -30,7 +30,7 @@ import (
 	"sync"
 )
 //go:generate msgp
-func (cs *CredentialSign) validate() error{
+func (cs *CredentialSign) validate() (types.Address,error) {
 	leader := false
 	if 1 == cs.Step{
 		leader = true
@@ -39,15 +39,16 @@ func (cs *CredentialSign) validate() error{
 
 	//verify right
 	if isPotVerifier(hash.Bytes(), leader) == false {
-		return errors.New("credential has no right to verify")
+		return types.Address{}, errors.New("credential has no right to verify")
 	}
 
 	//verify signature
-	if _, err := cs.sender(); err != nil {
-		return errors.New(fmt.Sprintf("verify CredentialSig fail: %s", err))
+	sender, err := cs.sender()
+	if err != nil {
+		return types.Address{}, errors.New(fmt.Sprintf("verify CredentialSig fail: %s", err))
 	}
 
-	return nil
+	return sender, nil
 }
 
 type msgCredentialSig struct {
@@ -66,7 +67,7 @@ func NewMsgCredential(c *CredentialSign) *msgCredentialSig{
 
 func (c *msgCredentialSig) DataHandle(data interface{}) {
 	logger.Debug("msgCredentialSig data handle")
-	if err := c.cs.validate(); err != nil {
+	if _, err := c.cs.validate(); err != nil {
 		logger.Info("message CredentialSig validate error:", err)
 		return
 	}
@@ -98,7 +99,8 @@ func (bp *BlockProposal) validate() error{
 	}
 
 	//verify Credential
-	if err := bp.Credential.validate(); err != nil {
+	cretSender, err := bp.Credential.validate()
+	if err != nil {
 		return err
 	}
 
@@ -106,9 +108,15 @@ func (bp *BlockProposal) validate() error{
 	bp.Esig.round = bp.Credential.Round
 	bp.Esig.step = bp.Credential.Step
 	bp.Esig.val = bp.Block.Hash().Bytes()
-	if _, err := bp.Esig.sender(); err != nil {
+	sender, err := bp.Esig.sender()
+	if err != nil {
 		return errors.New(fmt.Sprintf("BP verify ephemeral signature fail: %s", err))
 	}
+	if cretSender != sender {
+		logger.Debug("Block Proposal sender's address is not equal in Credential and Ephemeral signature", cretSender.Hex(), sender.Hex())
+		return errors.New("sender's address is not equal in Credential and Ephemeral")
+	}
+
 
 	//todo block validate
 
@@ -169,7 +177,8 @@ func (gc *GradedConsensus) validate() error{
 		return errors.New(fmt.Sprintf("Graded Consensus step is not 2 or 3: %d", gc.Credential.Step))
 	}
 	//verify Credential
-	if err := gc.Credential.validate(); err != nil {
+	cretSender, err := gc.Credential.validate()
+	if err != nil {
 		return err
 	}
 
@@ -177,8 +186,13 @@ func (gc *GradedConsensus) validate() error{
 	gc.Esig.round = gc.Credential.Round
 	gc.Esig.step = gc.Credential.Step
 	gc.Esig.val = gc.Hash.Bytes()
-	if _, err := gc.Esig.sender(); err != nil {
+	sender, err := gc.Esig.sender()
+	if err != nil {
 		return errors.New(fmt.Sprintf("GC verify ephemeral signature fail: %s", err))
+	}
+	if cretSender != sender {
+		logger.Debug("Graded Consensus sender's address is not equal in Credential and Ephemeral signature", cretSender.Hex(), sender.Hex())
+		return errors.New("sender's address is not equal in Credential and Ephemeral")
 	}
 
 	return nil
@@ -237,7 +251,7 @@ func (bba *BinaryByzantineAgreement) validate() error{
 		return errors.New(fmt.Sprintf("Binary Byzantine Agreement step is not right: %d", bba.Credential.Step))
 	}
 	//verify Credential
-	if err := bba.Credential.validate(); err != nil {
+	if _, err := bba.Credential.validate(); err != nil {
 		return err
 	}
 
