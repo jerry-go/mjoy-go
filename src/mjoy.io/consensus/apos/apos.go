@@ -666,7 +666,7 @@ func (this *Apos) stepsFactory(ctx *stepCtx) (stepObj step) {
 	case 1:
 		ctx.makeEmptyBlockForTest = this.makeEmptyBlockForTest
 
-		delayT := time.Duration(3)
+		delayT := time.Duration(1)
 
 		stepObj = makeStepObj1(delayT*time.Second)
 		stepObj.setCtx(ctx)
