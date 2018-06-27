@@ -70,7 +70,7 @@ func (c *msgCredentialSig) DataHandle(data interface{}) {
 		logger.Info("message CredentialSig validate error:", err)
 		return
 	}
-	MsgTransfer().Send2Apos(c)
+	MsgTransfer().Send2Apos(c.cs)
 }
 
 func (c *msgCredentialSig) StopHandle() {
@@ -137,7 +137,7 @@ func (bp *msgBlockProposal) DataHandle(data interface{}) {
 		logger.Info("message BlockProposal validate error:", err)
 		return
 	}
-	MsgTransfer().Send2Apos(bp)
+	MsgTransfer().Send2Apos(bp.bp)
 }
 
 func (bp *msgBlockProposal) StopHandle() {
@@ -204,7 +204,7 @@ func (gc *msgGradedConsensus) DataHandle(data interface{}) {
 		logger.Info("message GradedConsensus validate error:", err)
 		return
 	}
-	MsgTransfer().Send2Apos(gc)
+	MsgTransfer().Send2Apos(gc.gc)
 }
 
 func (gc *msgGradedConsensus) StopHandle() {
@@ -298,7 +298,7 @@ func (bba *msgBinaryByzantineAgreement) DataHandle(data interface{}) {
 		logger.Info("message ByzantineAgreement validate error:", err)
 		return
 	}
-	MsgTransfer().Send2Apos(bba)
+	MsgTransfer().Send2Apos(bba.bba)
 }
 
 func (bba *msgBinaryByzantineAgreement) StopHandle() {

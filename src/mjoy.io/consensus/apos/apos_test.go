@@ -719,23 +719,25 @@ func TestMCommon_EndCondition0New(t *testing.T){
 	cs.S = new(types.BigInt)
 	cs.V = new(types.BigInt)
 	if _,_,_, err := cs.sign(priKey); err != nil {
-		fmt.Println(err)
+		fmt.Println("111",err)
 		return
 	}
-
 
 	bp := newBlockProposal()
 
 	bp.Credential = cs
 	bp.Block = an.actualNode.makeEmptyBlockForTest(bp.Credential)
-	fmt.Println(bp.Block)
+	//fmt.Println(bp.Block)
 	hash := bp.Block.Hash()
 
 	bp.Esig.round = bp.Credential.Round
 	bp.Esig.step = bp.Credential.Step
 	bp.Esig.val = hash.Bytes()
+	bp.Esig.R = new(types.BigInt)
+	bp.Esig.S = new(types.BigInt)
+	bp.Esig.V = new(types.BigInt)
 	if _,_,_, err := bp.Esig.sign(priKey); err != nil {
-		fmt.Println(err)
+		fmt.Println("2222",err)
 	}
 
 	//an.SendDataPackToActualNode(m1)

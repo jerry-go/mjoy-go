@@ -68,6 +68,7 @@ func (c *config) setDefault() {
 	c.blockDelay = 10
 	c.verifyDelay = 5
 	c.chainId = big.NewInt(int64(params.DefaultChainId))
+	c.chainIdMul = new(big.Int).Mul(c.chainId, common.Big2)
 }
 
 // about msgcore singleton
