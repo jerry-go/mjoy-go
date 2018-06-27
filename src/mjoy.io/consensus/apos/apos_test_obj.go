@@ -128,6 +128,20 @@ func (this *allNodeManager)initTestCommon(testPotVerifier int) int{
 	return int(allNodesCnt)
 }
 
+func (this *allNodeManager)initTestCommonNew(testPotVerifier int) int{
+	this.actualNode = NewApos(this.msger , newOutCommonTools())
+	//this.actualNode.SetOutMsger(this.msger)
+	TestPotVerifier = testPotVerifier
+
+
+	go this.actualNode.Run()
+
+	fmt.Println("allNodeManager Init ok...")
+	allNodesCnt := Config().maxPotVerifiers.Uint64() -1
+
+	return int(allNodesCnt)
+}
+
 
 
 func (this *allNodeManager)SendDataPackToActualNode(dp dataPack){

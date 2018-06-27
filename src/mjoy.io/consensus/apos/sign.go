@@ -215,7 +215,7 @@ func (cret *CredentialSign) sender() (types.Address, error) {
 }
 
 func (cret *CredentialSign) hash() types.Hash {
-	cretforhash := CredentialSigForHash{
+	cretforhash := &CredentialSigForHash{
 		cret.Round,
 		cret.Step,
 		[]byte{0},	// TODO: to get Quantity !!!!!!!!!!!!!!! need to implement a global function(round)
