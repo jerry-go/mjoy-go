@@ -702,53 +702,6 @@ func TestMCommon_EndCondition0_B1(t *testing.T){
 	}
 }
 
-// End condition 0
-func TestMCommon_EndCondition0New(t *testing.T){
-	Config().blockDelay = 2
-	Config().verifyDelay = 1
-	Config().maxBBASteps = 12
-	an := newAllNodeManager()
-	verifierCnt := an.initTestCommonNew(1)
-	logger.Debug(COLOR_PREFIX+COLOR_FRONT_BLUE+COLOR_SUFFIX , "Verifier Cnt:" , verifierCnt , COLOR_SHORT_RESET)
-
-	priKey := generatePrivateKey()
-	cs := &CredentialSign{}
-	cs.Round = 100
-	cs.Step = 1
-	cs.R = new(types.BigInt)
-	cs.S = new(types.BigInt)
-	cs.V = new(types.BigInt)
-	if _,_,_, err := cs.sign(priKey); err != nil {
-		fmt.Println("111",err)
-		return
-	}
-
-	bp := newBlockProposal()
-
-	bp.Credential = cs
-	bp.Block = an.actualNode.makeEmptyBlockForTest(bp.Credential)
-	//fmt.Println(bp.Block)
-	hash := bp.Block.Hash()
-
-	bp.Esig.round = bp.Credential.Round
-	bp.Esig.step = bp.Credential.Step
-	bp.Esig.val = hash.Bytes()
-	bp.Esig.R = new(types.BigInt)
-	bp.Esig.S = new(types.BigInt)
-	bp.Esig.V = new(types.BigInt)
-	if _,_,_, err := bp.Esig.sign(priKey); err != nil {
-		fmt.Println("2222",err)
-	}
-
-	//an.SendDataPackToActualNode(m1)
-	msgbp := NewMsgBlockProposal(bp)
-	msgbp.Send()
-
-	for{
-		time.Sleep(3*time.Second)
-		//fmt.Println("apos_test doing....")
-	}
-}
 
 // End condition 1
 func TestMCommon_EndCondition1(t *testing.T){
