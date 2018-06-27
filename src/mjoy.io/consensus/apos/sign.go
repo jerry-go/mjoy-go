@@ -110,12 +110,13 @@ func (s *Signature) get(sig []byte) (err error) {
 func (s Signature) toBytes() (sig []byte) {
 	s.checkObj()
 
-	V := s.V
+	sV := s.V
+	V := types.NewBigInt(*big.NewInt(0))
 	if Config().chainId.Sign() != 0 {
-		V.IntVal.Sub(&V.IntVal, Config().chainIdMul)
+		V.IntVal.Sub(&sV.IntVal, Config().chainIdMul)
 		V.IntVal.Sub(&V.IntVal, common.Big35)
 	} else{
-		V.IntVal.Sub(&V.IntVal, common.Big27)
+		V.IntVal.Sub(&sV.IntVal, common.Big27)
 	}
 
 	vb := byte(V.IntVal.Uint64())
@@ -293,7 +294,7 @@ func (esig *EphemeralSign) hash() types.Hash {
 	if esig.val == nil {
 		panic(fmt.Errorf("EphemeralSign obj is not initialized"))
 	}
-	eisgforhash := EphemeralSigForHash{
+	eisgforhash := &EphemeralSigForHash{
 		esig.round,
 		esig.step,
 		esig.val,

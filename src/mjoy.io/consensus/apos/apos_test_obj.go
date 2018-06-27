@@ -207,20 +207,20 @@ func (this *allNodeManager)runTestStep(checkStep int64){
 		case actualData := <-this.msger.msgSndChan:
 
 			switch v := actualData.(type) {
-			case *CredentialSig:
+			case *CredentialSign:
 
-			case *M1:
+			case *BlockProposal:
 
-			case *M23:
-				if v.Credential.Step.IntVal.Int64() == checkStep{
+			case *GradedConsensus:
+				if v.Credential.Step == uint64(checkStep){
 
-					logger.Debug(COLOR_PREFIX+COLOR_FRONT_BLUE+COLOR_SUFFIX,"Actual Step:",v.Credential.Step.IntVal.Int64(),"  ,Return:",v.Hash,COLOR_SHORT_RESET)
+					logger.Debug(COLOR_PREFIX+COLOR_FRONT_BLUE+COLOR_SUFFIX,"Actual Step:",v.Credential.Step,"  ,Return:",v.Hash,COLOR_SHORT_RESET)
 					return
 				}
 
-			case *MCommon:
-				if v.Credential.Step.IntVal.Int64() == checkStep{
-					logger.Debug(COLOR_PREFIX+COLOR_FRONT_BLUE+COLOR_SUFFIX,"Actual Step:",v.Credential.Step.IntVal.Int64(),
+			case *BinaryByzantineAgreement:
+				if v.Credential.Step == uint64(checkStep){
+					logger.Debug(COLOR_PREFIX+COLOR_FRONT_BLUE+COLOR_SUFFIX,"Actual Step:",v.Credential.Step,
 						"\r\nReturn: Hash:",v.Hash,"\r\nBStatus:",v.B,COLOR_SHORT_RESET)
 					return
 				}
