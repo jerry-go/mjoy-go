@@ -27,6 +27,7 @@ import (
 	"fmt"
 	"errors"
 	"math/big"
+	"sync"
 )
 //go:generate msgp
 func (cs *CredentialSign) validate() error{
@@ -34,7 +35,7 @@ func (cs *CredentialSign) validate() error{
 	if 1 == cs.Step{
 		leader = true
 	}
-	hash := cs.hash()
+	hash := cs.Signature.hash()
 
 	//verify right
 	if isPotVerifier(hash.Bytes(), leader) == false {
@@ -63,22 +64,17 @@ func NewMsgCredential(c *CredentialSign) *msgCredentialSig{
 	return msgCs
 }
 
-func (c *msgCredentialSig) SendToCore() {
-	logger.Debug("msgBlockProposal data handle")
-
-}
-
 func (c *msgCredentialSig) DataHandle(data interface{}) {
 	logger.Debug("msgCredentialSig data handle")
 	if err := c.cs.validate(); err != nil {
 		logger.Info("message CredentialSig validate error:", err)
 		return
 	}
-	c.SendToCore()
+	MsgTransfer().Send2Apos(c)
 }
 
 func (c *msgCredentialSig) StopHandle() {
-	logger.Debug("stop ...")
+	logger.Debug("msgCredentialSig stop ...")
 }
 
 // step1 (Block Proposal) message
@@ -114,6 +110,8 @@ func (bp *BlockProposal) validate() error{
 		return errors.New(fmt.Sprintf("BP verify ephemeral signature fail: %s", err))
 	}
 
+	//todo block validate
+
 	return nil
 }
 
@@ -139,10 +137,11 @@ func (bp *msgBlockProposal) DataHandle(data interface{}) {
 		logger.Info("message BlockProposal validate error:", err)
 		return
 	}
+	MsgTransfer().Send2Apos(bp)
 }
 
 func (bp *msgBlockProposal) StopHandle() {
-	fmt.Printf("stop ...\n")
+	logger.Debug("msgBlockProposal stop ...")
 }
 
 
@@ -205,10 +204,11 @@ func (gc *msgGradedConsensus) DataHandle(data interface{}) {
 		logger.Info("message GradedConsensus validate error:", err)
 		return
 	}
+	MsgTransfer().Send2Apos(gc)
 }
 
 func (gc *msgGradedConsensus) StopHandle() {
-	logger.Debug("stop ...")
+	logger.Debug("msgGradedConsensus stop ...")
 }
 
 // step4 and step other message
@@ -298,8 +298,65 @@ func (bba *msgBinaryByzantineAgreement) DataHandle(data interface{}) {
 		logger.Info("message ByzantineAgreement validate error:", err)
 		return
 	}
+	MsgTransfer().Send2Apos(bba)
 }
 
 func (bba *msgBinaryByzantineAgreement) StopHandle() {
-	logger.Debug("stop ...")
+	logger.Debug("msgBinaryByzantineAgreement stop ...")
+}
+
+//message transfer between msg and Apos
+type msgTransfer struct {
+	receiveChan chan dataPack    //receive message from BBa, Gc, Bp and etc.
+	sendChan    chan dataPack
+}
+
+// about msgcore singleton
+var (
+	msgTransferInstance *msgTransfer
+	msgTransferOnce		sync.Once
+)
+// get the MsgTransfer singleton
+func MsgTransfer() *msgTransfer {
+	msgTransferOnce.Do(func() {
+		msgTransferInstance = &msgTransfer{
+			receiveChan: make(chan dataPack, 10),
+			sendChan: make(chan dataPack, 10),
+		}
+	})
+	return msgTransferInstance
+}
+
+
+func (mt *msgTransfer) BroadCast(msg []byte) error {
+	return nil
+}
+
+func (mt *msgTransfer) GetMsg() (<-chan dataPack) {
+	return mt.receiveChan
+}
+
+func (mt *msgTransfer) GetDataMsg() (<-chan dataPack) {
+	return mt.receiveChan
+}
+
+func (mt *msgTransfer) SendCredential(c *CredentialSign) error {
+	return nil
+}
+
+func (mt *msgTransfer) PropagateCredential(c *CredentialSign) error {
+	return nil
+}
+
+func (mt *msgTransfer) SendInner(data dataPack) error {
+	mt.receiveChan<-data
+	return nil
+}
+
+func (mt *msgTransfer) PropagateMsg(data dataPack) error {
+	return nil
+}
+
+func (mt *msgTransfer) Send2Apos(data dataPack)  {
+	mt.receiveChan<-data
 }
