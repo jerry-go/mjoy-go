@@ -196,7 +196,8 @@ func (cret *CredentialSign) sign(prv *ecdsa.PrivateKey) (R *types.BigInt, S *typ
 
 func (cret *CredentialSign) sender() (types.Address, error) {
 	cret.checkObj()
-
+	fmt.Println("sender:deriveChainId:" , deriveChainId(&cret.V.IntVal).Int64())
+	fmt.Println("sender:ConfigChanId:" , Config().chainId.Int64())
 	if Config().chainId != nil && deriveChainId(&cret.V.IntVal).Cmp(Config().chainId) != 0 {
 		return types.Address{}, ErrInvalidChainId
 	}
