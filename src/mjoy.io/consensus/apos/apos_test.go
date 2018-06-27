@@ -128,11 +128,28 @@ func TestM23(t *testing.T){
 		v := newVirtualNode(i,nil)
 		hash := types.Hash{}
 		hash[0] = 1
-		m23 := &M23{
-			Hash:hash,
-		}
+
+		m23 := new(GradedConsensus)
+		m23.Hash = hash
+
 		m23.Credential = v.makeCredential(2)
-		m23.Esig = v.commonTools.ESIG(m23.Hash)
+
+		m23.Esig.round = m23.Credential.Round
+		m23.Esig.step = m23.Credential.Step
+		m23.Esig.val = make([]byte , 0)
+		m23.Esig.val = append(m23.Esig.val , m23.Hash[:]...)
+
+		R,S,V := v.commonTools.ESIG(m23.Hash)
+
+		m23.Esig.R = new(types.BigInt)
+		m23.Esig.R.IntVal = *R
+
+		m23.Esig.S = new(types.BigInt)
+		m23.Esig.S.IntVal = *S
+
+		m23.Esig.V = new(types.BigInt)
+		m23.Esig.V.IntVal = *V
+
 
 		an.SendDataPackToActualNode(m23)
 	}
@@ -155,11 +172,27 @@ func TestM23filter(t *testing.T){
 		v := newVirtualNode(i,nil)
 		hash := types.Hash{}
 		hash[0] = 1
-		m23 := &M23{
-			Hash:hash,
-		}
+
+		m23 := new(GradedConsensus)
+		m23.Hash = hash
 		m23.Credential = v.makeCredential(2)
-		m23.Esig = v.commonTools.ESIG(m23.Hash)
+
+		m23.Esig.round = m23.Credential.Round
+		m23.Esig.step = m23.Credential.Step
+
+		m23.Esig.val = make([]byte , 0)
+		m23.Esig.val = append(m23.Esig.val , m23.Hash[:]...)
+
+		R,S,V := v.commonTools.ESIG(m23.Hash)
+
+		m23.Esig.R = new(types.BigInt)
+		m23.Esig.R.IntVal = *R
+
+		m23.Esig.S = new(types.BigInt)
+		m23.Esig.S.IntVal = *S
+
+		m23.Esig.V = new(types.BigInt)
+		m23.Esig.V.IntVal = *V
 
 		an.SendDataPackToActualNode(m23)
 		an.SendDataPackToActualNode(m23)
@@ -183,20 +216,35 @@ func TestM23filter_malicious(t *testing.T){
 		v := newVirtualNode(i,nil)
 		hash := types.Hash{}
 		hash[0] = 1
-		m23 := &M23{
-			Hash:hash,
-		}
+
+		m23 := new(GradedConsensus)
+		m23.Hash = hash
 		m23.Credential = v.makeCredential(2)
-		m23.Esig = v.commonTools.ESIG(m23.Hash)
+
+		m23.Esig.round = m23.Credential.Round
+		m23.Esig.step = m23.Credential.Step
+		m23.Esig.val = make([]byte , 0)
+
+		m23.Esig.val = append(m23.Esig.val , m23.Hash[:]...)
+
+		R,S,V := v.commonTools.ESIG(m23.Hash)
+		m23.Esig.R = new(types.BigInt)
+		m23.Esig.R.IntVal = *R
+
+		m23.Esig.S = new(types.BigInt)
+		m23.Esig.S.IntVal = *S
+
+		m23.Esig.V = new(types.BigInt)
+		m23.Esig.V.IntVal = *V
 
 		an.SendDataPackToActualNode(m23)
 
 		hash1 := types.Hash{}
 		hash1[0] = 2
-		m23_1 := &M23{
-			Hash:hash1,
-		}
-		m23_1.Credential = m23.Credential
+		m23_1 := new(GradedConsensus)
+
+		m23_1.Hash = hash
+		m23.Credential = m23.Credential
 		m23_1.Esig = m23.Esig
 		//receive different  vote message m23, it must a malicious peer
 		an.SendDataPackToActualNode(m23_1)
@@ -223,15 +271,38 @@ func TestMCommon(t *testing.T){
 		v := newVirtualNode(i,nil)
 		hash := types.Hash{}
 		hash[0] = 1
-		mcommon := &MCommon{
-			Hash:hash,
-		}
+		mcommon := new(BinaryByzantineAgreement)
+
 
 		mcommon.Credential = v.makeCredential(4 + 3)
 		mcommon.B = 0
-		mcommon.EsigB = v.commonTools.ESIG(types.BytesToHash(big.NewInt(int64(mcommon.B)).Bytes()))
 		mcommon.Hash = hash
-		mcommon.EsigV = v.commonTools.ESIG(hash)
+
+		mcommon.EsigB.round = mcommon.Credential.Round
+		mcommon.EsigB.step = mcommon.Credential.Step
+		mcommon.EsigB.val = make([]byte , 0 )
+		mcommon.EsigB.val = append(mcommon.EsigB.val , big.NewInt(int64(mcommon.B)).Bytes()...)
+		h := types.BytesToHash(big.NewInt(int64(mcommon.B)).Bytes())
+
+		R,S,V := v.commonTools.ESIG(h)
+		mcommon.EsigB.R = new(types.BigInt)
+		mcommon.EsigB.R.IntVal = *R
+
+		mcommon.EsigB.S = new(types.BigInt)
+		mcommon.EsigB.S.IntVal = *S
+
+		mcommon.EsigB.V = new(types.BigInt)
+		mcommon.EsigB.V.IntVal = *V
+
+		R,S,V = v.commonTools.ESIG(mcommon.Hash)
+		mcommon.EsigV.R = new(types.BigInt)
+		mcommon.EsigV.R.IntVal = *R
+
+		mcommon.EsigV.S = new(types.BigInt)
+		mcommon.EsigV.S.IntVal = *S
+
+		mcommon.EsigV.V = new(types.BigInt)
+		mcommon.EsigV.V.IntVal = *V
 
 		an.SendDataPackToActualNode(mcommon)
 	}
@@ -254,15 +325,45 @@ func TestMCommon_filter_duplicate(t *testing.T){
 		v := newVirtualNode(i,nil)
 		hash := types.Hash{}
 		hash[0] = 1
-		mcommon := &MCommon{
-			Hash:hash,
-		}
+
+
+		mcommon := new(BinaryByzantineAgreement)
 
 		mcommon.Credential = v.makeCredential(4 + 3)
-		mcommon.B = 0
-		mcommon.EsigB = v.commonTools.ESIG(types.BytesToHash(big.NewInt(int64(mcommon.B)).Bytes()))
 		mcommon.Hash = hash
-		mcommon.EsigV = v.commonTools.ESIG(hash)
+		mcommon.B = 0
+
+		mcommon.EsigB.round = mcommon.Credential.Round
+		mcommon.EsigB.step = mcommon.Credential.Step
+		mcommon.EsigB.val = make([]byte , 0 )
+		mcommon.EsigB.val = append(mcommon.EsigB.val , big.NewInt(int64(mcommon.B)).Bytes()...)
+		h := types.BytesToHash(big.NewInt(int64(mcommon.B)).Bytes())
+		R,S,V := v.commonTools.ESIG(h)
+
+		mcommon.EsigB.R = new(types.BigInt)
+		mcommon.EsigB.R.IntVal = *R
+
+		mcommon.EsigB.S = new(types.BigInt)
+		mcommon.EsigB.S.IntVal = *S
+
+		mcommon.EsigB.V = new(types.BigInt)
+		mcommon.EsigB.V.IntVal = *V
+
+		mcommon.EsigV.round = mcommon.Credential.Round
+		mcommon.EsigV.step = mcommon.Credential.Step
+		mcommon.EsigV.val = make([]byte , 0 )
+		mcommon.EsigV.val = append(mcommon.EsigV.val , mcommon.Hash[:]...)
+
+		R,S,V = v.commonTools.ESIG(mcommon.Hash)
+
+		mcommon.EsigV.R = new(types.BigInt)
+		mcommon.EsigV.R.IntVal = *R
+
+		mcommon.EsigV.S = new(types.BigInt)
+		mcommon.EsigV.S.IntVal = *S
+
+		mcommon.EsigV.V = new(types.BigInt)
+		mcommon.EsigV.V.IntVal = *V
 
 		an.SendDataPackToActualNode(mcommon)
 		an.SendDataPackToActualNode(mcommon)
@@ -285,16 +386,49 @@ func TestMCommon_filter_duplicate2(t *testing.T){
 		v := newVirtualNode(i,nil)
 		hash := types.Hash{}
 		hash[0] = 1
-		mcommon := &MCommon{}
+
+
+		mcommon := new(BinaryByzantineAgreement)
 
 		mcommon.Credential = v.makeCredential(4 + 3)
-		mcommon.B = 0
-		mcommon.EsigB = v.commonTools.ESIG(types.BytesToHash(big.NewInt(int64(mcommon.B)).Bytes()))
 		mcommon.Hash = hash
-		mcommon.EsigV = v.commonTools.ESIG(hash)
+		mcommon.B = 0
+
+		mcommon.EsigB.round = mcommon.Credential.Round
+		mcommon.EsigB.step = mcommon.Credential.Step
+		mcommon.EsigB.val = make([]byte , 0 )
+		mcommon.EsigB.val = append(mcommon.EsigB.val , big.NewInt(int64(mcommon.B)).Bytes()...)
+		h := types.BytesToHash(big.NewInt(int64(mcommon.B)).Bytes())
+		R,S,V := v.commonTools.ESIG(h)
+
+		mcommon.EsigB.R = new(types.BigInt)
+		mcommon.EsigB.R.IntVal = *R
+
+		mcommon.EsigB.S = new(types.BigInt)
+		mcommon.EsigB.S.IntVal = *S
+
+		mcommon.EsigB.V = new(types.BigInt)
+		mcommon.EsigB.V.IntVal = *V
+
+		mcommon.EsigV.round = mcommon.Credential.Round
+		mcommon.EsigV.step = mcommon.Credential.Step
+		mcommon.EsigV.val = make([]byte , 0 )
+		mcommon.EsigV.val = append(mcommon.EsigV.val , mcommon.Hash[:]...)
+
+		R,S,V = v.commonTools.ESIG(mcommon.Hash)
+
+		mcommon.EsigV.R = new(types.BigInt)
+		mcommon.EsigV.R.IntVal = *R
+
+		mcommon.EsigV.S = new(types.BigInt)
+		mcommon.EsigV.S.IntVal = *S
+
+		mcommon.EsigV.V = new(types.BigInt)
+		mcommon.EsigV.V.IntVal = *V
 
 		an.SendDataPackToActualNode(mcommon)
-		mcommonXX := &MCommon{}
+
+		mcommonXX := new(BinaryByzantineAgreement)
 
 		mcommonXX.Credential = mcommon.Credential
 		mcommonXX.B = 1
@@ -323,29 +457,59 @@ func TestMCommon_filter_duplicate3(t *testing.T){
 		v := newVirtualNode(i,nil)
 		hash := types.Hash{}
 		hash[0] = 1
-		mcommon := &MCommon{}
+
+
+		mcommon := new(BinaryByzantineAgreement)
 
 		mcommon.Credential = v.makeCredential(4 + 3)
-		mcommon.B = 0
-		mcommon.EsigB = v.commonTools.ESIG(types.BytesToHash(big.NewInt(int64(mcommon.B)).Bytes()))
 		mcommon.Hash = hash
-		mcommon.EsigV = v.commonTools.ESIG(hash)
+		mcommon.B = 0
+
+		mcommon.EsigB.round = mcommon.Credential.Round
+		mcommon.EsigB.step = mcommon.Credential.Step
+		mcommon.EsigB.val = make([]byte , 0 )
+		mcommon.EsigB.val = append(mcommon.EsigB.val , big.NewInt(int64(mcommon.B)).Bytes()...)
+		h := types.BytesToHash(big.NewInt(int64(mcommon.B)).Bytes())
+		R,S,V := v.commonTools.ESIG(h)
+
+		mcommon.EsigB.R = new(types.BigInt)
+		mcommon.EsigB.R.IntVal = *R
+
+		mcommon.EsigB.S = new(types.BigInt)
+		mcommon.EsigB.S.IntVal = *S
+
+		mcommon.EsigB.V = new(types.BigInt)
+		mcommon.EsigB.V.IntVal = *V
+
+		mcommon.EsigV.round = mcommon.Credential.Round
+		mcommon.EsigV.step = mcommon.Credential.Step
+		mcommon.EsigV.val = make([]byte , 0 )
+		mcommon.EsigV.val = append(mcommon.EsigV.val , mcommon.Hash[:]...)
+
+		R,S,V = v.commonTools.ESIG(mcommon.Hash)
+
+		mcommon.EsigV.R = new(types.BigInt)
+		mcommon.EsigV.R.IntVal = *R
+
+		mcommon.EsigV.S = new(types.BigInt)
+		mcommon.EsigV.S.IntVal = *S
+
+		mcommon.EsigV.V = new(types.BigInt)
+		mcommon.EsigV.V.IntVal = *V
 
 		an.SendDataPackToActualNode(mcommon)
-		mcommonXX := &MCommon{}
+
+		mcommonXX := new(BinaryByzantineAgreement)
 
 		mcommonXX.Credential = mcommon.Credential
-		mcommonXX.B = 0
+		mcommonXX.B = 1
 		mcommonXX.EsigB = mcommon.EsigB
-		hash1 := types.Hash{}
-		hash1[0] = 2
-		mcommonXX.Hash = hash1
+		mcommonXX.Hash = hash
 		mcommonXX.EsigV = mcommon.EsigV
 
 		//receive different hash in BBA message, it must a malicious peer
 		an.SendDataPackToActualNode(mcommonXX)
-		//not honesty peer
-		an.SendDataPackToActualNode(mcommonXX)
+
 	}
 	for{
 		time.Sleep(3*time.Second)
@@ -364,26 +528,78 @@ func TestMCommon_EndCondition0(t *testing.T){
 
 	//send m1
 	v := newVirtualNode(1,nil)
-	m1 := &M1{}
+
+	m1 := new(BlockProposal)
+
 	m1.Credential = v.makeCredential(1)
 	m1.Block = an.actualNode.makeEmptyBlockForTest(m1.Credential)
 	fmt.Println(m1.Block)
 	hash := m1.Block.Hash()
-	m1.Esig = v.commonTools.ESIG(hash)
+
+	m1.Esig.round = m1.Credential.Round
+	m1.Esig.step = m1.Credential.Step
+	m1.Esig.val = make([]byte , 0 )
+	m1.Esig.val = append(m1.Esig.val , hash[:]...)
+
+
+	R,S,V := v.commonTools.ESIG(hash)
+
+	m1.Esig.R = new(types.BigInt)
+	m1.Esig.R.IntVal = *R
+
+	m1.Esig.S = new(types.BigInt)
+	m1.Esig.S.IntVal = *S
+
+	m1.Esig.V = new(types.BigInt)
+	m1.Esig.V.IntVal = *V
+
 	an.SendDataPackToActualNode(m1)
 
 
 	for i := 1 ;i <= 4; i++ {
 		v := newVirtualNode(i,nil)
-		mcommon := &MCommon{}
+
+
+		mcommon := new(BinaryByzantineAgreement)
 
 		mcommon.Credential = v.makeCredential(4 + 3)
-		mcommon.B = 0
-		mcommon.EsigB = v.commonTools.ESIG(types.BytesToHash(big.NewInt(int64(mcommon.B)).Bytes()))
 		mcommon.Hash = hash
-		mcommon.EsigV = v.commonTools.ESIG(hash)
+		mcommon.B = 0
+
+		mcommon.EsigB.round = mcommon.Credential.Round
+		mcommon.EsigB.step = mcommon.Credential.Step
+		mcommon.EsigB.val = make([]byte , 0 )
+		mcommon.EsigB.val = append(mcommon.EsigB.val , big.NewInt(int64(mcommon.B)).Bytes()...)
+		h := types.BytesToHash(big.NewInt(int64(mcommon.B)).Bytes())
+		R,S,V := v.commonTools.ESIG(h)
+
+		mcommon.EsigB.R = new(types.BigInt)
+		mcommon.EsigB.R.IntVal = *R
+
+		mcommon.EsigB.S = new(types.BigInt)
+		mcommon.EsigB.S.IntVal = *S
+
+		mcommon.EsigB.V = new(types.BigInt)
+		mcommon.EsigB.V.IntVal = *V
+
+		mcommon.EsigV.round = mcommon.Credential.Round
+		mcommon.EsigV.step = mcommon.Credential.Step
+		mcommon.EsigV.val = make([]byte , 0 )
+		mcommon.EsigV.val = append(mcommon.EsigV.val , mcommon.Hash[:]...)
+
+		R,S,V = v.commonTools.ESIG(mcommon.Hash)
+
+		mcommon.EsigV.R = new(types.BigInt)
+		mcommon.EsigV.R.IntVal = *R
+
+		mcommon.EsigV.S = new(types.BigInt)
+		mcommon.EsigV.S.IntVal = *S
+
+		mcommon.EsigV.V = new(types.BigInt)
+		mcommon.EsigV.V.IntVal = *V
 
 		an.SendDataPackToActualNode(mcommon)
+
 
 	}
 	for{
@@ -405,24 +621,77 @@ func TestMCommon_EndCondition0_B1(t *testing.T){
 
 	//send m1
 	v := newVirtualNode(1,nil)
-	m1 := &M1{}
+
+	m1 := new(BlockProposal)
+
 	m1.Credential = v.makeCredential(1)
+
 	m1.Block = an.actualNode.makeEmptyBlockForTest(m1.Credential)
 	fmt.Println(m1.Block)
 	hash := m1.Block.Hash()
-	m1.Esig = v.commonTools.ESIG(hash)
+
+	m1.Esig.round = m1.Credential.Round
+	m1.Esig.step = m1.Credential.Step
+	m1.Esig.val = make([]byte , 0 )
+	m1.Esig.val = append(m1.Esig.val , hash[:]...)
+
+	R,S,V := v.commonTools.ESIG(hash)
+
+	m1.Esig.R = new(types.BigInt)
+	m1.Esig.R.IntVal = *R
+
+	m1.Esig.S = new(types.BigInt)
+	m1.Esig.S.IntVal = *S
+
+	m1.Esig.V = new(types.BigInt)
+	m1.Esig.V.IntVal = *V
+
 	an.SendDataPackToActualNode(m1)
 
 
 	for i := 1 ;i <= 4; i++ {
 		v := newVirtualNode(i,nil)
-		mcommon := &MCommon{}
+		mcommon := new(BinaryByzantineAgreement)
 
 		mcommon.Credential = v.makeCredential(4 + 3)
 		mcommon.B = 1
-		mcommon.EsigB = v.commonTools.ESIG(types.BytesToHash(big.NewInt(int64(mcommon.B)).Bytes()))
 		mcommon.Hash = hash
-		mcommon.EsigV = v.commonTools.ESIG(hash)
+		//b
+		mcommon.EsigB.round = mcommon.Credential.Round
+		mcommon.EsigB.step = mcommon.Credential.Step
+		mcommon.EsigB.val = make([]byte , 0)
+
+		mcommon.EsigB.val = append(mcommon.EsigB.val , big.NewInt(int64(mcommon.B)).Bytes()...)
+
+		h := types.BytesToHash(big.NewInt(int64(mcommon.B)).Bytes())
+		R,S,V := v.commonTools.ESIG(h)
+
+		mcommon.EsigB.R = new(types.BigInt)
+		mcommon.EsigB.R.IntVal = *R
+
+		mcommon.EsigB.S = new(types.BigInt)
+		mcommon.EsigB.S.IntVal = *S
+
+		mcommon.EsigB.V = new(types.BigInt)
+		mcommon.EsigB.V.IntVal = *V
+
+		//hash
+		mcommon.EsigV.round = mcommon.Credential.Round
+		mcommon.EsigV.step = mcommon.Credential.Step
+		mcommon.EsigV.val = make([]byte , 0)
+
+		mcommon.EsigV.val = append(mcommon.EsigV.val , mcommon.Hash[:]...)
+
+		R,S,V = v.commonTools.ESIG(mcommon.Hash)
+
+		mcommon.EsigV.R = new(types.BigInt)
+		mcommon.EsigV.R.IntVal = *R
+
+		mcommon.EsigV.S = new(types.BigInt)
+		mcommon.EsigV.S.IntVal = *S
+
+		mcommon.EsigV.V = new(types.BigInt)
+		mcommon.EsigV.V.IntVal = *V
 
 		an.SendDataPackToActualNode(mcommon)
 
@@ -444,24 +713,80 @@ func TestMCommon_EndCondition1(t *testing.T){
 
 	//send m1
 	v := newVirtualNode(1,nil)
-	m1 := &M1{}
+	m1 := new(BlockProposal)
+
 	m1.Credential = v.makeCredential(1)
 	m1.Block = an.actualNode.makeEmptyBlockForTest(m1.Credential)
 	fmt.Println(m1.Block)
 	hash := m1.Block.Hash()
-	m1.Esig = v.commonTools.ESIG(hash)
+
+	m1.Esig.round = m1.Credential.Round
+	m1.Esig.step = m1.Credential.Step
+	m1.Esig.val = make([]byte , 0)
+
+	m1.Esig.val = append(m1.Esig.val , hash[:]...)
+
+	R,S,V := v.commonTools.ESIG(hash)
+
+	m1.Esig.R = new(types.BigInt)
+	m1.Esig.R.IntVal = *R
+
+	m1.Esig.S = new(types.BigInt)
+	m1.Esig.S.IntVal = *S
+
+	m1.Esig.V = new(types.BigInt)
+	m1.Esig.V.IntVal = *V
+
 	an.SendDataPackToActualNode(m1)
 
 
 	for i := 1 ;i <= 4; i++ {
 		v := newVirtualNode(i,nil)
-		mcommon := &MCommon{}
+		mcommon := new(BinaryByzantineAgreement)
+
 
 		mcommon.Credential = v.makeCredential(4 + 3 + 1)
 		mcommon.B = 1
-		mcommon.EsigB = v.commonTools.ESIG(types.BytesToHash(big.NewInt(int64(mcommon.B)).Bytes()))
 		mcommon.Hash = hash
-		mcommon.EsigV = v.commonTools.ESIG(hash)
+
+		//sig b
+		mcommon.EsigB.round = mcommon.Credential.Round
+		mcommon.EsigB.step = mcommon.Credential.Step
+		mcommon.EsigB.val = make([]byte , 0)
+
+		mcommon.EsigB.val = append(mcommon.EsigB.val , big.NewInt(int64(mcommon.B)).Bytes()...)
+		h := types.BytesToHash(big.NewInt(int64(mcommon.B)).Bytes())
+
+		R,S,V := v.commonTools.ESIG(h)
+
+		mcommon.EsigB.R = new(types.BigInt)
+		mcommon.EsigB.R.IntVal = *R
+
+		mcommon.EsigB.S = new(types.BigInt)
+		mcommon.EsigB.S.IntVal = *S
+
+		mcommon.EsigB.V = new(types.BigInt)
+		mcommon.EsigB.V.IntVal = *V
+
+
+
+		//sig v
+		mcommon.EsigV.round = mcommon.Credential.Round
+		mcommon.EsigV.step = mcommon.Credential.Step
+		mcommon.EsigV.val = make([]byte , 0 )
+
+		mcommon.EsigV.val = append(mcommon.EsigV.val , mcommon.Hash[:]...)
+
+		R,S,V = v.commonTools.ESIG(mcommon.Hash)
+
+		mcommon.EsigV.R = new(types.BigInt)
+		mcommon.EsigV.R.IntVal = *R
+
+		mcommon.EsigV.S = new(types.BigInt)
+		mcommon.EsigV.S.IntVal = *S
+
+		mcommon.EsigV.V = new(types.BigInt)
+		mcommon.EsigV.V.IntVal = *V
 
 		an.SendDataPackToActualNode(mcommon)
 	}
@@ -484,24 +809,75 @@ func TestMCommon_EndCondition1_b0(t *testing.T){
 
 	//send m1
 	v := newVirtualNode(1,nil)
-	m1 := &M1{}
+	m1 := new(BlockProposal)
+
 	m1.Credential = v.makeCredential(1)
 	m1.Block = an.actualNode.makeEmptyBlockForTest(m1.Credential)
 	fmt.Println(m1.Block)
 	hash := m1.Block.Hash()
-	m1.Esig = v.commonTools.ESIG(hash)
+	//sig
+	m1.Esig.round = m1.Credential.Round
+	m1.Esig.step = m1.Credential.Step
+	m1.Esig.val = make([]byte , 0)
+	m1.Esig.val = append(m1.Esig.val , hash[:]...)
+
+	R,S,V := v.commonTools.ESIG(hash)
+
+	m1.Esig.R = new(types.BigInt)
+	m1.Esig.R.IntVal = *R
+
+	m1.Esig.S = new(types.BigInt)
+	m1.Esig.S.IntVal = *S
+
+	m1.Esig.V = new(types.BigInt)
+	m1.Esig.V.IntVal = *V
+
+
 	an.SendDataPackToActualNode(m1)
 
 
 	for i := 1 ;i <= 4; i++ {
 		v := newVirtualNode(i,nil)
-		mcommon := &MCommon{}
+		mcommon := new(BinaryByzantineAgreement)
+
 
 		mcommon.Credential = v.makeCredential(4 + 3 + 1)
 		mcommon.B = 0
-		mcommon.EsigB = v.commonTools.ESIG(types.BytesToHash(big.NewInt(int64(mcommon.B)).Bytes()))
 		mcommon.Hash = hash
-		mcommon.EsigV = v.commonTools.ESIG(hash)
+
+		//sig B
+		mcommon.EsigB.round = mcommon.Credential.Round
+		mcommon.EsigB.step = mcommon.Credential.Step
+		mcommon.EsigB.val = make([]byte , 0)
+		mcommon.EsigB.val = append(mcommon.EsigB.val , big.NewInt(int64(mcommon.B)).Bytes()...)
+		h := types.BytesToHash(big.NewInt(int64(mcommon.B)).Bytes())
+		R,S,V := v.commonTools.ESIG(h)
+
+		mcommon.EsigB.R = new(types.BigInt)
+		mcommon.EsigB.R.IntVal = *R
+
+		mcommon.EsigB.S = new(types.BigInt)
+		mcommon.EsigB.S.IntVal = *S
+
+		mcommon.EsigB.V = new(types.BigInt)
+		mcommon.EsigB.V.IntVal = *V
+
+		//sig V
+		mcommon.EsigV.round = mcommon.Credential.Round
+		mcommon.EsigV.step = mcommon.Credential.Step
+		mcommon.EsigV.val = make([]byte , 0)
+		mcommon.EsigV.val = append(mcommon.EsigV.val , mcommon.Hash[:]...)
+
+		R,S,V = v.commonTools.ESIG(mcommon.Hash)
+
+		mcommon.EsigV.R = new(types.BigInt)
+		mcommon.EsigV.R.IntVal = *R
+
+		mcommon.EsigV.S = new(types.BigInt)
+		mcommon.EsigV.S.IntVal = *S
+
+		mcommon.EsigV.V = new(types.BigInt)
+		mcommon.EsigV.V.IntVal = *V
 
 		an.SendDataPackToActualNode(mcommon)
 	}
@@ -524,24 +900,76 @@ func TestMCommon_EndCondition_s7_b0(t *testing.T){
 
 	//send m1
 	v := newVirtualNode(1,nil)
-	m1 := &M1{}
+	m1 := new(BlockProposal)
 	m1.Credential = v.makeCredential(1)
 	m1.Block = an.actualNode.makeEmptyBlockForTest(m1.Credential)
 	fmt.Println(m1.Block)
 	hash := m1.Block.Hash()
-	m1.Esig = v.commonTools.ESIG(hash)
+
+	//sig
+	m1.Esig.round = m1.Credential.Round
+	m1.Esig.step = m1.Credential.Step
+	m1.Esig.val = make([]byte , 0)
+	m1.Esig.val = append(m1.Esig.val , hash[:]...)
+
+	R,S,V := v.commonTools.ESIG(hash)
+
+	m1.Esig.R = new(types.BigInt)
+	m1.Esig.R.IntVal = *R
+
+	m1.Esig.S = new(types.BigInt)
+	m1.Esig.S.IntVal = *S
+
+	m1.Esig.V = new(types.BigInt)
+	m1.Esig.V.IntVal = *V
+
+
 	an.SendDataPackToActualNode(m1)
 
 
 	for i := 1 ;i <= 4; i++ {
 		v := newVirtualNode(i,nil)
-		mcommon := &MCommon{}
+		mcommon := new(BinaryByzantineAgreement)
 
 		mcommon.Credential = v.makeCredential(4 + 3 + 2)
 		mcommon.B = 0
-		mcommon.EsigB = v.commonTools.ESIG(types.BytesToHash(big.NewInt(int64(mcommon.B)).Bytes()))
 		mcommon.Hash = hash
-		mcommon.EsigV = v.commonTools.ESIG(hash)
+
+		//sig B
+		mcommon.EsigB.round = mcommon.Credential.Round
+		mcommon.EsigB.step = mcommon.Credential.Step
+		mcommon.EsigB.val = make([]byte , 0)
+		mcommon.EsigB.val = append(mcommon.EsigB.val , big.NewInt(int64(mcommon.B)).Bytes()...)
+
+		h := types.BytesToHash(big.NewInt(int64(mcommon.B)).Bytes())
+		R,S,V := v.commonTools.ESIG(h)
+
+		mcommon.EsigB.R = new(types.BigInt)
+		mcommon.EsigB.R.IntVal = *R
+
+		mcommon.EsigB.S = new(types.BigInt)
+		mcommon.EsigB.S.IntVal = *S
+
+		mcommon.EsigB.V = new(types.BigInt)
+		mcommon.EsigB.V.IntVal = *V
+
+
+		//sig V
+		mcommon.EsigV.round = mcommon.Credential.Round
+		mcommon.EsigV.step = mcommon.Credential.Step
+		mcommon.EsigV.val= make([]byte , 0)
+		mcommon.EsigV.val = append(mcommon.EsigV.val , mcommon.Hash[:]...)
+
+		R,S,V = v.commonTools.ESIG(mcommon.Hash)
+
+		mcommon.EsigV.R = new(types.BigInt)
+		mcommon.EsigV.R.IntVal = *R
+
+		mcommon.EsigV.S =new(types.BigInt)
+		mcommon.EsigV.S.IntVal = *S
+
+		mcommon.EsigV.V = new(types.BigInt)
+		mcommon.EsigV.V.IntVal = *V
 
 		an.SendDataPackToActualNode(mcommon)
 	}
@@ -564,24 +992,76 @@ func TestMCommon_EndCondition_s7_b1(t *testing.T){
 
 	//send m1
 	v := newVirtualNode(1,nil)
-	m1 := &M1{}
+	m1 := new(BlockProposal)
+
 	m1.Credential = v.makeCredential(1)
 	m1.Block = an.actualNode.makeEmptyBlockForTest(m1.Credential)
 	fmt.Println(m1.Block)
 	hash := m1.Block.Hash()
-	m1.Esig = v.commonTools.ESIG(hash)
+	//sig
+	m1.Esig.round = m1.Credential.Round
+	m1.Esig.step = m1.Credential.Step
+	m1.Esig.val = make([]byte , 0)
+	m1.Esig.val = append(m1.Esig.val , hash[:]...)
+
+	R,S,V := v.commonTools.ESIG(hash)
+
+	m1.Esig.R = new(types.BigInt)
+	m1.Esig.R.IntVal = *R
+
+	m1.Esig.S = new(types.BigInt)
+	m1.Esig.S.IntVal = *S
+
+	m1.Esig.V = new(types.BigInt)
+	m1.Esig.V.IntVal = *V
+
+
 	an.SendDataPackToActualNode(m1)
 
 
 	for i := 1 ;i <= 4; i++ {
 		v := newVirtualNode(i,nil)
-		mcommon := &MCommon{}
+		mcommon := new(BinaryByzantineAgreement)
 
 		mcommon.Credential = v.makeCredential(4 + 3 + 2)
 		mcommon.B = 1
-		mcommon.EsigB = v.commonTools.ESIG(types.BytesToHash(big.NewInt(int64(mcommon.B)).Bytes()))
 		mcommon.Hash = hash
-		mcommon.EsigV = v.commonTools.ESIG(hash)
+
+		//sig B
+		mcommon.EsigB.round = mcommon.Credential.Round
+		mcommon.EsigB.step = mcommon.Credential.Step
+		mcommon.EsigB.val = make([]byte , 0)
+		mcommon.EsigB.val = append(mcommon.EsigB.val , big.NewInt(int64(mcommon.B)).Bytes()...)
+
+		h := types.BytesToHash(big.NewInt(int64(mcommon.B)).Bytes())
+		R,S,V := v.commonTools.ESIG(h)
+
+		mcommon.EsigB.R = new(types.BigInt)
+		mcommon.EsigB.R.IntVal = *R
+
+		mcommon.EsigB.S = new(types.BigInt)
+		mcommon.EsigB.S.IntVal = *S
+
+		mcommon.EsigB.V = new(types.BigInt)
+		mcommon.EsigB.V.IntVal = *V
+
+
+		//sig V
+		mcommon.EsigV.round = mcommon.Credential.Round
+		mcommon.EsigV.step = mcommon.Credential.Step
+		mcommon.EsigV.val= make([]byte , 0)
+		mcommon.EsigV.val = append(mcommon.EsigV.val , mcommon.Hash[:]...)
+
+		R,S,V = v.commonTools.ESIG(mcommon.Hash)
+
+		mcommon.EsigV.R = new(types.BigInt)
+		mcommon.EsigV.R.IntVal = *R
+
+		mcommon.EsigV.S =new(types.BigInt)
+		mcommon.EsigV.S.IntVal = *S
+
+		mcommon.EsigV.V = new(types.BigInt)
+		mcommon.EsigV.V.IntVal = *V
 
 		an.SendDataPackToActualNode(mcommon)
 	}
@@ -603,24 +1083,75 @@ func TestMCommon_EndConditionMax(t *testing.T){
 
 	//send m1
 	v := newVirtualNode(1,nil)
-	m1 := &M1{}
+	m1 := new(BlockProposal)
+
 	m1.Credential = v.makeCredential(1)
 	m1.Block = an.actualNode.makeEmptyBlockForTest(m1.Credential)
 	fmt.Println(m1.Block)
 	hash := m1.Block.Hash()
-	m1.Esig = v.commonTools.ESIG(hash)
+	//sig
+	m1.Esig.round = m1.Credential.Round
+	m1.Esig.step = m1.Credential.Step
+	m1.Esig.val = make([]byte , 0)
+	m1.Esig.val = append(m1.Esig.val , hash[:]...)
+
+	R,S,V := v.commonTools.ESIG(hash)
+
+	m1.Esig.R = new(types.BigInt)
+	m1.Esig.R.IntVal = *R
+
+	m1.Esig.S = new(types.BigInt)
+	m1.Esig.S.IntVal = *S
+
+	m1.Esig.V = new(types.BigInt)
+	m1.Esig.V.IntVal = *V
+
 	an.SendDataPackToActualNode(m1)
 
 
 	for i := 1 ;i <= 4; i++ {
 		v := newVirtualNode(i,nil)
-		mcommon := &MCommon{}
+		mcommon := new(BinaryByzantineAgreement)
 
 		mcommon.Credential = v.makeCredential(15)
 		mcommon.B = 1
-		mcommon.EsigB = v.commonTools.ESIG(types.BytesToHash(big.NewInt(int64(mcommon.B)).Bytes()))
 		mcommon.Hash = hash
-		mcommon.EsigV = v.commonTools.ESIG(hash)
+
+		//sig B
+		mcommon.EsigB.round = mcommon.Credential.Round
+		mcommon.EsigB.step = mcommon.Credential.Step
+		mcommon.EsigB.val = make([]byte , 0)
+		mcommon.EsigB.val = append(mcommon.EsigB.val , big.NewInt(int64(mcommon.B)).Bytes()...)
+
+		h := types.BytesToHash(big.NewInt(int64(mcommon.B)).Bytes())
+		R,S,V := v.commonTools.ESIG(h)
+
+		mcommon.EsigB.R = new(types.BigInt)
+		mcommon.EsigB.R.IntVal = *R
+
+		mcommon.EsigB.S = new(types.BigInt)
+		mcommon.EsigB.S.IntVal = *S
+
+		mcommon.EsigB.V = new(types.BigInt)
+		mcommon.EsigB.V.IntVal = *V
+
+
+		//sig V
+		mcommon.EsigV.round = mcommon.Credential.Round
+		mcommon.EsigV.step = mcommon.Credential.Step
+		mcommon.EsigV.val= make([]byte , 0)
+		mcommon.EsigV.val = append(mcommon.EsigV.val , mcommon.Hash[:]...)
+
+		R,S,V = v.commonTools.ESIG(mcommon.Hash)
+
+		mcommon.EsigV.R = new(types.BigInt)
+		mcommon.EsigV.R.IntVal = *R
+
+		mcommon.EsigV.S =new(types.BigInt)
+		mcommon.EsigV.S.IntVal = *S
+
+		mcommon.EsigV.V = new(types.BigInt)
+		mcommon.EsigV.V.IntVal = *V
 
 		an.SendDataPackToActualNode(mcommon)
 	}
@@ -641,24 +1172,75 @@ func TestMCommon_EndConditionMax_validate(t *testing.T){
 
 	//send m1
 	v := newVirtualNode(1,nil)
-	m1 := &M1{}
+	m1 := new(BlockProposal)
+
 	m1.Credential = v.makeCredential(1)
 	m1.Block = an.actualNode.makeEmptyBlockForTest(m1.Credential)
 	fmt.Println(m1.Block)
 	hash := m1.Block.Hash()
-	m1.Esig = v.commonTools.ESIG(hash)
+	//sig
+	m1.Esig.round = m1.Credential.Round
+	m1.Esig.step = m1.Credential.Step
+	m1.Esig.val = make([]byte , 0)
+	m1.Esig.val = append(m1.Esig.val , hash[:]...)
+
+	R,S,V := v.commonTools.ESIG(hash)
+
+	m1.Esig.R = new(types.BigInt)
+	m1.Esig.R.IntVal = *R
+
+	m1.Esig.S = new(types.BigInt)
+	m1.Esig.S.IntVal = *S
+
+	m1.Esig.V = new(types.BigInt)
+	m1.Esig.V.IntVal = *V
+
 	an.SendDataPackToActualNode(m1)
 
 
 	for i := 1 ;i <= 4; i++ {
 		v := newVirtualNode(i,nil)
-		mcommon := &MCommon{}
+		mcommon := new(BinaryByzantineAgreement)
 
 		mcommon.Credential = v.makeCredential(15)
 		mcommon.B = 0
-		mcommon.EsigB = v.commonTools.ESIG(types.BytesToHash(big.NewInt(int64(mcommon.B)).Bytes()))
 		mcommon.Hash = hash
-		mcommon.EsigV = v.commonTools.ESIG(hash)
+
+		//sig B
+		mcommon.EsigB.round = mcommon.Credential.Round
+		mcommon.EsigB.step = mcommon.Credential.Step
+		mcommon.EsigB.val = make([]byte , 0)
+		mcommon.EsigB.val = append(mcommon.EsigB.val , big.NewInt(int64(mcommon.B)).Bytes()...)
+
+		h := types.BytesToHash(big.NewInt(int64(mcommon.B)).Bytes())
+		R,S,V := v.commonTools.ESIG(h)
+
+		mcommon.EsigB.R = new(types.BigInt)
+		mcommon.EsigB.R.IntVal = *R
+
+		mcommon.EsigB.S = new(types.BigInt)
+		mcommon.EsigB.S.IntVal = *S
+
+		mcommon.EsigB.V = new(types.BigInt)
+		mcommon.EsigB.V.IntVal = *V
+
+
+		//sig V
+		mcommon.EsigV.round = mcommon.Credential.Round
+		mcommon.EsigV.step = mcommon.Credential.Step
+		mcommon.EsigV.val= make([]byte , 0)
+		mcommon.EsigV.val = append(mcommon.EsigV.val , mcommon.Hash[:]...)
+
+		R,S,V = v.commonTools.ESIG(mcommon.Hash)
+
+		mcommon.EsigV.R = new(types.BigInt)
+		mcommon.EsigV.R.IntVal = *R
+
+		mcommon.EsigV.S =new(types.BigInt)
+		mcommon.EsigV.S.IntVal = *S
+
+		mcommon.EsigV.V = new(types.BigInt)
+		mcommon.EsigV.V.IntVal = *V
 
 		an.SendDataPackToActualNode(mcommon)
 	}
