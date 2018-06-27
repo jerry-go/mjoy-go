@@ -311,7 +311,7 @@ type msgTransfer struct {
 	sendChan    chan dataPack
 }
 
-// about msgcore singleton
+// about MsgTransfer singleton
 var (
 	msgTransferInstance *msgTransfer
 	msgTransferOnce		sync.Once
