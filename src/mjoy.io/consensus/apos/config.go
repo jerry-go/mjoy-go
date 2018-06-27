@@ -25,6 +25,7 @@ import (
 	"math/big"
 	"fmt"
 	"mjoy.io/common"
+	"mjoy.io/params"
 )
 
 var (
@@ -66,6 +67,7 @@ func (c *config) setDefault() {
 	c.prH = 67
 	c.blockDelay = 10
 	c.verifyDelay = 5
+	c.chainId = big.NewInt(int64(params.DefaultChainId))
 }
 
 // about msgcore singleton

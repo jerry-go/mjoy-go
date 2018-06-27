@@ -92,7 +92,7 @@ func (this *virtualNode)makeEmptyBlock()*block.Block{
 }
 
 func (this *virtualNode)makeM1(number int)dataPack{
-	m := new(BlockProposal)
+	m := newBlockProposal()
 	m.Block = this.makeEmptyBlock()
 	m.Credential = this.makeCredential(1)
 
@@ -121,7 +121,7 @@ func (this *virtualNode)makeM1(number int)dataPack{
 func (this *virtualNode)dealM1(data dataPack)dataPack{
 	m1 := data.(*BlockProposal)
 
-	m2 := new(GradedConsensus)
+	m2 := newGradedConsensus()
 	m2.Credential = this.makeCredential(2)
 
 
@@ -159,7 +159,7 @@ func (this *virtualNode)dealM23(data dataPack)dataPack{
 	logger.Debug("\033[35m [V]In Mx step:",m.Credential.Step,"\033[0m ")
 	if 2 == m.Credential.Step {
 		// step 2,should make m3
-		m3 := new(GradedConsensus)
+		m3 := newGradedConsensus()
 		m3.Credential = this.makeCredential(3)
 		m3.Hash = m.Hash
 		if !this.isHonest{

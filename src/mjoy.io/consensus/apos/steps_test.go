@@ -42,8 +42,8 @@ func TestStep3Result(t *testing.T){
 	notHonestCnt := 2
 	logger.Debug(COLOR_PREFIX+COLOR_FRONT_BLUE+COLOR_SUFFIX , "NOT HONEST CNT:",notHonestCnt , COLOR_SHORT_RESET)
 	for i := 1 ;i<=verifierCnt;i++{
-		m2 := new(GradedConsensus)
 
+		m2 := newGradedConsensus()
 		m2.Hash = types.Hash{}
 		if notHonestCnt > 0{
 			m2.Hash[10] = m2.Hash[10]+1
@@ -96,7 +96,7 @@ func TestStep4Result(t *testing.T){
 	logger.Debug(COLOR_PREFIX+COLOR_FRONT_BLUE+COLOR_SUFFIX , "NOT HONEST CNT:",notHonestCnt , COLOR_SHORT_RESET)
 
 	for i := 1 ;i<=verifierCnt;i++{
-		m3 := new(GradedConsensus)
+		m3 := newGradedConsensus()
 		m3.Hash = types.Hash{}
 		if notHonestCnt > 0{
 			m3.Hash[10] = m3.Hash[10]+1
@@ -150,7 +150,7 @@ func TestStepCommonResult_ChangeHashAndB(t *testing.T){
 	logger.Debug(COLOR_PREFIX+COLOR_FRONT_BLUE+COLOR_SUFFIX , "NOT HONEST CNT:",notHonestCnt , COLOR_SHORT_RESET)
 
 	for i := 1 ;i<=verifierCnt;i++{
-		mc := new(BinaryByzantineAgreement)
+		mc := newBinaryByzantineAgreement()
 		mc.Hash = types.Hash{}
 
 		if notHonestCnt > 0{

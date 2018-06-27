@@ -40,7 +40,7 @@ func (this *stepObj1)getTTL()time.Duration{
 
 func (this *stepObj1)timerHandle(){
 	//new a M1 data
-	m1 := new(BlockProposal)
+	m1 := newBlockProposal()
 
 
 	m1.Credential = this.ctx.getCredential()
@@ -109,9 +109,12 @@ func (this *stepObj2)getTTL()time.Duration{
 }
 
 func (this *stepObj2)timerHandle(){
-	m2 := new(GradedConsensus)
+	m2 := newGradedConsensus()
 	m2.Credential = this.ctx.getCredential()
-
+	if m2.Credential == nil {
+		panic("timeHandle Credential Wrong.........")
+	}
+	fmt.Println("m2.Credential:" , *m2.Credential)
 	if this.smallestLBr == nil {
 		m2.Hash = types.Hash{}
 		logger.Error(COLOR_PREFIX+COLOR_FRONT_RED+COLOR_SUFFIX,"[A]Step:",this.ctx.getCredential().Step,"Out M2 By a EmptyHash",COLOR_SHORT_RESET)
@@ -222,7 +225,7 @@ func (this *stepObj3)timerHandle(){
 	}
 	//pack m3 Data
 
-	m3 := new(GradedConsensus)
+	m3 := newGradedConsensus()
 	m3.Credential = this.ctx.getCredential()
 
 	m3.Hash = v
@@ -253,7 +256,7 @@ func (this *stepObj3)dataHandle(data interface{}){
 	this.lock.Lock()
 	defer this.lock.Unlock()
 
-	m2 := new(GradedConsensus)
+	m2 := newGradedConsensus()
 	m2 = data.(*GradedConsensus)
 	if m2 == nil{
 		return
@@ -351,7 +354,7 @@ func (this *stepObj4)timerHandle(){
 	}
 
 	//pack m4 Data
-	m4 := new(BinaryByzantineAgreement)
+	m4 := newBinaryByzantineAgreement()
 	m4.Hash = v
 	m4.B = uint(b)
 	m4.Credential = this.ctx.getCredential()
@@ -392,7 +395,7 @@ func (this *stepObj4)timerHandle(){
 func (this *stepObj4)dataHandle(data interface{}){
 	this.lock.Lock()
 	defer this.lock.Unlock()
-	m3 := new(GradedConsensus)
+	m3 := newGradedConsensus()
 	m3 = data.(*GradedConsensus)
 	if m3 == nil{
 		return
@@ -492,7 +495,7 @@ func (this *stepObj567)timerHandle(){
 
 
 
-	mx := new(BinaryByzantineAgreement)
+	mx := newBinaryByzantineAgreement()
 
 	//check 2/3 0 and 2/3 1
 	if max0Len * 3 > 2 * total {
@@ -592,7 +595,7 @@ func (this *stepObj567)timerHandle(){
 func (this *stepObj567)dataHandle(data interface{}){
 	this.lock.Lock()
 	defer this.lock.Unlock()
-	m6 := new(BinaryByzantineAgreement)
+	m6 := newBinaryByzantineAgreement()
 	m6 = data.(*BinaryByzantineAgreement)
 	if m6 == nil{
 		return
@@ -647,7 +650,7 @@ func (this *stepObjm3)timerHandle(){
 	this.lock.Lock()
 	defer this.lock.Unlock()
 
-	m3 := new(BinaryByzantineAgreement)
+	m3 := newBinaryByzantineAgreement()
 	//todo:should be H(Be)
 	m3.Hash = types.Hash{}
 	m3.B = 1

@@ -200,7 +200,9 @@ func (cret *CredentialSign) sender() (types.Address, error) {
 	if Config().chainId != nil && deriveChainId(&cret.V.IntVal).Cmp(Config().chainId) != 0 {
 		return types.Address{}, ErrInvalidChainId
 	}
-
+	if Config().chainId == nil{
+		panic("Config().chainId == nil")
+	}
 	V := &big.Int{}
 	if Config().chainId.Sign() != 0 {
 		V = V.Sub(&cret.V.IntVal, Config().chainIdMul)

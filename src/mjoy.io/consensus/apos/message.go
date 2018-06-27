@@ -89,6 +89,12 @@ type BlockProposal struct {
 	Credential    *CredentialSign
 }
 
+func newBlockProposal()*BlockProposal{
+	b := new(BlockProposal)
+	b.Esig = new(EphemeralSign)
+	return b
+}
+
 func (bp *BlockProposal) validate() error{
 	//verify step
 	if bp.Credential.Step != 1 {
@@ -151,6 +157,13 @@ type GradedConsensus struct {
 	Credential    *CredentialSign
 }
 
+func newGradedConsensus()*GradedConsensus{
+	g := new(GradedConsensus)
+	g.Esig = new(EphemeralSign)
+
+	return g
+}
+
 func (gc *GradedConsensus) validate() error{
 	step := gc.Credential.Step
 	if step != 2  && step != 3 {
@@ -208,6 +221,14 @@ type BinaryByzantineAgreement struct {
 	Hash          types.Hash
 	EsigV         *EphemeralSign
 	Credential    *CredentialSign
+}
+
+func newBinaryByzantineAgreement()*BinaryByzantineAgreement{
+	b := new(BinaryByzantineAgreement)
+	b.EsigB = new(EphemeralSign)
+	b.EsigV = new(EphemeralSign)
+
+	return b
 }
 
 func (bba *BinaryByzantineAgreement) validate() error{

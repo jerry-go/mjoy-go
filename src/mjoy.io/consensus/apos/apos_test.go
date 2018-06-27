@@ -129,7 +129,7 @@ func TestM23(t *testing.T){
 		hash := types.Hash{}
 		hash[0] = 1
 
-		m23 := new(GradedConsensus)
+		m23 := newGradedConsensus()
 		m23.Hash = hash
 
 		m23.Credential = v.makeCredential(2)
@@ -173,7 +173,7 @@ func TestM23filter(t *testing.T){
 		hash := types.Hash{}
 		hash[0] = 1
 
-		m23 := new(GradedConsensus)
+		m23 := newGradedConsensus()
 		m23.Hash = hash
 		m23.Credential = v.makeCredential(2)
 
@@ -217,7 +217,7 @@ func TestM23filter_malicious(t *testing.T){
 		hash := types.Hash{}
 		hash[0] = 1
 
-		m23 := new(GradedConsensus)
+		m23 := newGradedConsensus()
 		m23.Hash = hash
 		m23.Credential = v.makeCredential(2)
 
@@ -241,7 +241,7 @@ func TestM23filter_malicious(t *testing.T){
 
 		hash1 := types.Hash{}
 		hash1[0] = 2
-		m23_1 := new(GradedConsensus)
+		m23_1 := newGradedConsensus()
 
 		m23_1.Hash = hash
 		m23.Credential = m23.Credential
@@ -271,7 +271,7 @@ func TestMCommon(t *testing.T){
 		v := newVirtualNode(i,nil)
 		hash := types.Hash{}
 		hash[0] = 1
-		mcommon := new(BinaryByzantineAgreement)
+		mcommon := newBinaryByzantineAgreement()
 
 
 		mcommon.Credential = v.makeCredential(4 + 3)
@@ -327,7 +327,7 @@ func TestMCommon_filter_duplicate(t *testing.T){
 		hash[0] = 1
 
 
-		mcommon := new(BinaryByzantineAgreement)
+		mcommon := newBinaryByzantineAgreement()
 
 		mcommon.Credential = v.makeCredential(4 + 3)
 		mcommon.Hash = hash
@@ -388,7 +388,7 @@ func TestMCommon_filter_duplicate2(t *testing.T){
 		hash[0] = 1
 
 
-		mcommon := new(BinaryByzantineAgreement)
+		mcommon := newBinaryByzantineAgreement()
 
 		mcommon.Credential = v.makeCredential(4 + 3)
 		mcommon.Hash = hash
@@ -428,7 +428,7 @@ func TestMCommon_filter_duplicate2(t *testing.T){
 
 		an.SendDataPackToActualNode(mcommon)
 
-		mcommonXX := new(BinaryByzantineAgreement)
+		mcommonXX := newBinaryByzantineAgreement()
 
 		mcommonXX.Credential = mcommon.Credential
 		mcommonXX.B = 1
@@ -459,7 +459,7 @@ func TestMCommon_filter_duplicate3(t *testing.T){
 		hash[0] = 1
 
 
-		mcommon := new(BinaryByzantineAgreement)
+		mcommon := newBinaryByzantineAgreement()
 
 		mcommon.Credential = v.makeCredential(4 + 3)
 		mcommon.Hash = hash
@@ -499,7 +499,7 @@ func TestMCommon_filter_duplicate3(t *testing.T){
 
 		an.SendDataPackToActualNode(mcommon)
 
-		mcommonXX := new(BinaryByzantineAgreement)
+		mcommonXX := newBinaryByzantineAgreement()
 
 		mcommonXX.Credential = mcommon.Credential
 		mcommonXX.B = 1
@@ -529,7 +529,7 @@ func TestMCommon_EndCondition0(t *testing.T){
 	//send m1
 	v := newVirtualNode(1,nil)
 
-	m1 := new(BlockProposal)
+	m1 := newBlockProposal()
 
 	m1.Credential = v.makeCredential(1)
 	m1.Block = an.actualNode.makeEmptyBlockForTest(m1.Credential)
@@ -560,7 +560,7 @@ func TestMCommon_EndCondition0(t *testing.T){
 		v := newVirtualNode(i,nil)
 
 
-		mcommon := new(BinaryByzantineAgreement)
+		mcommon := newBinaryByzantineAgreement()
 
 		mcommon.Credential = v.makeCredential(4 + 3)
 		mcommon.Hash = hash
@@ -622,7 +622,7 @@ func TestMCommon_EndCondition0_B1(t *testing.T){
 	//send m1
 	v := newVirtualNode(1,nil)
 
-	m1 := new(BlockProposal)
+	m1 := newBlockProposal()
 
 	m1.Credential = v.makeCredential(1)
 
@@ -651,7 +651,7 @@ func TestMCommon_EndCondition0_B1(t *testing.T){
 
 	for i := 1 ;i <= 4; i++ {
 		v := newVirtualNode(i,nil)
-		mcommon := new(BinaryByzantineAgreement)
+		mcommon := newBinaryByzantineAgreement()
 
 		mcommon.Credential = v.makeCredential(4 + 3)
 		mcommon.B = 1
@@ -713,7 +713,7 @@ func TestMCommon_EndCondition1(t *testing.T){
 
 	//send m1
 	v := newVirtualNode(1,nil)
-	m1 := new(BlockProposal)
+	m1 := newBlockProposal()
 
 	m1.Credential = v.makeCredential(1)
 	m1.Block = an.actualNode.makeEmptyBlockForTest(m1.Credential)
@@ -742,7 +742,7 @@ func TestMCommon_EndCondition1(t *testing.T){
 
 	for i := 1 ;i <= 4; i++ {
 		v := newVirtualNode(i,nil)
-		mcommon := new(BinaryByzantineAgreement)
+		mcommon := newBinaryByzantineAgreement()
 
 
 		mcommon.Credential = v.makeCredential(4 + 3 + 1)
@@ -809,7 +809,7 @@ func TestMCommon_EndCondition1_b0(t *testing.T){
 
 	//send m1
 	v := newVirtualNode(1,nil)
-	m1 := new(BlockProposal)
+	m1 := newBlockProposal()
 
 	m1.Credential = v.makeCredential(1)
 	m1.Block = an.actualNode.makeEmptyBlockForTest(m1.Credential)
@@ -838,7 +838,7 @@ func TestMCommon_EndCondition1_b0(t *testing.T){
 
 	for i := 1 ;i <= 4; i++ {
 		v := newVirtualNode(i,nil)
-		mcommon := new(BinaryByzantineAgreement)
+		mcommon := newBinaryByzantineAgreement()
 
 
 		mcommon.Credential = v.makeCredential(4 + 3 + 1)
@@ -900,7 +900,7 @@ func TestMCommon_EndCondition_s7_b0(t *testing.T){
 
 	//send m1
 	v := newVirtualNode(1,nil)
-	m1 := new(BlockProposal)
+	m1 := newBlockProposal()
 	m1.Credential = v.makeCredential(1)
 	m1.Block = an.actualNode.makeEmptyBlockForTest(m1.Credential)
 	fmt.Println(m1.Block)
@@ -929,7 +929,7 @@ func TestMCommon_EndCondition_s7_b0(t *testing.T){
 
 	for i := 1 ;i <= 4; i++ {
 		v := newVirtualNode(i,nil)
-		mcommon := new(BinaryByzantineAgreement)
+		mcommon := newBinaryByzantineAgreement()
 
 		mcommon.Credential = v.makeCredential(4 + 3 + 2)
 		mcommon.B = 0
@@ -992,7 +992,7 @@ func TestMCommon_EndCondition_s7_b1(t *testing.T){
 
 	//send m1
 	v := newVirtualNode(1,nil)
-	m1 := new(BlockProposal)
+	m1 := newBlockProposal()
 
 	m1.Credential = v.makeCredential(1)
 	m1.Block = an.actualNode.makeEmptyBlockForTest(m1.Credential)
@@ -1021,7 +1021,7 @@ func TestMCommon_EndCondition_s7_b1(t *testing.T){
 
 	for i := 1 ;i <= 4; i++ {
 		v := newVirtualNode(i,nil)
-		mcommon := new(BinaryByzantineAgreement)
+		mcommon := newBinaryByzantineAgreement()
 
 		mcommon.Credential = v.makeCredential(4 + 3 + 2)
 		mcommon.B = 1
@@ -1083,7 +1083,7 @@ func TestMCommon_EndConditionMax(t *testing.T){
 
 	//send m1
 	v := newVirtualNode(1,nil)
-	m1 := new(BlockProposal)
+	m1 := newBlockProposal()
 
 	m1.Credential = v.makeCredential(1)
 	m1.Block = an.actualNode.makeEmptyBlockForTest(m1.Credential)
@@ -1111,7 +1111,7 @@ func TestMCommon_EndConditionMax(t *testing.T){
 
 	for i := 1 ;i <= 4; i++ {
 		v := newVirtualNode(i,nil)
-		mcommon := new(BinaryByzantineAgreement)
+		mcommon := newBinaryByzantineAgreement()
 
 		mcommon.Credential = v.makeCredential(15)
 		mcommon.B = 1
@@ -1172,7 +1172,7 @@ func TestMCommon_EndConditionMax_validate(t *testing.T){
 
 	//send m1
 	v := newVirtualNode(1,nil)
-	m1 := new(BlockProposal)
+	m1 := newBlockProposal()
 
 	m1.Credential = v.makeCredential(1)
 	m1.Block = an.actualNode.makeEmptyBlockForTest(m1.Credential)
@@ -1200,7 +1200,7 @@ func TestMCommon_EndConditionMax_validate(t *testing.T){
 
 	for i := 1 ;i <= 4; i++ {
 		v := newVirtualNode(i,nil)
-		mcommon := new(BinaryByzantineAgreement)
+		mcommon := newBinaryByzantineAgreement()
 
 		mcommon.Credential = v.makeCredential(15)
 		mcommon.B = 0
