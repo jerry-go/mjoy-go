@@ -5,6 +5,8 @@ import (
 	"testing"
 	"fmt"
 	"mjoy.io/common/types"
+	"time"
+	"mjoy.io/common"
 )
 
 func (s *Signature) init() {
@@ -17,8 +19,10 @@ func TestBba_EndCondition0(t *testing.T){
 	Config().blockDelay = 2
 	Config().verifyDelay = 1
 	Config().maxBBASteps = 12
+	Config().prVerifier = 10000000000
+	Config().prLeader = 10000000000
 	an := newAllNodeManager()
-	verifierCnt := an.initTestCommonNew(1)
+	verifierCnt := an.initTestCommonNew(0)
 	logger.Debug(COLOR_PREFIX+COLOR_FRONT_BLUE+COLOR_SUFFIX , "Verifier Cnt:" , verifierCnt , COLOR_SHORT_RESET)
 
 	priKey := generatePrivateKey()
@@ -50,6 +54,7 @@ func TestBba_EndCondition0(t *testing.T){
 	msgbp.Send()
 
 	for i := 1 ;i <= 4; i++ {
+		time.Sleep(1 * time.Second)
 		priKey := generatePrivateKey()
 		cs := &CredentialSign{}
 		cs.Round = 100
@@ -85,4 +90,55 @@ func TestBba_EndCondition0(t *testing.T){
 	select {
 		case <-an.actualNode.StopCh():
 	}
+}
+
+func TestCs_validate_success(t *testing.T){
+	Config().prVerifier = 10000000000
+	priKey := generatePrivateKey()
+	cs := &CredentialSign{}
+	cs.Round = 100
+	cs.Step = 2
+	cs.Signature.init()
+	if _,_,_, err := cs.sign(priKey); err != nil {
+		fmt.Println("111",err)
+		return
+	}
+	msgcs := NewMsgCredential(cs)
+	msgcs.Send()
+	time.Sleep(2 * time.Second)
+}
+
+//credential has no right to verify
+func TestCs_validate_fail_1(t *testing.T){
+	Config().prVerifier = 1
+	priKey := generatePrivateKey()
+	cs := &CredentialSign{}
+	cs.Round = 100
+	cs.Step = 2
+	cs.Signature.init()
+	if _,_,_, err := cs.sign(priKey); err != nil {
+		fmt.Println("111",err)
+		return
+	}
+	msgcs := NewMsgCredential(cs)
+	msgcs.Send()
+	time.Sleep(2 * time.Second)
+}
+
+//verify CredentialSig fail: invalid chain id for signer
+func TestCs_validate_fail_2(t *testing.T){
+	Config().prVerifier = 10000000000
+	priKey := generatePrivateKey()
+	cs := &CredentialSign{}
+	cs.Round = 100
+	cs.Step = 2
+	cs.Signature.init()
+	if _,_,_, err := cs.sign(priKey); err != nil {
+		fmt.Println("111",err)
+		return
+	}
+	cs.V.IntVal.Add(&cs.V.IntVal, common.Big2)
+	msgcs := NewMsgCredential(cs)
+	msgcs.Send()
+	time.Sleep(2 * time.Second)
 }

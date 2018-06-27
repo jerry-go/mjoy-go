@@ -659,7 +659,7 @@ func (this *Apos)stepsFactory(step int , pCredential *CredentialSign)(stepRoutin
 		stepRoutineObj = newStepRoutine()
 		stepCtx.makeEmptyBlockForTest = this.makeEmptyBlockForTest
 
-		delayT := time.Duration(3)
+		delayT := time.Duration(1)
 
 		stepObj = makeStepObj1(delayT*time.Second , stepRoutineObj.stopCh)
 		stepObj.setCtx(stepCtx)
