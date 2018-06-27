@@ -494,6 +494,7 @@ func NewApos(msger OutMsger ,cmTools CommonTools)*Apos{
 	a.allMsgBridge = make(chan dataPack , 10000)
 	a.roundOverCh = make(chan interface{} , 1)
 	a.aposStopCh = make(chan interface{} , 1)
+	a.outMsger = MsgTransfer()
 
 	a.reset()
 
@@ -598,7 +599,7 @@ func (this *Apos)StopCh()chan interface{}{
 }
 
 func (this *Apos)judgeVerifier(cs *CredentialSign, setp int) bool{
-	h := cs.hash()
+	h := cs.Signature.hash()
 	leader := false
 	if 1 == setp {
 		leader = true
