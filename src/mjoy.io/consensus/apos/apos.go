@@ -134,12 +134,15 @@ func (this *Round)setSmallestBrM1(bp *BlockProposal){
 	this.smallestLBr = bp
 }
 
-func (this *Round)addStepObj(step int , stepObj *stepRoutine){
-	this.lock.Lock()
-	defer this.lock.Unlock()
-
+func (this *Round)addStepRoutine(step int , stepObj *stepRoutine){
 	if _, ok := this.allStepObj[step]; !ok {
 		this.allStepObj[step] = stepObj
+	}
+}
+
+func (this *Round)stopAllStepRoutine(){
+	for _, routine := range this.allStepObj {
+		routine.stop()
 	}
 }
 
@@ -173,12 +176,34 @@ func (this *Round)broadcastCredentials() {
 
 
 func (this *Round)startVerify(wg *sync.WaitGroup) {
+	// create routine obj
 	for i, credential := range this.credentials {
-		stepRoutineObj,stepObj := this.apos.stepsFactory(i, credential)
-		if stepRoutineObj != nil && stepObj != nil{
-			this.addStepObj(i, stepRoutineObj)
-			go stepRoutineObj.run(stepObj)
+		stepRoutineObj := newStepRoutine()
+		this.addStepRoutine(i, stepRoutineObj)
+
+		// step context
+		stepCtx := &stepCtx{}
+		//GetCredential
+		stepCtx.getCredential = func() *CredentialSign {
+			return credential
 		}
+		stepCtx.esig = this.apos.commonTools.ESIG
+		stepCtx.sendInner = this.apos.outMsger.SendInner
+		stepCtx.propagateMsg = this.apos.outMsger.PropagateMsg
+		stepCtx.getStep = func()int{
+			return i
+		}
+		stepCtx.stopStep = stepRoutineObj.stop
+		stepCtx.stopRound = func() {
+			this.stopAllStepRoutine()
+			// TODO: ......
+		}
+
+		// create step
+		stepObj := this.apos.stepsFactory(stepCtx)
+
+		// run
+		stepRoutineObj.run(stepObj)
 	}
 }
 
@@ -636,102 +661,62 @@ func (this *Apos)judgeVerifier(cs *CredentialSign, setp int) bool{
 //}
 
 //now
-func (this *Apos)stepsFactory(step int , pCredential *CredentialSign)(stepRoutineObj *stepRoutine , stepObj step){
-
-	stepCtx := makeStepCtx()
-	//GetCredential
-	stepCtx.getCredential = func() *CredentialSign {
-		return pCredential
-	}
-	stepCtx.esig = this.commonTools.ESIG
-	stepCtx.sendInner = this.outMsger.SendInner
-	stepCtx.propagateMsg = this.outMsger.PropagateMsg
-	stepCtx.getStep = func()int{
-		return step
-	}
-	stepRoutineObj = nil   // if anyWrong ,return a nil obj
-	stepObj = nil
-
-
-	switch step {
+func (this *Apos) stepsFactory(ctx *stepCtx) (stepObj step) {
+	switch ctx.getStep() {
 	case 1:
-
-		stepRoutineObj = newStepRoutine()
-		stepCtx.makeEmptyBlockForTest = this.makeEmptyBlockForTest
+		ctx.makeEmptyBlockForTest = this.makeEmptyBlockForTest
 
 		delayT := time.Duration(3)
 
-		stepObj = makeStepObj1(delayT*time.Second , stepRoutineObj.stopCh)
-		stepObj.setCtx(stepCtx)
-
+		stepObj = makeStepObj1(delayT*time.Second)
+		stepObj.setCtx(ctx)
 
 	case 2:
-		stepRoutineObj = newStepRoutine()
-
 		delayT := time.Duration(Config().verifyDelay + Config().blockDelay)
 		if LessTimeDelayFlag{
 			delayT = time.Duration(LessTimeDelayCnt)
 		}
 
 
-		stepObj = makeStepObj2(delayT*time.Second , stepRoutineObj.stopCh)
+		stepObj = makeStepObj2(delayT*time.Second)
 		stepObj.setCtx(stepCtx)
 
-
 	case 3:
-		stepRoutineObj = newStepRoutine()
-
 		delayT := time.Duration(3*Config().verifyDelay + Config().blockDelay)
 		if LessTimeDelayFlag{
 			delayT = time.Duration(LessTimeDelayCnt)
 		}
 
-		stepObj = makeStepObj3(delayT*time.Second , stepRoutineObj.stopCh)
+		stepObj = makeStepObj3(delayT*time.Second)
 		stepObj.setCtx(stepCtx)
 
 	case 4:
-		stepRoutineObj = newStepRoutine()
-
 		delayT := time.Duration(5*Config().verifyDelay + Config().blockDelay)
 		if LessTimeDelayFlag{
 			delayT = time.Duration(LessTimeDelayCnt)
 		}
 
-		stepObj = makeStepObj4(delayT*time.Second , stepRoutineObj.stopCh)
+		stepObj = makeStepObj4(delayT*time.Second)
 		stepObj.setCtx(stepCtx)
 
-
 	default:
-
-		if step > Config().maxBBASteps + 3{
-			stepRoutineObj = nil
-
-		}else if (step >= 5 && step <= (Config().maxBBASteps + 2)) {
-			stepRoutineObj = newStepRoutine()
-
+		if step >= 5 && step <= (Config().maxBBASteps + 2) {
 			delayT := time.Duration((2*step -3)*Config().verifyDelay + Config().blockDelay)
 			if LessTimeDelayFlag{
 				delayT = time.Duration(LessTimeDelayCnt)
 			}
 
-			stepObj = makeStepObj567(delayT*time.Second , stepRoutineObj.stopCh)
+			stepObj = makeStepObj567(delayT*time.Second)
 			stepObj.setCtx(stepCtx)
-
-
-		}else if (step == (Config().maxBBASteps + 3)){
-			//stepObj = makeStepm3Obj(this,pCredential,step)
-			stepRoutineObj = newStepRoutine()
-
+		} else if step == (Config().maxBBASteps + 3) {
 			delayT := time.Duration((2*Config().maxBBASteps + 3)*Config().verifyDelay + Config().blockDelay)
 			if LessTimeDelayFlag{
 				delayT = time.Duration(LessTimeDelayCnt)
 			}
 
-			stepObj = makeStepObjm3(delayT*time.Second , stepRoutineObj.stopCh)
+			stepObj = makeStepObjm3(delayT*time.Second)
 			stepObj.setCtx(stepCtx)
-
-		}else{
-			stepRoutineObj = nil
+		} else {
 			stepObj = nil
 		}
 	}

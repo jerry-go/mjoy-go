@@ -15,23 +15,27 @@ var (
 	LessTimeDelayCnt int = 5
 )
 
+func calcTTL(step int) time.Duration {
+	return time.Duration(Config().blockDelay + step * Config().verifyDelay) * time.Second
+}
+
 //step 1
 type stepObj1 struct {
 	lock sync.RWMutex
 	ctx *stepCtx
 	timeEnd time.Duration
-	stopCh chan interface{}
 }
 
-func makeStepObj1(timeEnd time.Duration , stopCh chan interface{})*stepObj1{
+func makeStepObj1()*stepObj1{
 	s := new(stepObj1)
-	s.timeEnd = timeEnd
-	s.stopCh = stopCh
 	return s
 }
 
 func (this *stepObj1)setCtx(ctx *stepCtx){
 	this.ctx = ctx
+	if this.timeEnd == 0 {
+		this.timeEnd = calcTTL(ctx.getStep())
+	}
 }
 
 func (this *stepObj1)getTTL()time.Duration{
@@ -66,12 +70,7 @@ func (this *stepObj1)timerHandle(){
 	this.ctx.sendInner(m1)
 	logger.Debug(COLOR_PREFIX+COLOR_FRONT_RED+COLOR_SUFFIX,"[A]Out M1",COLOR_SHORT_RESET)
 
-
-
-
-	go func(this *stepObj1){
-		this.stopCh<-1
-	}(this)
+	go this.ctx.stopStep()
 }
 
 func (this *stepObj1)dataHandle(data interface{}){
@@ -82,21 +81,17 @@ func (this *stepObj1)stopHandle(){
 
 }
 
-
-
 //step 2
 type stepObj2 struct {
 	smallestLBr *BlockProposal //this node regard smallestLBr as the smallest credential's block info
 	lock sync.RWMutex
 	ctx *stepCtx
 	timeEnd time.Duration
-	stopCh chan interface{}
 }
 
 func makeStepObj2(timeEnd time.Duration , stopCh chan interface{})*stepObj2{
 	s := new(stepObj2)
 	s.timeEnd = timeEnd
-	s.stopCh = stopCh
 	return s
 }
 
@@ -140,10 +135,9 @@ func (this *stepObj2)timerHandle(){
 
 	this.ctx.sendInner(m2)
 	logger.Debug(COLOR_PREFIX+COLOR_FRONT_RED+COLOR_SUFFIX,"[A]Step:",this.ctx.getCredential().Step,"Out M2",COLOR_SHORT_RESET)
+
 	//turn to stop
-	go func(this *stepObj2){
-		this.stopCh<-1
-	}(this)
+	go this.ctx.stopStep()
 }
 
 func (this *stepObj2)dataHandle(data interface{}){

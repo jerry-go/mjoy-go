@@ -111,7 +111,7 @@ func (s Signature) toBytes() (sig []byte) {
 	s.checkObj()
 
 	sV := s.V
-	V := types.NewBigInt(*big.NewInt(0))
+	V := types.BigInt{}
 	if Config().chainId.Sign() != 0 {
 		V.IntVal.Sub(&sV.IntVal, Config().chainIdMul)
 		V.IntVal.Sub(&V.IntVal, common.Big35)

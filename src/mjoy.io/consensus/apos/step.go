@@ -130,12 +130,4 @@ type stepCtx struct {
 	setRound func(*Round)
 	makeEmptyBlockForTest func(cs *CredentialSign)*block.Block
 	getEphemeralSig func(signed []byte) Signature
-
 }
-
-func makeStepCtx()*stepCtx{
-	s := new(stepCtx)
-	return s
-}
-
-
