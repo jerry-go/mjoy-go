@@ -128,6 +128,7 @@ func (this *allNodeManager)initTestCommon(testPotVerifier int) int{
 	return int(allNodesCnt)
 }
 
+
 func (this *allNodeManager)initTestCommonNew(testPotVerifier int) int{
 	this.actualNode = NewApos(this.msger , newOutCommonTools())
 	//this.actualNode.SetOutMsger(this.msger)
