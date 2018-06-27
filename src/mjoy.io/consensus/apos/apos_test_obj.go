@@ -85,7 +85,6 @@ func (this *allNodeManager)init(maliciousNodeCnt int){
 	//only one msger,for virtual  nodes and actual node
 	this.msger = newMsgManager()
 	this.actualNode = NewApos(this.msger , newOutCommonTools())
-	this.actualNode.validate.fake = true
 	this.actualNode.SetOutMsger(this.msger)
 	TestPotVerifier = 1
 	//all nodes
@@ -166,7 +165,7 @@ func (this *allNodeManager)initTestSteps(checkStep int64)int{
 	//only one msger,for virtual  nodes and actual node
 	this.msger = newMsgManager()
 	this.actualNode = NewApos(this.msger , newOutCommonTools())
-	this.actualNode.validate.fake = true
+
 	this.actualNode.SetOutMsger(this.msger)
 	TestPotVerifier = 1
 

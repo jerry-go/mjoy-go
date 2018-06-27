@@ -321,12 +321,12 @@ func (this *Round)filterMsgBba(msg *BinaryByzantineAgreement) error {
 			return errors.New("not honesty peer")
 		}
 
-		if peerBba, ok := peerMsgBbas.msgBbas[int(step)]; ok {
-			if peerBba.bba.Hash == msg.Hash && (peerBba.B == 3 || peerBba.B == msg.B + 1){
+		if peerbba, ok := peerMsgBbas.msgBbas[int(step)]; ok {
+			if peerbba.bba.Hash == msg.Hash && (peerbba.B == 3 || peerbba.B == msg.B + 1){
 				return errors.New("duplicate bba message")
-			} else if (peerBba.bba.Hash == msg.Hash) {
+			} else if (peerbba.bba.Hash == msg.Hash) {
 				// for bba message, player j can send different B value
-				peerBba.B = 3
+				peerbba.B = 3
 				logger.Info("receive different vote bba message!", msg.B)
 				return nil
 			} else {
