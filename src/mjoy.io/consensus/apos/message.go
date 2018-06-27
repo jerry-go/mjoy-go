@@ -63,14 +63,22 @@ func NewMsgCredential(c *CredentialSign) *msgCredentialSig{
 	return msgCs
 }
 
+func (c *msgCredentialSig) SendToCore() {
+	logger.Debug("msgBlockProposal data handle")
 
+}
 
 func (c *msgCredentialSig) DataHandle(data interface{}) {
-	fmt.Println("msgBlockProposal data handle")
+	logger.Debug("msgCredentialSig data handle")
+	if err := c.cs.validate(); err != nil {
+		logger.Info("message CredentialSig validate error:", err)
+		return
+	}
+	c.SendToCore()
 }
 
 func (c *msgCredentialSig) StopHandle() {
-	fmt.Printf("stop ...\n")
+	logger.Debug("stop ...")
 }
 
 // step1 (Block Proposal) message
@@ -120,7 +128,11 @@ func NewMsgBlockProposal(bp *BlockProposal) *msgBlockProposal{
 
 
 func (bp *msgBlockProposal) DataHandle(data interface{}) {
-	fmt.Println("msgBlockProposal data handle")
+	logger.Debug("msgBlockProposal data handle")
+	if err := bp.bp.validate(); err != nil {
+		logger.Info("message BlockProposal validate error:", err)
+		return
+	}
 }
 
 func (bp *msgBlockProposal) StopHandle() {
@@ -175,11 +187,15 @@ func NewMsgGradedConsensus(gc *GradedConsensus) *msgGradedConsensus{
 }
 
 func (gc *msgGradedConsensus) DataHandle(data interface{}) {
-	fmt.Println("msgGradedConsensus data handle")
+	logger.Debug("msgGradedConsensus data handle")
+	if err := gc.gc.validate(); err != nil {
+		logger.Info("message GradedConsensus validate error:", err)
+		return
+	}
 }
 
 func (gc *msgGradedConsensus) StopHandle() {
-	fmt.Printf("stop ...\n")
+	logger.Debug("stop ...")
 }
 
 // step4 and step other message
@@ -235,7 +251,7 @@ func (bba *BinaryByzantineAgreement) validate() error{
 	bba.EsigV.step = bba.Credential.Step
 	bba.EsigV.val = bba.Hash.Bytes()
 	if _, err := bba.EsigV.sender(); err != nil {
-		return errors.New(fmt.Sprintf("BBA B verify ephemeral signature fail: %s", err))
+		return errors.New(fmt.Sprintf("BBA V verify ephemeral signature fail: %s", err))
 	}
 
 	return nil
@@ -255,10 +271,14 @@ func NewMsgBinaryByzantineAgreement(bba *BinaryByzantineAgreement) *msgBinaryByz
 	return msgBba
 }
 
-func (bba *BinaryByzantineAgreement) DataHandle(data interface{}) {
-	fmt.Println("BinaryByzantineAgreement data handle")
+func (bba *msgBinaryByzantineAgreement) DataHandle(data interface{}) {
+	logger.Debug("BinaryByzantineAgreement data handle")
+	if err := bba.bba.validate(); err != nil {
+		logger.Info("message ByzantineAgreement validate error:", err)
+		return
+	}
 }
 
-func (bba *BinaryByzantineAgreement) StopHandle() {
-	fmt.Printf("stop ...\n")
+func (bba *msgBinaryByzantineAgreement) StopHandle() {
+	logger.Debug("stop ...")
 }
