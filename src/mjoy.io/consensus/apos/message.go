@@ -251,7 +251,8 @@ func (bba *BinaryByzantineAgreement) validate() error{
 		return errors.New(fmt.Sprintf("Binary Byzantine Agreement step is not right: %d", bba.Credential.Step))
 	}
 	//verify Credential
-	if _, err := bba.Credential.validate(); err != nil {
+	cretSender, err := bba.Credential.validate()
+	if err != nil {
 		return err
 	}
 
@@ -277,16 +278,27 @@ func (bba *BinaryByzantineAgreement) validate() error{
 	bba.EsigB.round = bba.Credential.Round
 	bba.EsigB.step = bba.Credential.Step
 	bba.EsigB.val = big.NewInt(int64(bba.B)).Bytes()
-	if _, err := bba.EsigB.sender(); err != nil {
+	bSender, err := bba.EsigB.sender()
+	if err != nil {
 		return errors.New(fmt.Sprintf("BBA B verify ephemeral signature fail: %s", err))
+	}
+
+	if cretSender != bSender {
+		logger.Debug("BinaryByzantineAgreement sender's address is not equal in Credential and B Ephemeral signature", cretSender.Hex(), bSender.Hex())
+		return errors.New("sender's address is not equal in Credential and B Ephemeral")
 	}
 
 	//verify V ephemeral signature
 	bba.EsigV.round = bba.Credential.Round
 	bba.EsigV.step = bba.Credential.Step
 	bba.EsigV.val = bba.Hash.Bytes()
-	if _, err := bba.EsigV.sender(); err != nil {
+	hashSender, err := bba.EsigV.sender()
+	if err != nil {
 		return errors.New(fmt.Sprintf("BBA V verify ephemeral signature fail: %s", err))
+	}
+	if cretSender != hashSender {
+		logger.Debug("BinaryByzantineAgreement sender's address is not equal in Credential and V Ephemeral signature", cretSender.Hex(), hashSender.Hex())
+		return errors.New("sender's address is not equal in Credential and V Ephemeral")
 	}
 
 	return nil

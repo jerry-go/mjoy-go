@@ -413,3 +413,211 @@ func TestGc_validate_fail_2(t *testing.T){
 	msgGc.Send()
 	time.Sleep(2 * time.Second)
 }
+
+func TestBba_validate_success(t *testing.T){
+	Config().prVerifier = 10000000000
+	Config().prLeader = 10000000000
+	priKey := generatePrivateKey()
+	Orignaddress := crypto.PubkeyToAddress(priKey.PublicKey)
+	logger.Debug("Orignaddress", Orignaddress.Hex())
+	cs := &CredentialSign{}
+	cs.Round = 100
+	cs.Step = 4 + 3
+	cs.Signature.init()
+	if _,_,_, err := cs.sign(priKey); err != nil {
+		fmt.Println("111",err)
+		return
+	}
+
+	bba := newBinaryByzantineAgreement()
+
+	bba.Credential = cs
+	bba.B = 0
+	bba.Hash = types.Hash{}
+	bba.Hash[1] = 1
+	//b
+	bba.EsigB.round = bba.Credential.Round
+	bba.EsigB.step = bba.Credential.Step
+	bba.EsigB.val = big.NewInt(int64(bba.B)).Bytes()
+	bba.EsigB.Signature.init()
+	bba.EsigB.sign(priKey)
+
+	//hash
+	bba.EsigV.round = bba.Credential.Round
+	bba.EsigV.step = bba.Credential.Step
+	bba.EsigV.val = bba.Hash.Bytes()
+	bba.EsigV.Signature.init()
+	bba.EsigV.sign(priKey)
+
+	msgBba := NewMsgBinaryByzantineAgreement(bba)
+	msgBba.Send()
+	time.Sleep(2 * time.Second)
+}
+
+//step is not right
+func TestBba_validate_fail_1(t *testing.T){
+	Config().prVerifier = 10000000000
+	Config().prLeader = 10000000000
+	priKey := generatePrivateKey()
+	Orignaddress := crypto.PubkeyToAddress(priKey.PublicKey)
+	logger.Debug("Orignaddress", Orignaddress.Hex())
+	cs := &CredentialSign{}
+	cs.Round = 100
+	cs.Step = 3
+	cs.Signature.init()
+	if _,_,_, err := cs.sign(priKey); err != nil {
+		fmt.Println("111",err)
+		return
+	}
+
+	bba := newBinaryByzantineAgreement()
+
+	bba.Credential = cs
+	bba.B = 0
+	bba.Hash = types.Hash{}
+	bba.Hash[1] = 1
+	//b
+	bba.EsigB.round = bba.Credential.Round
+	bba.EsigB.step = bba.Credential.Step
+	bba.EsigB.val = big.NewInt(int64(bba.B)).Bytes()
+	bba.EsigB.Signature.init()
+	bba.EsigB.sign(priKey)
+
+	//hash
+	bba.EsigV.round = bba.Credential.Round
+	bba.EsigV.step = bba.Credential.Step
+	bba.EsigV.val = bba.Hash.Bytes()
+	bba.EsigV.Signature.init()
+	bba.EsigV.sign(priKey)
+
+	msgBba := NewMsgBinaryByzantineAgreement(bba)
+	msgBba.Send()
+	time.Sleep(2 * time.Second)
+}
+
+//B value 2 is not right in apos protocal
+func TestBba_validate_fail_2(t *testing.T){
+	Config().prVerifier = 10000000000
+	Config().prLeader = 10000000000
+	priKey := generatePrivateKey()
+	Orignaddress := crypto.PubkeyToAddress(priKey.PublicKey)
+	logger.Debug("Orignaddress", Orignaddress.Hex())
+	cs := &CredentialSign{}
+	cs.Round = 100
+	cs.Step = 7
+	cs.Signature.init()
+	if _,_,_, err := cs.sign(priKey); err != nil {
+		fmt.Println("111",err)
+		return
+	}
+
+	bba := newBinaryByzantineAgreement()
+
+	bba.Credential = cs
+	bba.B = 2
+	bba.Hash = types.Hash{}
+	bba.Hash[1] = 1
+	//b
+	bba.EsigB.round = bba.Credential.Round
+	bba.EsigB.step = bba.Credential.Step
+	bba.EsigB.val = big.NewInt(int64(bba.B)).Bytes()
+	bba.EsigB.Signature.init()
+	bba.EsigB.sign(priKey)
+
+	//hash
+	bba.EsigV.round = bba.Credential.Round
+	bba.EsigV.step = bba.Credential.Step
+	bba.EsigV.val = bba.Hash.Bytes()
+	bba.EsigV.Signature.init()
+	bba.EsigV.sign(priKey)
+
+	msgBba := NewMsgBinaryByzantineAgreement(bba)
+	msgBba.Send()
+	time.Sleep(2 * time.Second)
+}
+
+//sender's address is not equal in Credential and B Ephemeral signature
+func TestBba_validate_fail_3(t *testing.T){
+	Config().prVerifier = 10000000000
+	Config().prLeader = 10000000000
+	priKey := generatePrivateKey()
+	Orignaddress := crypto.PubkeyToAddress(priKey.PublicKey)
+	logger.Debug("Orignaddress", Orignaddress.Hex())
+	cs := &CredentialSign{}
+	cs.Round = 100
+	cs.Step = 7
+	cs.Signature.init()
+	if _,_,_, err := cs.sign(priKey); err != nil {
+		fmt.Println("111",err)
+		return
+	}
+
+	bba := newBinaryByzantineAgreement()
+
+	bba.Credential = cs
+	bba.B = 0
+	bba.Hash = types.Hash{}
+	bba.Hash[1] = 1
+	//b
+	bba.EsigB.round = bba.Credential.Round
+	bba.EsigB.step = bba.Credential.Step
+	bba.EsigB.val = big.NewInt(int64(bba.B)).Bytes()
+	bba.EsigB.Signature.init()
+	bba.EsigB.sign(priKey)
+
+	bba.B = 1
+
+	//hash
+	bba.EsigV.round = bba.Credential.Round
+	bba.EsigV.step = bba.Credential.Step
+	bba.EsigV.val = bba.Hash.Bytes()
+	bba.EsigV.Signature.init()
+	bba.EsigV.sign(priKey)
+
+	msgBba := NewMsgBinaryByzantineAgreement(bba)
+	msgBba.Send()
+	time.Sleep(2 * time.Second)
+}
+
+//sender's address is not equal in Credential and V Ephemeral
+func TestBba_validate_fail_4(t *testing.T){
+	Config().prVerifier = 10000000000
+	Config().prLeader = 10000000000
+	priKey := generatePrivateKey()
+	Orignaddress := crypto.PubkeyToAddress(priKey.PublicKey)
+	logger.Debug("Orignaddress", Orignaddress.Hex())
+	cs := &CredentialSign{}
+	cs.Round = 100
+	cs.Step = 7
+	cs.Signature.init()
+	if _,_,_, err := cs.sign(priKey); err != nil {
+		fmt.Println("111",err)
+		return
+	}
+
+	bba := newBinaryByzantineAgreement()
+
+	bba.Credential = cs
+	bba.B = 0
+	bba.Hash = types.Hash{}
+	bba.Hash[1] = 1
+	//b
+	bba.EsigB.round = bba.Credential.Round
+	bba.EsigB.step = bba.Credential.Step
+	bba.EsigB.val = big.NewInt(int64(bba.B)).Bytes()
+	bba.EsigB.Signature.init()
+	bba.EsigB.sign(priKey)
+
+
+	//hash
+	bba.EsigV.round = bba.Credential.Round
+	bba.EsigV.step = bba.Credential.Step
+	bba.EsigV.val = bba.Hash.Bytes()
+	bba.EsigV.Signature.init()
+	bba.EsigV.sign(priKey)
+	bba.Hash[1] = 2
+
+	msgBba := NewMsgBinaryByzantineAgreement(bba)
+	msgBba.Send()
+	time.Sleep(2 * time.Second)
+}
