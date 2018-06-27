@@ -356,6 +356,7 @@ func (mt *msgTransfer) PropagateCredential(c *CredentialSign) error {
 }
 
 func (mt *msgTransfer) SendInner(data dataPack) error {
+	//todo here need to validate process??
 	mt.receiveChan<-data
 	//send the data to receiveSubCh
 	return nil
@@ -365,6 +366,6 @@ func (mt *msgTransfer) PropagateMsg(data dataPack) error {
 	return nil
 }
 
-func (mt *msgTransfer) Send2Apos(data dataPack)  {
+func (mt *msgTransfer) Send2Apos(data dataPack) {
 	mt.receiveChan<-data
 }
