@@ -153,11 +153,11 @@ func (this *allNodeManager)run(){
 		select {
 		//deal all data from virtual] node,just send the virtualData to the chan(will send to actual node)
 		case virtualData:=<-this.allVNodeChan:
-			this.msger.SendInner(virtualData)
+			this.msger.Send2Apos(virtualData)
 			//send the data from all node to actual node
 
 
-		case actualData := <-this.msger.msgSndChan:
+		case actualData := <-this.msger.GetSubDataMsg():
 			//continue
 			for _,vNode := range this.vituals{
 				vNode.inChan <- actualData
@@ -178,7 +178,7 @@ func (this *allNodeManager)run(){
 func (this *allNodeManager)initTestSteps(checkStep int64)int{
 	this.allVNodeChan = make(chan dataPack , 1000)
 	//only one msger,for virtual  nodes and actual node
-	this.msger = newMsgManager()
+	this.msger = MsgTransfer()
 	this.actualNode = NewApos(this.msger , newOutCommonTools())
 
 	this.actualNode.SetOutMsger(this.msger)
@@ -203,9 +203,10 @@ func (this *allNodeManager)runTestStep(checkStep int64){
 		//deal all data from virtual] node,just send the virtualData to the chan(will send to actual node)
 		case virtualData:=<-this.allVNodeChan:
 			//send the data from all node to actual node
-			this.msger.msgRcvChan <- virtualData
+			this.msger.Send2Apos(virtualData)
+			//this.msger.msgRcvChan <- virtualData
 
-		case actualData := <-this.msger.msgSndChan:
+		case actualData := <-this.msger.GetSubDataMsg():
 
 			switch v := actualData.(type) {
 			case *CredentialSign:

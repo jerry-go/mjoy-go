@@ -89,14 +89,16 @@ type stepObj2 struct {
 	timeEnd time.Duration
 }
 
-func makeStepObj2(timeEnd time.Duration , stopCh chan interface{})*stepObj2{
+func makeStepObj2()*stepObj2{
 	s := new(stepObj2)
-	s.timeEnd = timeEnd
 	return s
 }
 
 func (this * stepObj2)setCtx(ctx *stepCtx){
 	this.ctx = ctx
+	if this.timeEnd == 0 {
+		this.timeEnd = calcTTL(ctx.getStep())
+	}
 }
 
 func (this *stepObj2)getTTL()time.Duration{
@@ -172,19 +174,19 @@ type stepObj3 struct {
 	lock sync.RWMutex
 	ctx *stepCtx
 	timeEnd time.Duration
-	stopCh chan interface{}
 }
 
-func makeStepObj3(timeEnd time.Duration , stopCh chan interface{})*stepObj3{
+func makeStepObj3()*stepObj3{
 	s := new(stepObj3)
 	s.allM2Index = make(map[types.Hash]map[CredentialSigForKey]bool)
-	s.timeEnd = timeEnd
-	s.stopCh = stopCh
 	return s
 }
 
 func (this *stepObj3)setCtx(ctx *stepCtx){
 	this.ctx = ctx
+	if this.timeEnd == 0 {
+		this.timeEnd = calcTTL(ctx.getStep())
+	}
 }
 
 func (this *stepObj3)getTTL()time.Duration{
@@ -241,9 +243,7 @@ func (this *stepObj3)timerHandle(){
 
 	this.ctx.sendInner(m3)
 	logger.Debug(COLOR_PREFIX+COLOR_FRONT_RED+COLOR_SUFFIX,"[A]Step:",this.ctx.getCredential().Step,"Out M3 ",v.String(),COLOR_SHORT_RESET)
-	go func(this *stepObj3){
-		this.stopCh<-1
-	}(this)
+	go this.ctx.stopStep()
 }
 
 func (this *stepObj3)dataHandle(data interface{}){
@@ -282,19 +282,24 @@ type stepObj4 struct {
 	lock sync.RWMutex
 	ctx *stepCtx
 	timeEnd time.Duration
-	stopCh chan interface{}
 }
 
-func makeStepObj4(timeEnd time.Duration , stopCh chan interface{})*stepObj4{
+func makeStepObj4()*stepObj4{
 	s := new(stepObj4)
 	s.allM2Index = make(map[types.Hash]map[CredentialSigForKey]bool)
-	s.timeEnd = timeEnd
-	s.stopCh = stopCh
 	return s
 }
 
 func (this *stepObj4)setCtx(ctx *stepCtx){
 	this.ctx = ctx
+	//if test
+	if LessTimeDelayFlag{
+		this.timeEnd = time.Duration(LessTimeDelayCnt)
+	}
+
+	if this.timeEnd == 0 {
+		this.timeEnd = calcTTL(ctx.getStep())
+	}
 }
 
 func (this *stepObj4)getTTL()time.Duration{
@@ -382,9 +387,7 @@ func (this *stepObj4)timerHandle(){
 	this.ctx.sendInner(m4)
 	logger.Debug(COLOR_PREFIX+COLOR_FRONT_RED+COLOR_SUFFIX,"[A]Step:",this.ctx.getCredential().Step,"Out M4",m4.Hash.String(),m4.B,COLOR_SHORT_RESET)
 
-	go func(this *stepObj4){
-		this.stopCh<-1
-	}(this)
+	go this.ctx.stopStep()
 
 }
 
@@ -424,20 +427,21 @@ type stepObj567 struct {
 	lock sync.RWMutex
 	ctx *stepCtx
 	timeEnd time.Duration
-	stopCh chan interface{}
 }
 
 
-func makeStepObj567(timeEnd time.Duration , stopCh chan interface{})*stepObj567{
+func makeStepObj567()*stepObj567{
 	s := new(stepObj567)
 	s.allMxIndex = make(map[types.Hash]*binaryStatus)
-	s.timeEnd = timeEnd
-	s.stopCh = stopCh
 	return s
 }
 
 func (this *stepObj567)setCtx(ctx *stepCtx){
 	this.ctx = ctx
+
+	if this.timeEnd == 0 {
+		this.timeEnd = calcTTL(ctx.getStep())
+	}
 	//init step and stepIndex
 	step := this.ctx.getStep()
 
@@ -582,9 +586,7 @@ func (this *stepObj567)timerHandle(){
 	this.ctx.sendInner(mx)
 	logger.Debug(COLOR_PREFIX+COLOR_FRONT_RED+COLOR_SUFFIX,"[A]Step:",this.ctx.getCredential().Step,"Out M",mx.Credential.Step,COLOR_SHORT_RESET)
 
-	go func(this *stepObj567){
-		this.stopCh<-1
-	}(this)
+	go this.ctx.stopStep()
 }
 
 
@@ -624,17 +626,17 @@ type stepObjm3 struct {
 	lock sync.RWMutex
 	ctx *stepCtx
 	timeEnd time.Duration
-	stopCh chan interface{}
 }
 
-func makeStepObjm3(timeEnd time.Duration , stopCh chan interface{})*stepObjm3{
+func makeStepObjm3()*stepObjm3{
 	s := new(stepObjm3)
-	s.timeEnd = timeEnd
-	s.stopCh = stopCh
 	return s
 }
 
 func (this *stepObjm3)setCtx(ctx *stepCtx){
+	if this.timeEnd == 0 {
+		this.timeEnd = calcTTL(ctx.getStep())
+	}
 	this.ctx = ctx
 }
 
@@ -681,9 +683,7 @@ func (this *stepObjm3)timerHandle(){
 
 	this.ctx.sendInner(m3)
 
-	go func(this *stepObjm3){
-		this.stopCh<-1
-	}(this)
+	go this.ctx.stopStep()
 }
 
 

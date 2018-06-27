@@ -46,6 +46,7 @@ type OutMsger interface {
 	PropagateCredential(*CredentialSign) error
 
 	SendInner(dataPack) error
+	Send2Apos(dataPack)
 	PropagateMsg(dataPack) error
 }
 //some out tools offered by Mjoy,such as signer and blockInfo getter

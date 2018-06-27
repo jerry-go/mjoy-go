@@ -359,6 +359,7 @@ func (mt *msgTransfer) SendInner(data dataPack) error {
 	//todo here need to validate process??
 	mt.receiveChan<-data
 	//send the data to receiveSubCh
+	mt.receiveSubChan<-data
 	return nil
 }
 
@@ -369,3 +370,4 @@ func (mt *msgTransfer) PropagateMsg(data dataPack) error {
 func (mt *msgTransfer) Send2Apos(data dataPack) {
 	mt.receiveChan<-data
 }
+

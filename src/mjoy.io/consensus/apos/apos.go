@@ -666,56 +666,34 @@ func (this *Apos) stepsFactory(ctx *stepCtx) (stepObj step) {
 	case 1:
 		ctx.makeEmptyBlockForTest = this.makeEmptyBlockForTest
 
-		delayT := time.Duration(1)
-
-		stepObj = makeStepObj1(delayT*time.Second)
+		stepObj = makeStepObj1()
 		stepObj.setCtx(ctx)
 
 	case 2:
-		delayT := time.Duration(Config().verifyDelay + Config().blockDelay)
-		if LessTimeDelayFlag{
-			delayT = time.Duration(LessTimeDelayCnt)
-		}
 
-
-		stepObj = makeStepObj2(delayT*time.Second)
-		stepObj.setCtx(stepCtx)
+		stepObj = makeStepObj2()
+		stepObj.setCtx(ctx)
 
 	case 3:
-		delayT := time.Duration(3*Config().verifyDelay + Config().blockDelay)
-		if LessTimeDelayFlag{
-			delayT = time.Duration(LessTimeDelayCnt)
-		}
 
-		stepObj = makeStepObj3(delayT*time.Second)
-		stepObj.setCtx(stepCtx)
+		stepObj = makeStepObj3()
+		stepObj.setCtx(ctx)
 
 	case 4:
-		delayT := time.Duration(5*Config().verifyDelay + Config().blockDelay)
-		if LessTimeDelayFlag{
-			delayT = time.Duration(LessTimeDelayCnt)
-		}
 
-		stepObj = makeStepObj4(delayT*time.Second)
-		stepObj.setCtx(stepCtx)
+		stepObj = makeStepObj4()
+		stepObj.setCtx(ctx)
 
 	default:
+		step := ctx.getStep()
 		if step >= 5 && step <= (Config().maxBBASteps + 2) {
-			delayT := time.Duration((2*step -3)*Config().verifyDelay + Config().blockDelay)
-			if LessTimeDelayFlag{
-				delayT = time.Duration(LessTimeDelayCnt)
-			}
 
-			stepObj = makeStepObj567(delayT*time.Second)
-			stepObj.setCtx(stepCtx)
+			stepObj = makeStepObj567()
+			stepObj.setCtx(ctx)
 		} else if step == (Config().maxBBASteps + 3) {
-			delayT := time.Duration((2*Config().maxBBASteps + 3)*Config().verifyDelay + Config().blockDelay)
-			if LessTimeDelayFlag{
-				delayT = time.Duration(LessTimeDelayCnt)
-			}
 
-			stepObj = makeStepObjm3(delayT*time.Second)
-			stepObj.setCtx(stepCtx)
+			stepObj = makeStepObjm3()
+			stepObj.setCtx(ctx)
 		} else {
 			stepObj = nil
 		}
