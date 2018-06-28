@@ -114,8 +114,8 @@ func (bp *BlockProposal) validate() error{
 		return errors.New(fmt.Sprintf("BP verify ephemeral signature fail: %s", err))
 	}
 	if cretSender != sender {
-		logger.Debug("Block Proposal sender's address is not equal in Credential and Ephemeral signature", cretSender.Hex(), sender.Hex())
-		return errors.New("sender's address is not equal in Credential and Ephemeral")
+		logger.Debug("Block Proposal Ephemeral signature address is not equal to Credential signature address", sender.Hex(), cretSender.Hex())
+		return errors.New("sender's address between Credential and Ephemeral is not equal")
 	}
 
 
@@ -192,8 +192,8 @@ func (gc *GradedConsensus) validate() error{
 		return errors.New(fmt.Sprintf("GC verify ephemeral signature fail: %s", err))
 	}
 	if cretSender != sender {
-		logger.Debug("Graded Consensus sender's address is not equal in Credential and Ephemeral signature", cretSender.Hex(), sender.Hex())
-		return errors.New("sender's address is not equal in Credential and Ephemeral")
+		logger.Debug("Graded Consensus Ephemeral signature address is not equal to Credential signature address", sender.Hex(), cretSender.Hex())
+		return errors.New("sender's address between Credential and Ephemeral is not equal")
 	}
 
 	return nil
@@ -285,8 +285,8 @@ func (bba *BinaryByzantineAgreement) validate() error{
 	}
 
 	if cretSender != bSender {
-		logger.Debug("BinaryByzantineAgreement sender's address is not equal in Credential and B Ephemeral signature", cretSender.Hex(), bSender.Hex())
-		return errors.New("sender's address is not equal in Credential and B Ephemeral")
+		logger.Debug("BinaryByzantineAgreement Ephemeral B signature address is not equal to Credential signature address", bSender.Hex(), cretSender.Hex())
+		return errors.New("sender's address between Credential and B Ephemeral is not equal")
 	}
 
 	//verify V ephemeral signature
@@ -298,8 +298,8 @@ func (bba *BinaryByzantineAgreement) validate() error{
 		return errors.New(fmt.Sprintf("BBA V verify ephemeral signature fail: %s", err))
 	}
 	if cretSender != hashSender {
-		logger.Debug("BinaryByzantineAgreement sender's address is not equal in Credential and V Ephemeral signature", cretSender.Hex(), hashSender.Hex())
-		return errors.New("sender's address is not equal in Credential and V Ephemeral")
+		logger.Debug("BinaryByzantineAgreement Ephemeral V signature address is not equal to Credential signature address", hashSender.Hex(), cretSender.Hex())
+		return errors.New("sender's address between Credential and V Ephemeral is not equal")
 	}
 
 	return nil
@@ -322,7 +322,7 @@ func NewMsgBinaryByzantineAgreement(bba *BinaryByzantineAgreement) *msgBinaryByz
 func (bba *msgBinaryByzantineAgreement) DataHandle(data interface{}) {
 	logger.Debug("BinaryByzantineAgreement data handle")
 	if err := bba.bba.validate(); err != nil {
-		logger.Info("message ByzantineAgreement validate error:", err)
+		logger.Info("message BinaryByzantineAgreement validate error:", err)
 		return
 	}
 	MsgTransfer().Send2Apos(bba.bba)
