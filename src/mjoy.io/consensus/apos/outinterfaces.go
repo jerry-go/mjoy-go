@@ -23,7 +23,6 @@ package apos
 import (
 	"mjoy.io/common/types"
 	"math/big"
-	"crypto/ecdsa"
 )
 
 /*
@@ -53,18 +52,24 @@ type OutMsger interface {
 //some out tools offered by Mjoy,such as signer and blockInfo getter
 type CommonTools interface {
 	//
-	SIG(hash types.Hash)(R,S,V *big.Int)
+	Sig(pCs *CredentialSign)error
+	Esig(pEphemeralSign *EphemeralSign)error
+	SigHash(hash types.Hash)(R,S,V *big.Int)
+
 	SigVerify(hash types.Hash, sig *SignatureVal) (error)
 	Sender(hash types.Hash, sig *SignatureVal) (types.Address, error)
 
-	ESIG(hash types.Hash)(R,S,V *big.Int)
+
 	ESigVerify(hash types.Hash, sig []byte) (error)
 	ESender(hash types.Hash, sig []byte) (types.Address, error)
 
 	GetQr_k(k int)types.Hash
 	GetNowBlockNum()int
 	GetNextRound()int
-	GetPriKey()*ecdsa.PrivateKey
+
+
+	CreateTmpPriKey(step int)
+	DelTmpKey(step int)
 }
 
 

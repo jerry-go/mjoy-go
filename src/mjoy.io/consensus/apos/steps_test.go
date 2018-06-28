@@ -61,16 +61,13 @@ func TestStep3Result(t *testing.T){
 		m2.Esig.val = make([]byte , 0)
 		m2.Esig.val = append(m2.Esig.val  , m2.Hash[:]...)
 
-		R,S,V := v.commonTools.ESIG(m2.Hash)
+		v.commonTools.CreateTmpPriKey(int(m2.Credential.Step))
+		err := v.commonTools.Esig(m2.Esig)
+		if err != nil{
+			logger.Error(err.Error())
+			return
+		}
 
-		m2.Esig.R = new(types.BigInt)
-		m2.Esig.R.IntVal = *R
-
-		m2.Esig.S = new(types.BigInt)
-		m2.Esig.S.IntVal = *S
-
-		m2.Esig.V = new(types.BigInt)
-		m2.Esig.V.IntVal = *V
 
 		an.SendDataPackToActualNode(m2)
 	}
@@ -113,16 +110,12 @@ func TestStep4Result(t *testing.T){
 		m3.Esig.val = make([]byte , 0)
 		m3.Esig.val = append(m3.Esig.val , m3.Hash[:]...)
 
-		R,S,V := v.commonTools.ESIG(m3.Hash)
-
-		m3.Esig.R = new(types.BigInt)
-		m3.Esig.R.IntVal = *R
-
-		m3.Esig.S = new(types.BigInt)
-		m3.Esig.S.IntVal = *S
-
-		m3.Esig.V = new(types.BigInt)
-		m3.Esig.V.IntVal = *V
+		v.commonTools.CreateTmpPriKey(int(m3.Credential.Step))
+		err := v.commonTools.Esig(m3.Esig)
+		if err != nil{
+			logger.Error(err.Error())
+			return
+		}
 
 		an.SendDataPackToActualNode(m3)
 	}
@@ -168,17 +161,12 @@ func TestStepCommonResult_ChangeHashAndB(t *testing.T){
 		mc.EsigB.val = make([]byte , 0)
 		mc.EsigB.val = append(mc.EsigB.val , big.NewInt(int64(mc.B)).Bytes()...)
 
-		h := types.BytesToHash(big.NewInt(int64(mc.B)).Bytes())
-		R,S,V := v.commonTools.ESIG(h)
-
-		mc.EsigB.R = new(types.BigInt)
-		mc.EsigB.R.IntVal = *R
-
-		mc.EsigB.S = new(types.BigInt)
-		mc.EsigB.S.IntVal = *S
-
-		mc.EsigB.V = new(types.BigInt)
-		mc.EsigB.V.IntVal = *V
+		v.commonTools.CreateTmpPriKey(int(mc.Credential.Step))
+		err := v.commonTools.Esig(mc.EsigB)
+		if err != nil{
+			logger.Error(err.Error())
+			return
+		}
 
 		//v sig
 		mc.EsigV.round = mc.Credential.Round
@@ -186,16 +174,13 @@ func TestStepCommonResult_ChangeHashAndB(t *testing.T){
 		mc.EsigV.val = make([]byte , 0)
 		mc.EsigV.val = append(mc.EsigV.val , mc.Hash[:]...)
 
-		R,S,V = v.commonTools.ESIG(mc.Hash)
+		v.commonTools.CreateTmpPriKey(int(mc.Credential.Step))
+		err = v.commonTools.Esig(mc.EsigV)
+		if err != nil{
+			logger.Error(err.Error())
+			return
+		}
 
-		mc.EsigV.R = new(types.BigInt)
-		mc.EsigV.R.IntVal = *R
-
-		mc.EsigV.S = new(types.BigInt)
-		mc.EsigV.S.IntVal = *S
-
-		mc.EsigV.V = new(types.BigInt)
-		mc.EsigV.V.IntVal = *V
 		an.SendDataPackToActualNode(mc)
 	}
 

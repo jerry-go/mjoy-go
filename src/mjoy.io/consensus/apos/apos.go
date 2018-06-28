@@ -163,6 +163,7 @@ func (this *Round)generateCredentials() {
 		if isVerfier {
 			//logger.Info("GenerateCredential step:",i,"  isVerifier:",isVerfier)
 			this.credentials[i] = credential
+			this.apos.commonTools.CreateTmpPriKey(i)
 		}
 	}
 }
@@ -190,7 +191,7 @@ func (this *Round)startVerify(wg *sync.WaitGroup) {
 			return pC
 		}
 
-		stepCtx.esig = this.apos.commonTools.ESIG
+		stepCtx.esig = this.apos.commonTools.Esig
 		stepCtx.sendInner = this.apos.outMsger.SendInner
 		stepCtx.propagateMsg = this.apos.outMsger.PropagateMsg
 
@@ -545,7 +546,7 @@ func (this *Apos)makeEmptyBlockForTest(cs *CredentialSign)*block.Block{
 	h := crypto.Keccak256(srcBytes)
 	header.ConsensusData.Id = ConsensusDataId
 	header.ConsensusData.Para = h
-	R,S,V := this.commonTools.SIG(header.HashNoSig())
+	R,S,V := this.commonTools.SigHash(header.HashNoSig())
 	header.R = &types.BigInt{*R}
 	header.S = &types.BigInt{*S}
 	header.V = &types.BigInt{*V}
@@ -603,23 +604,29 @@ func (this *Apos)makeCredential(s int) *CredentialSign{
 	//k := this.algoParam.GetK()
 	//get Qr_k
 	r := this.commonTools.GetNowBlockNum()
-	k := 1
-
-	Qr_k := this.commonTools.GetQr_k(k)
-	//str := fmt.Sprintf("%d%d%s",r,k,Qr_k.Hex())
-	//get sig
-	cd := CredentialData{*types.NewBigInt(*big.NewInt(int64(r))),*types.NewBigInt(*big.NewInt(int64(s))), Qr_k}
-
-	//R,S,V := this.commonTools.SIG(types.BytesToHash([]byte(str)))
-	R,S,V := this.commonTools.SIG(cd.Hash())
+	//k := 1
+	//
+	//Qr_k := this.commonTools.GetQr_k(k)
+	////str := fmt.Sprintf("%d%d%s",r,k,Qr_k.Hex())
+	////get sig
+	//cd := CredentialData{*types.NewBigInt(*big.NewInt(int64(r))),*types.NewBigInt(*big.NewInt(int64(s))), Qr_k}
+	//
+	////R,S,V := this.commonTools.SIG(types.BytesToHash([]byte(str)))
+	//R,S,V := this.commonTools.SIG(cd.Hash())
 
 	//if endFloat <= this.algoParam
+
+
 	c := new(CredentialSign)
+	c.Signature.init()
 	c.Round = uint64(r)
 	c.Step = uint64(s)
-	c.R = &types.BigInt{IntVal:*R}
-	c.S = &types.BigInt{IntVal:*S}
-	c.V = &types.BigInt{IntVal:*V}
+
+	err := this.commonTools.Sig(c)
+	if err != nil{
+		logger.Error(err.Error())
+		return nil
+	}
 
 	return c
 

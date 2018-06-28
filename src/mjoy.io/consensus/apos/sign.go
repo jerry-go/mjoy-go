@@ -57,6 +57,12 @@ type Signature struct {
 	V *types.BigInt
 }
 
+func (s *Signature) init() {
+	s.R = new(types.BigInt)
+	s.S = new(types.BigInt)
+	s.V = new(types.BigInt)
+}
+
 type signValue interface {
 	// check the signature obj is initialized, if not, throw painc
 	checkObj()

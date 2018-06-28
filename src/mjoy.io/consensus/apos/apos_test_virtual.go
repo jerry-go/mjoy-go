@@ -2,7 +2,6 @@ package apos
 
 import (
 	"sync"
-	"fmt"
 	"mjoy.io/common/types"
 	"math/big"
 	"mjoy.io/core/blockchain/block"
@@ -54,26 +53,28 @@ func (this *virtualNode)makeCredential(s int)*CredentialSign{
 	defer this.lock.Unlock()
 
 	r := this.commonTools.GetNowBlockNum()
-	k := 1
-
-	Qr_k := this.commonTools.GetQr_k(k)
-	str := fmt.Sprintf("testHash")
-	hStr := types.BytesToHash([]byte(str))
-
-	cd := CredentialData{Round:types.BigInt{*big.NewInt(int64(r))},Step:types.BigInt{*big.NewInt(int64(s))},Quantity:Qr_k}
-	_ = cd
-	//h := cd.Hash()
-	h := hStr
+	//k := 1
+	//
+	//Qr_k := this.commonTools.GetQr_k(k)
+	//str := fmt.Sprintf("testHash")
+	//hStr := types.BytesToHash([]byte(str))
+	//
+	//cd := CredentialData{Round:types.BigInt{*big.NewInt(int64(r))},Step:types.BigInt{*big.NewInt(int64(s))},Quantity:Qr_k}
+	//_ = cd
+	////h := cd.Hash()
+	//h := hStr
 	//get sig
-	R,S,V :=this.commonTools.SIG(h)
 
 	c := new(CredentialSign)
+	c.Signature.init()
 	c.Round = uint64(r)
 	c.Step = uint64(s)
 
-	c.R = &types.BigInt{IntVal:*R}
-	c.S = &types.BigInt{IntVal:*S}
-	c.V = &types.BigInt{IntVal:*V}
+	err := this.commonTools.Sig(c)
+	if err != nil{
+		logger.Error(err.Error())
+		return nil
+	}
 
 	return c
 }
@@ -82,7 +83,7 @@ func (this *virtualNode)makeEmptyBlock()*block.Block{
 	header := &block.Header{Number:types.NewBigInt(*big.NewInt(int64(this.commonTools.GetNowBlockNum()))),Time:types.NewBigInt(*big.NewInt(0))}
 	//chainId := big.NewInt(100)
 	//signer := block.NewBlockSigner(chainId)
-	R,S,V := this.commonTools.SIG(header.Hash())
+	R,S,V := this.commonTools.SigHash(header.Hash())
 	header.R = &types.BigInt{*R}
 	header.S = &types.BigInt{*S}
 	header.V = &types.BigInt{*V}
@@ -102,18 +103,13 @@ func (this *virtualNode)makeM1(number int)dataPack{
 	h := m.Block.Hash()
 	m.Esig.val = append(m.Esig.val , h[:]...)
 
-	R,S,V := this.commonTools.ESIG(m.Block.Hash())
+	this.commonTools.CreateTmpPriKey(int(m.Esig.step))
 
-	m.Esig.R = new(types.BigInt)
-	m.Esig.R.IntVal = *R
-
-	m.Esig.S = new(types.BigInt)
-	m.Esig.S.IntVal = *S
-
-	m.Esig.V = new(types.BigInt)
-	m.Esig.V.IntVal = *V
-
-
+	err := this.commonTools.Esig(m.Esig)
+	if err != nil{
+		logger.Error(err.Error())
+		return nil
+	}
 
 	return m
 }
@@ -135,16 +131,12 @@ func (this *virtualNode)dealM1(data dataPack)dataPack{
 	m2.Esig.val = make([]byte , 0)
 	m2.Esig.val = append(m2.Esig.val , m2.Hash[:]...)
 
-	R,S,V := this.commonTools.ESIG(m2.Hash)
-
-	m2.Esig.R = new(types.BigInt)
-	m2.Esig.R.IntVal = *R
-
-	m2.Esig.S = new(types.BigInt)
-	m2.Esig.S.IntVal = *S
-
-	m2.Esig.V = new(types.BigInt)
-	m2.Esig.V.IntVal = *V
+	this.commonTools.CreateTmpPriKey(int(m2.Credential.Step))
+	err := this.commonTools.Esig(m2.Esig)
+	if err!= nil{
+		logger.Error(err.Error())
+		return nil
+	}
 
 	logger.Debug("\033[35m [V] In M1 Out M2 \033[0m")
 	return m2
@@ -171,16 +163,12 @@ func (this *virtualNode)dealM23(data dataPack)dataPack{
 		m3.Esig.val = make([]byte , 0 )
 		m3.Esig.val = append(m3.Esig.val , m3.Hash[:]...)
 
-		R,S,V := this.commonTools.ESIG(m3.Hash)
-
-		m3.Esig.R = new(types.BigInt)
-		m3.Esig.R.IntVal = *R
-
-		m3.Esig.S = new(types.BigInt)
-		m3.Esig.S.IntVal = *S
-
-		m3.Esig.V = new(types.BigInt)
-		m3.Esig.V.IntVal = *V
+		this.commonTools.CreateTmpPriKey(int(m3.Credential.Step))
+		err := this.commonTools.Esig(m3.Esig)
+		if err != nil{
+			logger.Error(err.Error())
+			return nil
+		}
 
 		logger.Debug("\033[35m [V]In M2 Out M3 \033[0m ")
 		return m3
@@ -202,35 +190,24 @@ func (this *virtualNode)dealM23(data dataPack)dataPack{
 		m4.EsigV.val = make([]byte , 0)
 		m4.EsigV.val = append(m4.EsigV.val , m4.Hash[:]...)
 
-		R,S,V := this.commonTools.ESIG(m4.Hash)
-
-		m4.EsigV.R = new(types.BigInt)
-		m4.EsigV.R.IntVal = *R
-
-		m4.EsigV.S = new(types.BigInt)
-		m4.EsigV.S.IntVal = *S
-
-		m4.EsigV.V = new(types.BigInt)
-		m4.EsigV.V.IntVal = *V
+		this.commonTools.CreateTmpPriKey(int(m4.Credential.Step))
+		err := this.commonTools.Esig(m4.EsigV)
+		if err != nil{
+			logger.Error(err.Error())
+			return nil
+		}
 
 
 		m4.EsigB.round = m4.Credential.Round
 		m4.EsigB.step = m4.Credential.Step
 		m4.EsigB.val = make([]byte , 0)
 		m4.EsigB.val = append(m4.EsigB.val , big.NewInt(int64(m4.B)).Bytes()...)
-		h := types.BytesToHash(big.NewInt(int64(m4.B)).Bytes())
-		m4.EsigB.val = append(m4.EsigB.val , h[:]...)
 
-		R,S,V = this.commonTools.ESIG(types.BytesToHash(big.NewInt(int64(m4.B)).Bytes()))
-
-		m4.EsigB.R = new(types.BigInt)
-		m4.EsigB.R.IntVal = *R
-
-		m4.EsigB.S = new(types.BigInt)
-		m4.EsigB.S.IntVal = *S
-
-		m4.EsigB.V = new(types.BigInt)
-		m4.EsigB.V.IntVal = *V
+		err = this.commonTools.Esig(m4.EsigB)
+		if err != nil{
+			logger.Error(err.Error())
+			return nil
+		}
 
 		logger.Debug("\033[35m [V]In M3 Out M4  \033[0m ")
 		return m4
@@ -266,35 +243,24 @@ func (this *virtualNode)dealMCommon(data dataPack)dataPack{
 	mc.EsigV.val = make([]byte , 0)
 	mc.EsigV.val = append(mc.EsigV.val , mc.Hash[:]...)
 
-	R,S,V := this.commonTools.ESIG(mc.Hash)
-
-	mc.EsigV.R = new(types.BigInt)
-	mc.EsigV.R.IntVal = *R
-
-	mc.EsigV.S = new(types.BigInt)
-	mc.EsigV.S.IntVal = *S
-
-	mc.EsigV.V = new(types.BigInt)
-	mc.EsigV.V.IntVal = *V
-
+	this.commonTools.CreateTmpPriKey(int(mc.Credential.Step))
+	err := this.commonTools.Esig(mc.EsigV)
+	if err != nil{
+		logger.Error(err.Error())
+		return nil
+	}
 
 	mc.EsigB.round = mc.Credential.Round
 	mc.EsigB.step = mc.Credential.Step
 	mc.EsigB.val = make([]byte , 0)
 	mc.EsigB.val = append(mc.EsigB.val , big.NewInt(int64(mc.B)).Bytes()...)
-	h := types.BytesToHash(big.NewInt(int64(mc.B)).Bytes())
-	mc.EsigB.val = append(mc.EsigB.val , h[:]...)
 
-	R,S,V = this.commonTools.ESIG(types.BytesToHash(big.NewInt(int64(mc.B)).Bytes()))
+	err = this.commonTools.Esig(mc.EsigB)
+	if err != nil{
+		logger.Error(err.Error())
+		return nil
+	}
 
-	mc.EsigB.R = new(types.BigInt)
-	mc.EsigB.R.IntVal = *R
-
-	mc.EsigB.S = new(types.BigInt)
-	mc.EsigB.S.IntVal = *S
-
-	mc.EsigB.V = new(types.BigInt)
-	mc.EsigB.V.IntVal = *V
 
 	logger.Debug("\033[35m [V]In M",m.Credential.Step ,
 		"  Out M",int(m.Credential.Step)+1 ,

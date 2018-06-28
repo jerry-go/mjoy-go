@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"mjoy.io/common"
 	"reflect"
+	"errors"
 )
 
 var (
@@ -278,8 +279,11 @@ func generatePrivateKey()*ecdsa.PrivateKey{
 
 //each Node has a outCommonTools to sign or verify
 type outCommonTools struct {
-	pri *ecdsa.PrivateKey
+	pri *ecdsa.PrivateKey   //stable key
+	tmpPriKeys map[int]*ecdsa.PrivateKey
 	signer Signer
+
+	lock sync.RWMutex
 }
 
 func newOutCommonTools()*outCommonTools{
@@ -288,11 +292,55 @@ func newOutCommonTools()*outCommonTools{
 	o.pri = generatePrivateKey()
 	//signer with chainId
 	o.signer = NewSigner(big.NewInt(1))
+	o.tmpPriKeys = make(map[int]*ecdsa.PrivateKey)
 
 	return o
 }
 
-func (this *outCommonTools)SIG(hash types.Hash)(R,S,V *big.Int){
+//if the nod is leader or verfier,call the method to create a key
+func (this *outCommonTools)CreateTmpPriKey(step int){
+	this.lock.Lock()
+	defer this.lock.Unlock()
+
+	if _,ok:=this.tmpPriKeys[step];ok{
+		return
+	}
+	tmpKey := generatePrivateKey()
+	this.tmpPriKeys[step] = tmpKey
+
+	return
+}
+
+func (this *outCommonTools)Sig(pCs *CredentialSign)error{
+	_,_,_,err:=pCs.sign(this.pri)
+	return err
+}
+
+func (this *outCommonTools)Esig(pEphemeralSign *EphemeralSign)error{
+	this.lock.RLock()
+	defer this.lock.RUnlock()
+
+	step := int(pEphemeralSign.step)
+	if pri,ok:= this.tmpPriKeys[step];ok{
+		//sign
+		pEphemeralSign.Signature.init()
+		_,_,_,err := pEphemeralSign.sign(pri)
+
+		return err
+	}
+	return errors.New(fmt.Sprintf("Not Find TmpPriKey About:%d" , step))
+}
+
+func (this *outCommonTools)DelTmpKey(step int){
+	this.lock.Lock()
+	defer this.lock.Unlock()
+
+	if _,ok := this.tmpPriKeys[step];ok{
+		delete(this.tmpPriKeys , step)
+	}
+}
+
+func (this *outCommonTools)SigHash(hash types.Hash)(R,S,V *big.Int){
 
 	sig , err := crypto.Sign(hash[:] , this.pri)
 	if err != nil {
@@ -308,9 +356,6 @@ func (this *outCommonTools)SIG(hash types.Hash)(R,S,V *big.Int){
 
 }
 
-func (this *outCommonTools)GetPriKey()*ecdsa.PrivateKey{
-	return this.pri
-}
 
 func (this *outCommonTools)SigVerify(h types.Hash , sig *SignatureVal)error{
 	return nil
@@ -339,6 +384,8 @@ func (this *outCommonTools)ESIG(hash types.Hash)(R,S,V *big.Int){
 	}
 	return
 }
+
+
 
 func (this *outCommonTools)ESigVerify(h types.Hash , sig []byte)error{
 	return nil

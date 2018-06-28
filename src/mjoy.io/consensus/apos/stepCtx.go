@@ -45,7 +45,7 @@ func makeStepCtxData(apos *Apos , pCredential *CredentialSig)*stepCtxData{
 
 
 func (this *stepCtxData) ESIG(h types.Hash) (R,S,V *big.Int) {
-	return this.apos.commonTools.ESIG(h)
+	return this.apos.commonTools.SigHash(h)
 }
 
 func (this *stepCtxData) SendInner(dp dataPack) error {

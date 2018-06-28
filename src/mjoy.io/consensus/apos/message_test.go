@@ -10,11 +10,11 @@ import (
 	"mjoy.io/utils/crypto"
 )
 
-func (s *Signature) init() {
-	s.R = new(types.BigInt)
-	s.S = new(types.BigInt)
-	s.V = new(types.BigInt)
-}
+//func (s *Signature) init() {
+//	s.R = new(types.BigInt)
+//	s.S = new(types.BigInt)
+//	s.V = new(types.BigInt)
+//}
 // End condition 0 for message bp bba
 func TestBba_EndCondition0(t *testing.T){
 	Config().blockDelay = 2

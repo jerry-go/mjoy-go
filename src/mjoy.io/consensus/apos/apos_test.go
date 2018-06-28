@@ -140,17 +140,12 @@ func TestM23(t *testing.T){
 		m23.Esig.val = make([]byte , 0)
 		m23.Esig.val = append(m23.Esig.val , m23.Hash[:]...)
 
-		R,S,V := v.commonTools.ESIG(m23.Hash)
-
-		m23.Esig.R = new(types.BigInt)
-		m23.Esig.R.IntVal = *R
-
-		m23.Esig.S = new(types.BigInt)
-		m23.Esig.S.IntVal = *S
-
-		m23.Esig.V = new(types.BigInt)
-		m23.Esig.V.IntVal = *V
-
+		v.commonTools.CreateTmpPriKey(int(m23.Credential.Step))
+		err := v.commonTools.Esig(m23.Esig)
+		if err != nil{
+			logger.Error(err.Error())
+			return
+		}
 
 		an.SendDataPackToActualNode(m23)
 	}
@@ -184,16 +179,12 @@ func TestM23filter(t *testing.T){
 		m23.Esig.val = make([]byte , 0)
 		m23.Esig.val = append(m23.Esig.val , m23.Hash[:]...)
 
-		R,S,V := v.commonTools.ESIG(m23.Hash)
-
-		m23.Esig.R = new(types.BigInt)
-		m23.Esig.R.IntVal = *R
-
-		m23.Esig.S = new(types.BigInt)
-		m23.Esig.S.IntVal = *S
-
-		m23.Esig.V = new(types.BigInt)
-		m23.Esig.V.IntVal = *V
+		v.commonTools.CreateTmpPriKey(int(m23.Credential.Step))
+		err := v.commonTools.Esig(m23.Esig)
+		if err != nil{
+			logger.Error(err.Error())
+			return
+		}
 
 		an.SendDataPackToActualNode(m23)
 		an.SendDataPackToActualNode(m23)
@@ -203,6 +194,11 @@ func TestM23filter(t *testing.T){
 		//fmt.Println("apos_test doing....")
 	}
 }
+
+/*
+
+
+
 
 //m23 malicious message
 func TestM23filter_malicious(t *testing.T){
@@ -1258,3 +1254,5 @@ func TestBp(t *testing.T) {
 	msgbp := NewMsgBlockProposal(bp)
 	msgbp.Send()
 }
+
+*/

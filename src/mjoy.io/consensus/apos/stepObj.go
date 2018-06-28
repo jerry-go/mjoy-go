@@ -43,6 +43,9 @@ func (this *stepObj1)getTTL()time.Duration{
 }
 
 func (this *stepObj1)timerHandle(){
+	defer func(){
+		go this.ctx.stopStep()
+	}()
 	//new a M1 data
 	m1 := newBlockProposal()
 
@@ -56,22 +59,19 @@ func (this *stepObj1)timerHandle(){
 	m1.Esig.val = make([]byte,0)
 	h := m1.Block.Hash()
 	m1.Esig.val = append(m1.Esig.val , h[:]...)
-	R,S,V := this.ctx.esig(m1.Block.Hash())
-	m1.Esig.Signature.R = new(types.BigInt)
-	m1.Esig.Signature.R.IntVal = *R
+	err := this.ctx.esig(m1.Esig)
+	if err != nil{
+		logger.Error(err.Error())
+		return
+	}
 
-	m1.Esig.Signature.S = new(types.BigInt)
-	m1.Esig.Signature.S.IntVal = *S
-
-	m1.Esig.Signature.V = new(types.BigInt)
-	m1.Esig.Signature.V.IntVal = *V
 
 	//fill struct members
 	//todo: should using interface
 	this.ctx.sendInner(m1)
 	logger.Debug(COLOR_PREFIX+COLOR_FRONT_RED+COLOR_SUFFIX,"[A]Out M1",COLOR_SHORT_RESET)
 
-	go this.ctx.stopStep()
+
 }
 
 func (this *stepObj1)dataHandle(data interface{}){
@@ -107,6 +107,9 @@ func (this *stepObj2)getTTL()time.Duration{
 }
 
 func (this *stepObj2)timerHandle(){
+	defer func(){
+		go this.ctx.stopStep()
+	}()
 	m2 := newGradedConsensus()
 	m2.Credential = this.ctx.getCredential()
 	if m2.Credential == nil {
@@ -125,23 +128,17 @@ func (this *stepObj2)timerHandle(){
 	m2.Esig.val = make([]byte , 0)
 	m2.Esig.val = append(m2.Esig.val , m2.Hash[:]...)
 
-	R,S,V := this.ctx.esig(m2.Hash)
-	
-
-	m2.Esig.Signature.R = new(types.BigInt)
-	m2.Esig.Signature.R.IntVal = *R
-
-	m2.Esig.Signature.S = new(types.BigInt)
-	m2.Esig.Signature.S.IntVal = *S
-
-	m2.Esig.Signature.V = new(types.BigInt)
-	m2.Esig.Signature.V.IntVal = *V
+	err := this.ctx.esig(m2.Esig)
+	if err != nil{
+		logger.Error(err.Error())
+		return
+	}
 
 	this.ctx.sendInner(m2)
 	logger.Debug(COLOR_PREFIX+COLOR_FRONT_RED+COLOR_SUFFIX,"Obj2[A]Step:",this.ctx.getCredential().Step,"Out M2",COLOR_SHORT_RESET)
 
 	//turn to stop
-	go this.ctx.stopStep()
+
 }
 
 func (this *stepObj2)dataHandle(data interface{}){
@@ -196,8 +193,13 @@ func (this *stepObj3)getTTL()time.Duration{
 }
 
 func (this *stepObj3)timerHandle(){
+	defer func(){
+		go this.ctx.stopStep()
+	}()
+
 	this.lock.Lock()
 	defer this.lock.Unlock()
+
 
 
 	//time to work now,send all
@@ -227,25 +229,22 @@ func (this *stepObj3)timerHandle(){
 	m3.Credential = this.ctx.getCredential()
 
 	m3.Hash = v
+
 	m3.Esig.round = m3.Credential.Round
 	m3.Esig.step = m3.Credential.Step
 	m3.Esig.val = make([]byte , 0)
 	m3.Esig.val = append(m3.Esig.val , m3.Hash[:]...)
 
-	R,S,V := this.ctx.esig(m3.Hash)
+	err := this.ctx.esig(m3.Esig)
+	if err != nil{
+		logger.Error(err.Error())
+		return
+	}
 
-	m3.Esig.R = new(types.BigInt)
-	m3.Esig.R.IntVal = *R
-
-	m3.Esig.S = new(types.BigInt)
-	m3.Esig.S.IntVal = *S
-
-	m3.Esig.V = new(types.BigInt)
-	m3.Esig.V.IntVal = *V
 
 	this.ctx.sendInner(m3)
 	logger.Debug(COLOR_PREFIX+COLOR_FRONT_RED+COLOR_SUFFIX,"Obj3[A]Step:",this.ctx.getCredential().Step,"Out M3 ",v.String(),COLOR_SHORT_RESET)
-	go this.ctx.stopStep()
+
 }
 
 func (this *stepObj3)dataHandle(data interface{}){
@@ -309,6 +308,10 @@ func (this *stepObj4)getTTL()time.Duration{
 }
 
 func (this *stepObj4)timerHandle(){
+
+	defer func(){
+		go this.ctx.stopStep()
+	}()
 	this.lock.Lock()
 	defer this.lock.Unlock()
 
@@ -362,34 +365,35 @@ func (this *stepObj4)timerHandle(){
 	m4.B = uint(b)
 	m4.Credential = this.ctx.getCredential()
 
-	//b big.Int
-	R,S,V := this.ctx.esig(types.BytesToHash(big.NewInt(int64(m4.B)).Bytes()))
-	m4.EsigB.R = new(types.BigInt)
-	m4.EsigB.R.IntVal = *R
+	//sig b
+	m4.EsigB.round = m4.Credential.Round
+	m4.EsigB.step = m4.Credential.Step
+	m4.EsigB.val = make([]byte , 0)
+	m4.EsigB.val = append(m4.EsigB.val , big.NewInt(int64(m4.B)).Bytes()...)
 
-	m4.EsigB.S = new(types.BigInt)
-	m4.EsigB.R.IntVal = *S
-
-	m4.EsigB.V = new(types.BigInt)
-	m4.EsigB.V.IntVal = *V
-
+	err := this.ctx.esig(m4.EsigB)
+	if err != nil{
+		logger.Error(err.Error())
+		return
+	}
 
 	//v
-	R,S,V = this.ctx.esig(m4.Hash)
-	m4.EsigV.R = new(types.BigInt)
-	m4.EsigV.R.IntVal = *R
 
-	m4.EsigV.S = new(types.BigInt)
-	m4.EsigV.S.IntVal = *S
+	m4.EsigV.round = m4.Credential.Round
+	m4.EsigV.step = m4.Credential.Step
+	m4.EsigV.val = make([]byte , 0)
+	m4.EsigV.val = append(m4.EsigV.val , m4.Hash[:]...)
 
-	m4.EsigV.V = new(types.BigInt)
-	m4.EsigV.V.IntVal = *V
-
+	err = this.ctx.esig(m4.EsigV)
+	if err != nil{
+		logger.Error(err.Error())
+		return
+	}
 
 	this.ctx.sendInner(m4)
 	logger.Debug(COLOR_PREFIX+COLOR_FRONT_RED+COLOR_SUFFIX,"Obj4[A]Step:",this.ctx.getCredential().Step,"Out M4",m4.Hash.String(),m4.B,COLOR_SHORT_RESET)
 
-	go this.ctx.stopStep()
+
 
 }
 
@@ -462,6 +466,11 @@ func (this *stepObj567)getTTL()time.Duration{
 }
 
 func (this *stepObj567)timerHandle(){
+
+	defer func(){
+		go this.ctx.stopStep()
+	}()
+
 	this.lock.Lock()
 	defer this.lock.Unlock()
 
@@ -562,33 +571,34 @@ func (this *stepObj567)timerHandle(){
 
 
 	//b big.Int
-	R,S,V := this.ctx.esig(types.BytesToHash(big.NewInt(int64(mx.B)).Bytes()))
-	mx.EsigB.R = new(types.BigInt)
-	mx.EsigB.R.IntVal = *R
+	mx.EsigB.round = mx.Credential.Round
+	mx.EsigB.step = mx.Credential.Step
+	mx.EsigB.val = make([]byte , 0)
+	mx.EsigB.val = append(mx.EsigB.val , big.NewInt(int64(mx.B)).Bytes()...)
 
-	mx.EsigB.S = new(types.BigInt)
-	mx.EsigB.R.IntVal = *S
-
-	mx.EsigB.V = new(types.BigInt)
-	mx.EsigB.V.IntVal = *V
+	err := this.ctx.esig(mx.EsigB)
+	if err != nil{
+		logger.Error(err.Error())
+		return
+	}
 
 
 	//v
-	R,S,V = this.ctx.esig(mx.Hash)
-	mx.EsigV.R = new(types.BigInt)
-	mx.EsigV.R.IntVal = *R
+	mx.EsigV.round = mx.Credential.Round
+	mx.EsigV.step = mx.Credential.Step
+	mx.EsigV.val = make([]byte , 0)
+	mx.EsigV.val = append(mx.EsigV.val , mx.Hash[:]...)
 
-	mx.EsigV.S = new(types.BigInt)
-	mx.EsigV.S.IntVal = *S
-
-	mx.EsigV.V = new(types.BigInt)
-	mx.EsigV.V.IntVal = *V
-
+	err = this.ctx.esig(mx.EsigV)
+	if err != nil{
+		logger.Error(err.Error())
+		return
+	}
 
 	this.ctx.sendInner(mx)
 	logger.Debug(COLOR_PREFIX+COLOR_FRONT_RED+COLOR_SUFFIX,"[A]Step:",this.ctx.getCredential().Step,"Out M",mx.Credential.Step,COLOR_SHORT_RESET)
 
-	go this.ctx.stopStep()
+
 }
 
 
@@ -647,6 +657,11 @@ func (this *stepObjm3)getTTL()time.Duration{
 }
 
 func (this *stepObjm3)timerHandle(){
+
+	defer func(){
+		go this.ctx.stopStep()
+	}()
+
 	this.lock.Lock()
 	defer this.lock.Unlock()
 
@@ -657,35 +672,33 @@ func (this *stepObjm3)timerHandle(){
 	m3.Credential = this.ctx.getCredential()
 
 	//b big.Int
-	R,S,V := this.ctx.esig(types.BytesToHash(big.NewInt(int64(m3.B)).Bytes()))
-	m3.EsigB.R = new(types.BigInt)
-	m3.EsigB.R.IntVal = *R
+	m3.EsigB.round = m3.Credential.Round
+	m3.EsigB.step = m3.Credential.Step
+	m3.EsigB.val = make([]byte , 0)
+	m3.EsigB.val = append(m3.EsigB.val , big.NewInt(int64(m3.B)).Bytes()...)
 
-	m3.EsigB.S = new(types.BigInt)
-	m3.EsigB.R.IntVal = *S
-
-	m3.EsigB.V = new(types.BigInt)
-	m3.EsigB.V.IntVal = *V
+	err := this.ctx.esig(m3.EsigB)
+	if err != nil{
+		logger.Error(err.Error())
+		return
+	}
 
 
 	//v
-	R,S,V = this.ctx.esig(m3.Hash)
-	m3.EsigV.R = new(types.BigInt)
-	m3.EsigV.R.IntVal = *R
+	m3.EsigV.round = m3.Credential.Round
+	m3.EsigV.step = m3.Credential.Step
+	m3.EsigV.val = make([]byte , 0)
+	m3.EsigV.val = append(m3.EsigV.val , m3.Hash[:]...)
 
-	m3.EsigV.S = new(types.BigInt)
-	m3.EsigV.S.IntVal = *S
-
-	m3.EsigV.V = new(types.BigInt)
-	m3.EsigV.V.IntVal = *V
-
-
-
-
+	err = this.ctx.esig(m3.EsigV)
+	if err != nil{
+		logger.Error(err.Error())
+		return
+	}
 
 	this.ctx.sendInner(m3)
 
-	go this.ctx.stopStep()
+
 }
 
 
