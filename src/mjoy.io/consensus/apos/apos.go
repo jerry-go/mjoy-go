@@ -29,6 +29,7 @@ import (
 	"errors"
 	"mjoy.io/core/blockchain/block"
 	"time"
+	"fmt"
 )
 
 const (
@@ -177,22 +178,42 @@ func (this *Round)broadcastCredentials() {
 
 func (this *Round)startVerify(wg *sync.WaitGroup) {
 	// create routine obj
-	for i, credential := range this.credentials {
+	for step, credential := range this.credentials {
 		stepRoutineObj := newStepRoutine()
-		this.addStepRoutine(i, stepRoutineObj)
+		this.addStepRoutine(step, stepRoutineObj)
 
 		// step context
 		stepCtx := &stepCtx{}
 		//GetCredential
-		stepCtx.getCredential = func() *CredentialSign {
-			return credential
-		}
+		//stepCtx.getCredential = func() *CredentialSign {
+		//	pC:=new(CredentialSign)
+		//	*pC = *credential
+		//	return pC
+		//}
+
+		stepCtx.getCredential = func()func()*CredentialSign{
+			pc := new(CredentialSign)
+			*pc = *credential
+			return func() *CredentialSign {
+				return pc
+			}
+		}()
 		stepCtx.esig = this.apos.commonTools.ESIG
 		stepCtx.sendInner = this.apos.outMsger.SendInner
 		stepCtx.propagateMsg = this.apos.outMsger.PropagateMsg
-		stepCtx.getStep = func()int{
-			return i
-		}
+
+		//stepCtx.getStep = func()int{
+		//	stepRt:=step
+		//	return stepRt
+		//}
+
+		stepCtx.getStep = func()func()int{
+			stepRt := step
+			return func() int {
+				return stepRt
+			}
+		}()
+
 		stepCtx.stopStep = stepRoutineObj.stop
 		stepCtx.stopRound = func() {
 			this.stopAllStepRoutine()
@@ -456,6 +477,7 @@ func (this *Round)commonProcess() {
 		select {
 		// receive message
 		case outData := <-this.apos.outMsger.GetDataMsg():
+			fmt.Println("commonProcess Get Data.....",reflect.TypeOf(outData))
 			switch v := outData.(type) {
 			case *CredentialSign:
 				this.receiveMsgCs(v)

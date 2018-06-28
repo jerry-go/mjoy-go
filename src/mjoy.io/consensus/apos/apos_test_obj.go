@@ -128,7 +128,6 @@ func (this *allNodeManager)initTestCommon(testPotVerifier int) int{
 	return int(allNodesCnt)
 }
 
-
 func (this *allNodeManager)initTestCommonNew(testPotVerifier int) int{
 	this.actualNode = NewApos(this.msger , newOutCommonTools())
 	//this.actualNode.SetOutMsger(this.msger)
@@ -154,11 +153,13 @@ func (this *allNodeManager)run(){
 		select {
 		//deal all data from virtual] node,just send the virtualData to the chan(will send to actual node)
 		case virtualData:=<-this.allVNodeChan:
+			fmt.Println("Run:allVNodeChan Type:" , reflect.TypeOf(virtualData))
 			this.msger.Send2Apos(virtualData)
 			//send the data from all node to actual node
 
 
 		case actualData := <-this.msger.GetSubDataMsg():
+			fmt.Println("Run:getSubDataMSG TYPE:" , reflect.TypeOf(actualData))
 			//continue
 			for _,vNode := range this.vituals{
 				vNode.inChan <- actualData

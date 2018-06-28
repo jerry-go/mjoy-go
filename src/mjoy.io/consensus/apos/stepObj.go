@@ -48,6 +48,7 @@ func (this *stepObj1)timerHandle(){
 
 
 	m1.Credential = this.ctx.getCredential()
+	fmt.Println("m1.step:",m1.Credential.Step)
 	m1.Block = this.ctx.makeEmptyBlockForTest(m1.Credential)
 
 	m1.Esig.round = m1.Credential.Round
@@ -114,7 +115,7 @@ func (this *stepObj2)timerHandle(){
 	fmt.Println("m2.Credential:" , *m2.Credential)
 	if this.smallestLBr == nil {
 		m2.Hash = types.Hash{}
-		logger.Error(COLOR_PREFIX+COLOR_FRONT_RED+COLOR_SUFFIX,"[A]Step:",this.ctx.getCredential().Step,"Out M2 By a EmptyHash",COLOR_SHORT_RESET)
+		logger.Error(COLOR_PREFIX+COLOR_FRONT_RED+COLOR_SUFFIX,"Obj2[A]Step:",this.ctx.getCredential().Step,"Out M2 By a EmptyHash",COLOR_SHORT_RESET)
 	}else{
 		m2.Hash = this.smallestLBr.Block.Hash()
 	}
@@ -136,14 +137,14 @@ func (this *stepObj2)timerHandle(){
 	m2.Esig.Signature.V.IntVal = *V
 
 	this.ctx.sendInner(m2)
-	logger.Debug(COLOR_PREFIX+COLOR_FRONT_RED+COLOR_SUFFIX,"[A]Step:",this.ctx.getCredential().Step,"Out M2",COLOR_SHORT_RESET)
+	logger.Debug(COLOR_PREFIX+COLOR_FRONT_RED+COLOR_SUFFIX,"Obj2[A]Step:",this.ctx.getCredential().Step,"Out M2",COLOR_SHORT_RESET)
 
 	//turn to stop
 	go this.ctx.stopStep()
 }
 
 func (this *stepObj2)dataHandle(data interface{}){
-	logger.Debug(COLOR_PREFIX+COLOR_FRONT_RED+COLOR_SUFFIX,"[A]Step:",this.ctx.getCredential().Step,"In M1",COLOR_SHORT_RESET)
+	logger.Debug(COLOR_PREFIX+COLOR_FRONT_RED+COLOR_SUFFIX,"Obj2[A]Step:",this.ctx.getCredential().Step,"In M1",COLOR_SHORT_RESET)
 	m1 := new(BlockProposal)
 	m1 = data.(*BlockProposal)
 
@@ -242,7 +243,7 @@ func (this *stepObj3)timerHandle(){
 	m3.Esig.V.IntVal = *V
 
 	this.ctx.sendInner(m3)
-	logger.Debug(COLOR_PREFIX+COLOR_FRONT_RED+COLOR_SUFFIX,"[A]Step:",this.ctx.getCredential().Step,"Out M3 ",v.String(),COLOR_SHORT_RESET)
+	logger.Debug(COLOR_PREFIX+COLOR_FRONT_RED+COLOR_SUFFIX,"Obj3[A]Step:",this.ctx.getCredential().Step,"Out M3 ",v.String(),COLOR_SHORT_RESET)
 	go this.ctx.stopStep()
 }
 
@@ -255,7 +256,7 @@ func (this *stepObj3)dataHandle(data interface{}){
 	if m2 == nil{
 		return
 	}
-	logger.Debug(COLOR_PREFIX+COLOR_FRONT_RED+COLOR_SUFFIX,"[A]Step:",this.ctx.getCredential().Step,"In M2",m2.Hash.String(),COLOR_SHORT_RESET)
+	logger.Debug(COLOR_PREFIX+COLOR_FRONT_RED+COLOR_SUFFIX,"Obj3[A]Step:",this.ctx.getCredential().Step,"In M2",m2.Hash.String(),COLOR_SHORT_RESET)
 	//add to IndexMap
 	var subIndex map[CredentialSigForKey]bool
 	subIndex = this.allM2Index[m2.Hash]
@@ -385,7 +386,7 @@ func (this *stepObj4)timerHandle(){
 
 
 	this.ctx.sendInner(m4)
-	logger.Debug(COLOR_PREFIX+COLOR_FRONT_RED+COLOR_SUFFIX,"[A]Step:",this.ctx.getCredential().Step,"Out M4",m4.Hash.String(),m4.B,COLOR_SHORT_RESET)
+	logger.Debug(COLOR_PREFIX+COLOR_FRONT_RED+COLOR_SUFFIX,"Obj4[A]Step:",this.ctx.getCredential().Step,"Out M4",m4.Hash.String(),m4.B,COLOR_SHORT_RESET)
 
 	go this.ctx.stopStep()
 
@@ -399,7 +400,7 @@ func (this *stepObj4)dataHandle(data interface{}){
 	if m3 == nil{
 		return
 	}
-	logger.Debug(COLOR_PREFIX+COLOR_FRONT_RED+COLOR_SUFFIX,"[A]Step:",this.ctx.getCredential().Step,"In M3",m3.Hash.String(),COLOR_SHORT_RESET)
+	logger.Debug(COLOR_PREFIX+COLOR_FRONT_RED+COLOR_SUFFIX,"Obj4[A]Step:",this.ctx.getCredential().Step,"In M3",m3.Hash.String(),COLOR_SHORT_RESET)
 	//add to IndexMap
 	var subIndex map[CredentialSigForKey]bool
 	subIndex = this.allM2Index[m3.Hash]
@@ -600,7 +601,7 @@ func (this *stepObj567)dataHandle(data interface{}){
 	}
 	//add to IndexMap
 	//logger.Debug(COLOR_PREFIX+COLOR_FRONT_RED+COLOR_SUFFIX,"[A]Step:",this.pCredential.Step.IntVal.Int64(),"In M",m6.Credential.Step.IntVal.Int64(),COLOR_SHORT_RESET)
-	logger.Debug(COLOR_PREFIX+COLOR_FRONT_RED+COLOR_SUFFIX,"[A]Step:",this.ctx.getCredential().Step,"In M3 Hash:",m6.Hash.String(),"B:",m6.B,COLOR_SHORT_RESET)
+	logger.Debug(COLOR_PREFIX+COLOR_FRONT_RED+COLOR_SUFFIX,"Obj567[A]Step:",this.ctx.getCredential().Step,"In M3 Hash:",m6.Hash.String(),"B:",m6.B,COLOR_SHORT_RESET)
 	var subIndex *binaryStatus
 	subIndex = this.allMxIndex[m6.Hash]
 	if subIndex == nil {

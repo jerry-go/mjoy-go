@@ -186,7 +186,8 @@ func (this *virtualNode)dealM23(data dataPack)dataPack{
 		return m3
 	}else {
 		// step 3,should make mCommon
-		m4 := new(BinaryByzantineAgreement)
+
+		m4 := newBinaryByzantineAgreement()
 		m4.Credential = this.makeCredential(4)
 		if this.isHonest{
 			m4.B = 0
@@ -242,7 +243,7 @@ func (this *virtualNode)dealMCommon(data dataPack)dataPack{
 
 
 	m := data.(*BinaryByzantineAgreement)
-	mc := new(BinaryByzantineAgreement)
+	mc := newBinaryByzantineAgreement()
 
 
 	if this.isHonest{
@@ -306,14 +307,14 @@ func (this *virtualNode)dealMCommon(data dataPack)dataPack{
 //Focus:no matter what data the virtual
 func (this *virtualNode)dataDeal(data dataPack)(dp dataPack){
 	switch v := data.(type) {
-	case *CredentialSig:
+	case *CredentialSign:
 		//no need to deal CredentialSig
 		//dp = this.makeM1(int(v.Step.IntVal.Int64()))
-	case *M1:
+	case *BlockProposal:
 		dp = this.dealM1(v)
-	case *M23:
+	case *GradedConsensus:
 		dp = this.dealM23(v)
-	case *MCommon:
+	case *BinaryByzantineAgreement:
 		dp = this.dealMCommon(v)
 	}
 

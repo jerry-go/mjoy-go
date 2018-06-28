@@ -28,6 +28,7 @@ import (
 	"errors"
 	"math/big"
 	"sync"
+	"reflect"
 )
 //go:generate msgp
 func (cs *CredentialSign) validate() error{
@@ -357,6 +358,7 @@ func (mt *msgTransfer) PropagateCredential(c *CredentialSign) error {
 
 func (mt *msgTransfer) SendInner(data dataPack) error {
 	//todo here need to validate process??
+	fmt.Println("SendInner type:" , reflect.TypeOf(data))
 	mt.receiveChan<-data
 	//send the data to receiveSubCh
 	mt.receiveSubChan<-data
@@ -368,6 +370,7 @@ func (mt *msgTransfer) PropagateMsg(data dataPack) error {
 }
 
 func (mt *msgTransfer) Send2Apos(data dataPack) {
+	fmt.Println("Send2Apos type:" , reflect.TypeOf(data))
 	mt.receiveChan<-data
 }
 
