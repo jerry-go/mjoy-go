@@ -184,35 +184,20 @@ func (this *Round)startVerify(wg *sync.WaitGroup) {
 
 		// step context
 		stepCtx := &stepCtx{}
-		//GetCredential
-		//stepCtx.getCredential = func() *CredentialSign {
-		//	pC:=new(CredentialSign)
-		//	*pC = *credential
-		//	return pC
-		//}
 
-		stepCtx.getCredential = func()func()*CredentialSign{
-			pc := new(CredentialSign)
-			*pc = *credential
-			return func() *CredentialSign {
-				return pc
-			}
-		}()
+		pC := credential
+		stepCtx.getCredential = func()*CredentialSign{
+			return pC
+		}
+
 		stepCtx.esig = this.apos.commonTools.ESIG
 		stepCtx.sendInner = this.apos.outMsger.SendInner
 		stepCtx.propagateMsg = this.apos.outMsger.PropagateMsg
 
-		//stepCtx.getStep = func()int{
-		//	stepRt:=step
-		//	return stepRt
-		//}
-
-		stepCtx.getStep = func()func()int{
-			stepRt := step
-			return func() int {
-				return stepRt
-			}
-		}()
+		stepRt:=step
+		stepCtx.getStep = func()int{
+			return stepRt
+		}
 
 		stepCtx.stopStep = stepRoutineObj.stop
 		stepCtx.stopRound = func() {

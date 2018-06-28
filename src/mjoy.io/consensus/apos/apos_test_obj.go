@@ -129,6 +129,7 @@ func (this *allNodeManager)initTestCommon(testPotVerifier int) int{
 }
 
 func (this *allNodeManager)initTestCommonNew(testPotVerifier int) int{
+	this.msger = MsgTransfer()
 	this.actualNode = NewApos(this.msger , newOutCommonTools())
 	//this.actualNode.SetOutMsger(this.msger)
 	TestPotVerifier = testPotVerifier
