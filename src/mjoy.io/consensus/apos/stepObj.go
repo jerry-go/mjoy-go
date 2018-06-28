@@ -126,6 +126,7 @@ func (this *stepObj2)timerHandle(){
 	m2.Esig.val = append(m2.Esig.val , m2.Hash[:]...)
 
 	R,S,V := this.ctx.esig(m2.Hash)
+	
 
 	m2.Esig.Signature.R = new(types.BigInt)
 	m2.Esig.Signature.R.IntVal = *R

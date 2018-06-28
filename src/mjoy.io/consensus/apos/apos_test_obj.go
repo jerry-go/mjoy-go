@@ -308,6 +308,10 @@ func (this *outCommonTools)SIG(hash types.Hash)(R,S,V *big.Int){
 
 }
 
+func (this *outCommonTools)GetPriKey()*ecdsa.PrivateKey{
+	return this.pri
+}
+
 func (this *outCommonTools)SigVerify(h types.Hash , sig *SignatureVal)error{
 	return nil
 }

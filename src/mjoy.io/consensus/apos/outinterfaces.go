@@ -23,6 +23,7 @@ package apos
 import (
 	"mjoy.io/common/types"
 	"math/big"
+	"crypto/ecdsa"
 )
 
 /*
@@ -63,6 +64,7 @@ type CommonTools interface {
 	GetQr_k(k int)types.Hash
 	GetNowBlockNum()int
 	GetNextRound()int
+	GetPriKey()*ecdsa.PrivateKey
 }
 
 

@@ -335,6 +335,7 @@ func (bba *msgBinaryByzantineAgreement) StopHandle() {
 //message transfer between msg and Apos
 type msgTransfer struct {
 	receiveSubChan chan dataPack
+	somebodyGetSubChan bool
 	receiveChan chan dataPack    //receive message from BBa, Gc, Bp and etc.
 	sendChan    chan dataPack
 }
@@ -351,6 +352,7 @@ func MsgTransfer() *msgTransfer {
 			receiveChan: make(chan dataPack, 10),
 			receiveSubChan:make(chan dataPack , 10),
 			sendChan: make(chan dataPack, 10),
+			somebodyGetSubChan:false,
 		}
 	})
 	return msgTransferInstance
@@ -371,6 +373,7 @@ func (mt *msgTransfer) GetDataMsg() (<-chan dataPack) {
 
 //return the chan sub chan,just for test
 func (mt *msgTransfer) GetSubDataMsg()<-chan dataPack{
+	mt.somebodyGetSubChan = true
 	return mt.receiveSubChan
 }
 
@@ -387,7 +390,10 @@ func (mt *msgTransfer) SendInner(data dataPack) error {
 	fmt.Println("SendInner type:" , reflect.TypeOf(data))
 	mt.receiveChan<-data
 	//send the data to receiveSubCh
-	mt.receiveSubChan<-data
+	if mt.somebodyGetSubChan {
+		mt.receiveSubChan<-data
+	}
+
 	return nil
 }
 

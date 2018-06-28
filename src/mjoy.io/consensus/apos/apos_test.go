@@ -9,6 +9,7 @@ import (
 )
 
 func TestAposRunning(t *testing.T){
+	fmt.Println("TestAposRunning.........")
 	an := newAllNodeManager()
 	Config().blockDelay = 2
 	Config().verifyDelay = 1
