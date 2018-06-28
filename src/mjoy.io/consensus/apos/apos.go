@@ -287,7 +287,7 @@ func (this *Round)receiveMsgBp(msg *BlockProposal) {
 
 	//send this msg to step2 goroutine
 	if stepObj, ok := this.allStepObj[2]; ok {
-		stepObj.sendMsg(msg)
+		go stepObj.sendMsg(msg)
 	}
 
 	// for M1 Propagate process will in stepObj
@@ -346,7 +346,7 @@ func (this *Round)receiveMsgGc(msg *GradedConsensus) {
 	//send this msg to step3 or step4 goroutine
 	step := msg.Credential.Step
 	if stepObj, ok := this.allStepObj[int(step) + 1]; ok {
-		stepObj.sendMsg(msg)
+		go stepObj.sendMsg(msg)
 	}
 
 	//Propagate message via p2p
@@ -454,7 +454,7 @@ func (this *Round)receiveMsgBba(msg *BinaryByzantineAgreement) {
 
 	//send this msg to step other goroutine
 	if stepObj, ok := this.allStepObj[int(step) + 1]; ok {
-		stepObj.sendMsg(msg)
+		go stepObj.sendMsg(msg)
 	}
 	//Propagate message via p2p
 	this.apos.outMsger.PropagateMsg(msg)

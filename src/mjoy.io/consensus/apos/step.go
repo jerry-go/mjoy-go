@@ -60,7 +60,7 @@ func (sr *stepRoutine)setStep(s step){
 }
 
 func (sr *stepRoutine) reset() {
-	sr.inputCh = make(chan interface{} , 100)
+	sr.inputCh = make(chan interface{})
 	sr.stopCh = make(chan interface{})
 	sr.timer = nil
 	sr.s = nil
@@ -70,10 +70,11 @@ func (sr *stepRoutine) reset() {
 //func (sr *stepRoutine)sendMsg(dataPack,*Round) error{
 //
 //}
-func (sr *stepRoutine)sendMsg(dp dataPack)error{
+func (sr *stepRoutine)sendMsg(dp dataPack) error {
 	sr.inputCh<-dp
 	return nil
 }
+
 // run the routine of step
 func (sr *stepRoutine) run(s step) {
 	sr.s = s
