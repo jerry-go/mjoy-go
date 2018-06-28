@@ -536,7 +536,7 @@ type Apos struct {
 //Create Apos
 func NewApos(msger OutMsger ,cmTools CommonTools)*Apos{
 	a := new(Apos)
-	a.outMsger = msger
+	//a.outMsger = msger
 	a.commonTools = cmTools
 	a.allMsgBridge = make(chan dataPack , 10000)
 	a.roundOverCh = make(chan interface{} , 1)
