@@ -195,7 +195,6 @@ func TestM23filter(t *testing.T){
 	}
 }
 
-/*
 
 
 
@@ -223,16 +222,13 @@ func TestM23filter_malicious(t *testing.T){
 		m23.Esig.val = make([]byte , 0)
 
 		m23.Esig.val = append(m23.Esig.val , m23.Hash[:]...)
+		v.commonTools.CreateTmpPriKey(int(m23.Credential.Step))
 
-		R,S,V := v.commonTools.ESIG(m23.Hash)
-		m23.Esig.R = new(types.BigInt)
-		m23.Esig.R.IntVal = *R
-
-		m23.Esig.S = new(types.BigInt)
-		m23.Esig.S.IntVal = *S
-
-		m23.Esig.V = new(types.BigInt)
-		m23.Esig.V.IntVal = *V
+		err := v.commonTools.Esig(m23.Esig)
+		if err != nil{
+			logger.Error(err.Error())
+			return
+		}
 
 		an.SendDataPackToActualNode(m23)
 
@@ -279,27 +275,25 @@ func TestMCommon(t *testing.T){
 		mcommon.EsigB.step = mcommon.Credential.Step
 		mcommon.EsigB.val = make([]byte , 0 )
 		mcommon.EsigB.val = append(mcommon.EsigB.val , big.NewInt(int64(mcommon.B)).Bytes()...)
-		h := types.BytesToHash(big.NewInt(int64(mcommon.B)).Bytes())
 
-		R,S,V := v.commonTools.ESIG(h)
-		mcommon.EsigB.R = new(types.BigInt)
-		mcommon.EsigB.R.IntVal = *R
+		v.commonTools.CreateTmpPriKey(int(mcommon.Credential.Step))
 
-		mcommon.EsigB.S = new(types.BigInt)
-		mcommon.EsigB.S.IntVal = *S
+		err := v.commonTools.Esig(mcommon.EsigB)
+		if err != nil{
+			logger.Error(err.Error())
+			return
+		}
 
-		mcommon.EsigB.V = new(types.BigInt)
-		mcommon.EsigB.V.IntVal = *V
+		mcommon.EsigV.round = mcommon.Credential.Round
+		mcommon.EsigV.step = mcommon.Credential.Step
+		mcommon.EsigV.val = make([]byte , 0)
+		mcommon.EsigV.val = append(mcommon.EsigV.val , mcommon.Hash[:]...)
 
-		R,S,V = v.commonTools.ESIG(mcommon.Hash)
-		mcommon.EsigV.R = new(types.BigInt)
-		mcommon.EsigV.R.IntVal = *R
-
-		mcommon.EsigV.S = new(types.BigInt)
-		mcommon.EsigV.S.IntVal = *S
-
-		mcommon.EsigV.V = new(types.BigInt)
-		mcommon.EsigV.V.IntVal = *V
+		err = v.commonTools.Esig(mcommon.EsigV)
+		if err != nil{
+			logger.Error(err.Error())
+			return
+		}
 
 		an.SendDataPackToActualNode(mcommon)
 	}
@@ -334,33 +328,27 @@ func TestMCommon_filter_duplicate(t *testing.T){
 		mcommon.EsigB.step = mcommon.Credential.Step
 		mcommon.EsigB.val = make([]byte , 0 )
 		mcommon.EsigB.val = append(mcommon.EsigB.val , big.NewInt(int64(mcommon.B)).Bytes()...)
-		h := types.BytesToHash(big.NewInt(int64(mcommon.B)).Bytes())
-		R,S,V := v.commonTools.ESIG(h)
 
-		mcommon.EsigB.R = new(types.BigInt)
-		mcommon.EsigB.R.IntVal = *R
+		v.commonTools.CreateTmpPriKey(int(mcommon.Credential.Step))
 
-		mcommon.EsigB.S = new(types.BigInt)
-		mcommon.EsigB.S.IntVal = *S
+		err := v.commonTools.Esig(mcommon.EsigB)
+		if err != nil {
+			logger.Error(err.Error())
+			return
+		}
 
-		mcommon.EsigB.V = new(types.BigInt)
-		mcommon.EsigB.V.IntVal = *V
 
 		mcommon.EsigV.round = mcommon.Credential.Round
 		mcommon.EsigV.step = mcommon.Credential.Step
 		mcommon.EsigV.val = make([]byte , 0 )
 		mcommon.EsigV.val = append(mcommon.EsigV.val , mcommon.Hash[:]...)
 
-		R,S,V = v.commonTools.ESIG(mcommon.Hash)
 
-		mcommon.EsigV.R = new(types.BigInt)
-		mcommon.EsigV.R.IntVal = *R
-
-		mcommon.EsigV.S = new(types.BigInt)
-		mcommon.EsigV.S.IntVal = *S
-
-		mcommon.EsigV.V = new(types.BigInt)
-		mcommon.EsigV.V.IntVal = *V
+		err = v.commonTools.Esig(mcommon.EsigV)
+		if err != nil {
+			logger.Error(err.Error())
+			return
+		}
 
 		an.SendDataPackToActualNode(mcommon)
 		an.SendDataPackToActualNode(mcommon)
@@ -395,33 +383,27 @@ func TestMCommon_filter_duplicate2(t *testing.T){
 		mcommon.EsigB.step = mcommon.Credential.Step
 		mcommon.EsigB.val = make([]byte , 0 )
 		mcommon.EsigB.val = append(mcommon.EsigB.val , big.NewInt(int64(mcommon.B)).Bytes()...)
-		h := types.BytesToHash(big.NewInt(int64(mcommon.B)).Bytes())
-		R,S,V := v.commonTools.ESIG(h)
 
-		mcommon.EsigB.R = new(types.BigInt)
-		mcommon.EsigB.R.IntVal = *R
+		v.commonTools.CreateTmpPriKey(int(mcommon.Credential.Step))
 
-		mcommon.EsigB.S = new(types.BigInt)
-		mcommon.EsigB.S.IntVal = *S
-
-		mcommon.EsigB.V = new(types.BigInt)
-		mcommon.EsigB.V.IntVal = *V
+		err := v.commonTools.Esig(mcommon.EsigB)
+		if err != nil {
+			logger.Error(err.Error())
+			return
+		}
 
 		mcommon.EsigV.round = mcommon.Credential.Round
 		mcommon.EsigV.step = mcommon.Credential.Step
 		mcommon.EsigV.val = make([]byte , 0 )
 		mcommon.EsigV.val = append(mcommon.EsigV.val , mcommon.Hash[:]...)
 
-		R,S,V = v.commonTools.ESIG(mcommon.Hash)
+		err = v.commonTools.Esig(mcommon.EsigV)
+		if err != nil {
+			logger.Error(err.Error())
+			return
+		}
 
-		mcommon.EsigV.R = new(types.BigInt)
-		mcommon.EsigV.R.IntVal = *R
 
-		mcommon.EsigV.S = new(types.BigInt)
-		mcommon.EsigV.S.IntVal = *S
-
-		mcommon.EsigV.V = new(types.BigInt)
-		mcommon.EsigV.V.IntVal = *V
 
 		an.SendDataPackToActualNode(mcommon)
 
@@ -466,33 +448,25 @@ func TestMCommon_filter_duplicate3(t *testing.T){
 		mcommon.EsigB.step = mcommon.Credential.Step
 		mcommon.EsigB.val = make([]byte , 0 )
 		mcommon.EsigB.val = append(mcommon.EsigB.val , big.NewInt(int64(mcommon.B)).Bytes()...)
-		h := types.BytesToHash(big.NewInt(int64(mcommon.B)).Bytes())
-		R,S,V := v.commonTools.ESIG(h)
 
-		mcommon.EsigB.R = new(types.BigInt)
-		mcommon.EsigB.R.IntVal = *R
+		v.commonTools.CreateTmpPriKey(int(mcommon.Credential.Step))
+		err := v.commonTools.Esig(mcommon.EsigB)
+		if err != nil {
+			logger.Error(err.Error())
+			return
+		}
 
-		mcommon.EsigB.S = new(types.BigInt)
-		mcommon.EsigB.S.IntVal = *S
-
-		mcommon.EsigB.V = new(types.BigInt)
-		mcommon.EsigB.V.IntVal = *V
 
 		mcommon.EsigV.round = mcommon.Credential.Round
 		mcommon.EsigV.step = mcommon.Credential.Step
 		mcommon.EsigV.val = make([]byte , 0 )
 		mcommon.EsigV.val = append(mcommon.EsigV.val , mcommon.Hash[:]...)
 
-		R,S,V = v.commonTools.ESIG(mcommon.Hash)
-
-		mcommon.EsigV.R = new(types.BigInt)
-		mcommon.EsigV.R.IntVal = *R
-
-		mcommon.EsigV.S = new(types.BigInt)
-		mcommon.EsigV.S.IntVal = *S
-
-		mcommon.EsigV.V = new(types.BigInt)
-		mcommon.EsigV.V.IntVal = *V
+		err = v.commonTools.Esig(mcommon.EsigV)
+		if err != nil {
+			logger.Error(err.Error())
+			return
+		}
 
 		an.SendDataPackToActualNode(mcommon)
 
@@ -538,17 +512,13 @@ func TestMCommon_EndCondition0(t *testing.T){
 	m1.Esig.val = make([]byte , 0 )
 	m1.Esig.val = append(m1.Esig.val , hash[:]...)
 
+	v.commonTools.CreateTmpPriKey(int(m1.Credential.Step))
 
-	R,S,V := v.commonTools.ESIG(hash)
-
-	m1.Esig.R = new(types.BigInt)
-	m1.Esig.R.IntVal = *R
-
-	m1.Esig.S = new(types.BigInt)
-	m1.Esig.S.IntVal = *S
-
-	m1.Esig.V = new(types.BigInt)
-	m1.Esig.V.IntVal = *V
+	err := v.commonTools.Esig(m1.Esig)
+	if err != nil{
+		logger.Error(err.Error())
+		return
+	}
 
 	an.SendDataPackToActualNode(m1)
 
@@ -567,37 +537,28 @@ func TestMCommon_EndCondition0(t *testing.T){
 		mcommon.EsigB.step = mcommon.Credential.Step
 		mcommon.EsigB.val = make([]byte , 0 )
 		mcommon.EsigB.val = append(mcommon.EsigB.val , big.NewInt(int64(mcommon.B)).Bytes()...)
-		h := types.BytesToHash(big.NewInt(int64(mcommon.B)).Bytes())
-		R,S,V := v.commonTools.ESIG(h)
 
-		mcommon.EsigB.R = new(types.BigInt)
-		mcommon.EsigB.R.IntVal = *R
+		v.commonTools.CreateTmpPriKey(int(mcommon.Credential.Step))
 
-		mcommon.EsigB.S = new(types.BigInt)
-		mcommon.EsigB.S.IntVal = *S
+		err := v.commonTools.Esig(mcommon.EsigB)
+		if err != nil {
+			logger.Error(err.Error())
+			return
+		}
 
-		mcommon.EsigB.V = new(types.BigInt)
-		mcommon.EsigB.V.IntVal = *V
 
 		mcommon.EsigV.round = mcommon.Credential.Round
 		mcommon.EsigV.step = mcommon.Credential.Step
 		mcommon.EsigV.val = make([]byte , 0 )
 		mcommon.EsigV.val = append(mcommon.EsigV.val , mcommon.Hash[:]...)
 
-		R,S,V = v.commonTools.ESIG(mcommon.Hash)
-
-		mcommon.EsigV.R = new(types.BigInt)
-		mcommon.EsigV.R.IntVal = *R
-
-		mcommon.EsigV.S = new(types.BigInt)
-		mcommon.EsigV.S.IntVal = *S
-
-		mcommon.EsigV.V = new(types.BigInt)
-		mcommon.EsigV.V.IntVal = *V
+		err = v.commonTools.Esig(mcommon.EsigV)
+		if err != nil {
+			logger.Error(err.Error())
+			return
+		}
 
 		an.SendDataPackToActualNode(mcommon)
-
-
 	}
 	for{
 		time.Sleep(3*time.Second)
@@ -632,16 +593,13 @@ func TestMCommon_EndCondition0_B1(t *testing.T){
 	m1.Esig.val = make([]byte , 0 )
 	m1.Esig.val = append(m1.Esig.val , hash[:]...)
 
-	R,S,V := v.commonTools.ESIG(hash)
+	v.commonTools.CreateTmpPriKey(int(m1.Credential.Step))
 
-	m1.Esig.R = new(types.BigInt)
-	m1.Esig.R.IntVal = *R
-
-	m1.Esig.S = new(types.BigInt)
-	m1.Esig.S.IntVal = *S
-
-	m1.Esig.V = new(types.BigInt)
-	m1.Esig.V.IntVal = *V
+	err := v.commonTools.Esig(m1.Esig)
+	if err != nil {
+		logger.Error(err.Error())
+		return
+	}
 
 	an.SendDataPackToActualNode(m1)
 
@@ -660,17 +618,14 @@ func TestMCommon_EndCondition0_B1(t *testing.T){
 
 		mcommon.EsigB.val = append(mcommon.EsigB.val , big.NewInt(int64(mcommon.B)).Bytes()...)
 
-		h := types.BytesToHash(big.NewInt(int64(mcommon.B)).Bytes())
-		R,S,V := v.commonTools.ESIG(h)
+		v.commonTools.CreateTmpPriKey(int(mcommon.Credential.Step))
 
-		mcommon.EsigB.R = new(types.BigInt)
-		mcommon.EsigB.R.IntVal = *R
+		err := v.commonTools.Esig(mcommon.EsigB)
+		if err != nil{
+			logger.Error(err.Error())
+			return
+		}
 
-		mcommon.EsigB.S = new(types.BigInt)
-		mcommon.EsigB.S.IntVal = *S
-
-		mcommon.EsigB.V = new(types.BigInt)
-		mcommon.EsigB.V.IntVal = *V
 
 		//hash
 		mcommon.EsigV.round = mcommon.Credential.Round
@@ -679,16 +634,11 @@ func TestMCommon_EndCondition0_B1(t *testing.T){
 
 		mcommon.EsigV.val = append(mcommon.EsigV.val , mcommon.Hash[:]...)
 
-		R,S,V = v.commonTools.ESIG(mcommon.Hash)
-
-		mcommon.EsigV.R = new(types.BigInt)
-		mcommon.EsigV.R.IntVal = *R
-
-		mcommon.EsigV.S = new(types.BigInt)
-		mcommon.EsigV.S.IntVal = *S
-
-		mcommon.EsigV.V = new(types.BigInt)
-		mcommon.EsigV.V.IntVal = *V
+		err = v.commonTools.Esig(mcommon.EsigV)
+		if err != nil{
+			logger.Error(err.Error())
+			return
+		}
 
 		an.SendDataPackToActualNode(mcommon)
 
@@ -724,16 +674,13 @@ func TestMCommon_EndCondition1(t *testing.T){
 
 	m1.Esig.val = append(m1.Esig.val , hash[:]...)
 
-	R,S,V := v.commonTools.ESIG(hash)
+	v.commonTools.CreateTmpPriKey(int(m1.Credential.Step))
 
-	m1.Esig.R = new(types.BigInt)
-	m1.Esig.R.IntVal = *R
-
-	m1.Esig.S = new(types.BigInt)
-	m1.Esig.S.IntVal = *S
-
-	m1.Esig.V = new(types.BigInt)
-	m1.Esig.V.IntVal = *V
+	err := v.commonTools.Esig(m1.Esig)
+	if err != nil {
+		logger.Error(err.Error())
+		return
+	}
 
 	an.SendDataPackToActualNode(m1)
 
@@ -753,20 +700,13 @@ func TestMCommon_EndCondition1(t *testing.T){
 		mcommon.EsigB.val = make([]byte , 0)
 
 		mcommon.EsigB.val = append(mcommon.EsigB.val , big.NewInt(int64(mcommon.B)).Bytes()...)
-		h := types.BytesToHash(big.NewInt(int64(mcommon.B)).Bytes())
 
-		R,S,V := v.commonTools.ESIG(h)
-
-		mcommon.EsigB.R = new(types.BigInt)
-		mcommon.EsigB.R.IntVal = *R
-
-		mcommon.EsigB.S = new(types.BigInt)
-		mcommon.EsigB.S.IntVal = *S
-
-		mcommon.EsigB.V = new(types.BigInt)
-		mcommon.EsigB.V.IntVal = *V
-
-
+		v.commonTools.CreateTmpPriKey(int(mcommon.Credential.Step))
+		err := v.commonTools.Esig(mcommon.EsigB)
+		if err != nil{
+			logger.Error(err.Error())
+			return
+		}
 
 		//sig v
 		mcommon.EsigV.round = mcommon.Credential.Round
@@ -775,16 +715,11 @@ func TestMCommon_EndCondition1(t *testing.T){
 
 		mcommon.EsigV.val = append(mcommon.EsigV.val , mcommon.Hash[:]...)
 
-		R,S,V = v.commonTools.ESIG(mcommon.Hash)
-
-		mcommon.EsigV.R = new(types.BigInt)
-		mcommon.EsigV.R.IntVal = *R
-
-		mcommon.EsigV.S = new(types.BigInt)
-		mcommon.EsigV.S.IntVal = *S
-
-		mcommon.EsigV.V = new(types.BigInt)
-		mcommon.EsigV.V.IntVal = *V
+		err  = v.commonTools.Esig(mcommon.EsigV)
+		if err != nil {
+			logger.Error(err.Error())
+			return
+		}
 
 		an.SendDataPackToActualNode(mcommon)
 	}
@@ -819,16 +754,12 @@ func TestMCommon_EndCondition1_b0(t *testing.T){
 	m1.Esig.val = make([]byte , 0)
 	m1.Esig.val = append(m1.Esig.val , hash[:]...)
 
-	R,S,V := v.commonTools.ESIG(hash)
-
-	m1.Esig.R = new(types.BigInt)
-	m1.Esig.R.IntVal = *R
-
-	m1.Esig.S = new(types.BigInt)
-	m1.Esig.S.IntVal = *S
-
-	m1.Esig.V = new(types.BigInt)
-	m1.Esig.V.IntVal = *V
+	v.commonTools.CreateTmpPriKey(int(m1.Credential.Step))
+	err := v.commonTools.Esig(m1.Esig)
+	if err != nil {
+		logger.Error(err.Error())
+		return
+	}
 
 
 	an.SendDataPackToActualNode(m1)
@@ -848,17 +779,14 @@ func TestMCommon_EndCondition1_b0(t *testing.T){
 		mcommon.EsigB.step = mcommon.Credential.Step
 		mcommon.EsigB.val = make([]byte , 0)
 		mcommon.EsigB.val = append(mcommon.EsigB.val , big.NewInt(int64(mcommon.B)).Bytes()...)
-		h := types.BytesToHash(big.NewInt(int64(mcommon.B)).Bytes())
-		R,S,V := v.commonTools.ESIG(h)
 
-		mcommon.EsigB.R = new(types.BigInt)
-		mcommon.EsigB.R.IntVal = *R
+		v.commonTools.CreateTmpPriKey(int(mcommon.Credential.Step))
 
-		mcommon.EsigB.S = new(types.BigInt)
-		mcommon.EsigB.S.IntVal = *S
-
-		mcommon.EsigB.V = new(types.BigInt)
-		mcommon.EsigB.V.IntVal = *V
+		err := v.commonTools.Esig(mcommon.EsigB)
+		if err != nil {
+			logger.Error(err.Error())
+			return
+		}
 
 		//sig V
 		mcommon.EsigV.round = mcommon.Credential.Round
@@ -866,16 +794,12 @@ func TestMCommon_EndCondition1_b0(t *testing.T){
 		mcommon.EsigV.val = make([]byte , 0)
 		mcommon.EsigV.val = append(mcommon.EsigV.val , mcommon.Hash[:]...)
 
-		R,S,V = v.commonTools.ESIG(mcommon.Hash)
+		err = v.commonTools.Esig(mcommon.EsigV)
+		if err != nil {
+			logger.Error(err.Error())
+			return
+		}
 
-		mcommon.EsigV.R = new(types.BigInt)
-		mcommon.EsigV.R.IntVal = *R
-
-		mcommon.EsigV.S = new(types.BigInt)
-		mcommon.EsigV.S.IntVal = *S
-
-		mcommon.EsigV.V = new(types.BigInt)
-		mcommon.EsigV.V.IntVal = *V
 
 		an.SendDataPackToActualNode(mcommon)
 	}
@@ -910,16 +834,12 @@ func TestMCommon_EndCondition_s7_b0(t *testing.T){
 	m1.Esig.val = make([]byte , 0)
 	m1.Esig.val = append(m1.Esig.val , hash[:]...)
 
-	R,S,V := v.commonTools.ESIG(hash)
-
-	m1.Esig.R = new(types.BigInt)
-	m1.Esig.R.IntVal = *R
-
-	m1.Esig.S = new(types.BigInt)
-	m1.Esig.S.IntVal = *S
-
-	m1.Esig.V = new(types.BigInt)
-	m1.Esig.V.IntVal = *V
+	v.commonTools.CreateTmpPriKey(int(m1.Credential.Step))
+	err := v.commonTools.Esig(m1.Esig)
+	if err != nil{
+		logger.Error(err.Error())
+		return
+	}
 
 
 	an.SendDataPackToActualNode(m1)
@@ -939,17 +859,12 @@ func TestMCommon_EndCondition_s7_b0(t *testing.T){
 		mcommon.EsigB.val = make([]byte , 0)
 		mcommon.EsigB.val = append(mcommon.EsigB.val , big.NewInt(int64(mcommon.B)).Bytes()...)
 
-		h := types.BytesToHash(big.NewInt(int64(mcommon.B)).Bytes())
-		R,S,V := v.commonTools.ESIG(h)
-
-		mcommon.EsigB.R = new(types.BigInt)
-		mcommon.EsigB.R.IntVal = *R
-
-		mcommon.EsigB.S = new(types.BigInt)
-		mcommon.EsigB.S.IntVal = *S
-
-		mcommon.EsigB.V = new(types.BigInt)
-		mcommon.EsigB.V.IntVal = *V
+		v.commonTools.CreateTmpPriKey(int(mcommon.Credential.Step))
+		err := v.commonTools.Esig(mcommon.EsigB)
+		if err != nil {
+			logger.Error(err.Error())
+			return
+		}
 
 
 		//sig V
@@ -958,16 +873,11 @@ func TestMCommon_EndCondition_s7_b0(t *testing.T){
 		mcommon.EsigV.val= make([]byte , 0)
 		mcommon.EsigV.val = append(mcommon.EsigV.val , mcommon.Hash[:]...)
 
-		R,S,V = v.commonTools.ESIG(mcommon.Hash)
-
-		mcommon.EsigV.R = new(types.BigInt)
-		mcommon.EsigV.R.IntVal = *R
-
-		mcommon.EsigV.S =new(types.BigInt)
-		mcommon.EsigV.S.IntVal = *S
-
-		mcommon.EsigV.V = new(types.BigInt)
-		mcommon.EsigV.V.IntVal = *V
+		err = v.commonTools.Esig(mcommon.EsigV)
+		if err != nil{
+			logger.Error(err.Error())
+			return
+		}
 
 		an.SendDataPackToActualNode(mcommon)
 	}
@@ -1002,17 +912,12 @@ func TestMCommon_EndCondition_s7_b1(t *testing.T){
 	m1.Esig.val = make([]byte , 0)
 	m1.Esig.val = append(m1.Esig.val , hash[:]...)
 
-	R,S,V := v.commonTools.ESIG(hash)
-
-	m1.Esig.R = new(types.BigInt)
-	m1.Esig.R.IntVal = *R
-
-	m1.Esig.S = new(types.BigInt)
-	m1.Esig.S.IntVal = *S
-
-	m1.Esig.V = new(types.BigInt)
-	m1.Esig.V.IntVal = *V
-
+	v.commonTools.CreateTmpPriKey(int(m1.Credential.Step))
+	err := v.commonTools.Esig(m1.Esig)
+	if err != nil{
+		logger.Error(err.Error())
+		return
+	}
 
 	an.SendDataPackToActualNode(m1)
 
@@ -1031,17 +936,12 @@ func TestMCommon_EndCondition_s7_b1(t *testing.T){
 		mcommon.EsigB.val = make([]byte , 0)
 		mcommon.EsigB.val = append(mcommon.EsigB.val , big.NewInt(int64(mcommon.B)).Bytes()...)
 
-		h := types.BytesToHash(big.NewInt(int64(mcommon.B)).Bytes())
-		R,S,V := v.commonTools.ESIG(h)
-
-		mcommon.EsigB.R = new(types.BigInt)
-		mcommon.EsigB.R.IntVal = *R
-
-		mcommon.EsigB.S = new(types.BigInt)
-		mcommon.EsigB.S.IntVal = *S
-
-		mcommon.EsigB.V = new(types.BigInt)
-		mcommon.EsigB.V.IntVal = *V
+		v.commonTools.CreateTmpPriKey(int(mcommon.Credential.Step))
+		err := v.commonTools.Esig(mcommon.EsigB)
+		if err != nil{
+			logger.Error(err.Error())
+			return
+		}
 
 
 		//sig V
@@ -1050,16 +950,11 @@ func TestMCommon_EndCondition_s7_b1(t *testing.T){
 		mcommon.EsigV.val= make([]byte , 0)
 		mcommon.EsigV.val = append(mcommon.EsigV.val , mcommon.Hash[:]...)
 
-		R,S,V = v.commonTools.ESIG(mcommon.Hash)
-
-		mcommon.EsigV.R = new(types.BigInt)
-		mcommon.EsigV.R.IntVal = *R
-
-		mcommon.EsigV.S =new(types.BigInt)
-		mcommon.EsigV.S.IntVal = *S
-
-		mcommon.EsigV.V = new(types.BigInt)
-		mcommon.EsigV.V.IntVal = *V
+		err = v.commonTools.Esig(mcommon.EsigV)
+		if err != nil{
+			logger.Error(err.Error())
+			return
+		}
 
 		an.SendDataPackToActualNode(mcommon)
 	}
@@ -1093,16 +988,12 @@ func TestMCommon_EndConditionMax(t *testing.T){
 	m1.Esig.val = make([]byte , 0)
 	m1.Esig.val = append(m1.Esig.val , hash[:]...)
 
-	R,S,V := v.commonTools.ESIG(hash)
-
-	m1.Esig.R = new(types.BigInt)
-	m1.Esig.R.IntVal = *R
-
-	m1.Esig.S = new(types.BigInt)
-	m1.Esig.S.IntVal = *S
-
-	m1.Esig.V = new(types.BigInt)
-	m1.Esig.V.IntVal = *V
+	v.commonTools.CreateTmpPriKey(int(m1.Credential.Step))
+	err := v.commonTools.Esig(m1.Esig)
+	if err != nil{
+		logger.Error(err.Error())
+		return
+	}
 
 	an.SendDataPackToActualNode(m1)
 
@@ -1121,17 +1012,12 @@ func TestMCommon_EndConditionMax(t *testing.T){
 		mcommon.EsigB.val = make([]byte , 0)
 		mcommon.EsigB.val = append(mcommon.EsigB.val , big.NewInt(int64(mcommon.B)).Bytes()...)
 
-		h := types.BytesToHash(big.NewInt(int64(mcommon.B)).Bytes())
-		R,S,V := v.commonTools.ESIG(h)
-
-		mcommon.EsigB.R = new(types.BigInt)
-		mcommon.EsigB.R.IntVal = *R
-
-		mcommon.EsigB.S = new(types.BigInt)
-		mcommon.EsigB.S.IntVal = *S
-
-		mcommon.EsigB.V = new(types.BigInt)
-		mcommon.EsigB.V.IntVal = *V
+		v.commonTools.CreateTmpPriKey(int(mcommon.Credential.Step))
+		err := v.commonTools.Esig(mcommon.EsigB)
+		if err != nil{
+			logger.Error(err.Error())
+			return
+		}
 
 
 		//sig V
@@ -1140,16 +1026,11 @@ func TestMCommon_EndConditionMax(t *testing.T){
 		mcommon.EsigV.val= make([]byte , 0)
 		mcommon.EsigV.val = append(mcommon.EsigV.val , mcommon.Hash[:]...)
 
-		R,S,V = v.commonTools.ESIG(mcommon.Hash)
-
-		mcommon.EsigV.R = new(types.BigInt)
-		mcommon.EsigV.R.IntVal = *R
-
-		mcommon.EsigV.S =new(types.BigInt)
-		mcommon.EsigV.S.IntVal = *S
-
-		mcommon.EsigV.V = new(types.BigInt)
-		mcommon.EsigV.V.IntVal = *V
+		err = v.commonTools.Esig(mcommon.EsigV)
+		if err != nil {
+			logger.Error(err.Error())
+			return
+		}
 
 		an.SendDataPackToActualNode(mcommon)
 	}
@@ -1182,16 +1063,12 @@ func TestMCommon_EndConditionMax_validate(t *testing.T){
 	m1.Esig.val = make([]byte , 0)
 	m1.Esig.val = append(m1.Esig.val , hash[:]...)
 
-	R,S,V := v.commonTools.ESIG(hash)
-
-	m1.Esig.R = new(types.BigInt)
-	m1.Esig.R.IntVal = *R
-
-	m1.Esig.S = new(types.BigInt)
-	m1.Esig.S.IntVal = *S
-
-	m1.Esig.V = new(types.BigInt)
-	m1.Esig.V.IntVal = *V
+	v.commonTools.CreateTmpPriKey(int(m1.Credential.Step))
+	err := v.commonTools.Esig(m1.Esig)
+	if err != nil{
+		logger.Error(err.Error())
+		return
+	}
 
 	an.SendDataPackToActualNode(m1)
 
@@ -1210,18 +1087,12 @@ func TestMCommon_EndConditionMax_validate(t *testing.T){
 		mcommon.EsigB.val = make([]byte , 0)
 		mcommon.EsigB.val = append(mcommon.EsigB.val , big.NewInt(int64(mcommon.B)).Bytes()...)
 
-		h := types.BytesToHash(big.NewInt(int64(mcommon.B)).Bytes())
-		R,S,V := v.commonTools.ESIG(h)
-
-		mcommon.EsigB.R = new(types.BigInt)
-		mcommon.EsigB.R.IntVal = *R
-
-		mcommon.EsigB.S = new(types.BigInt)
-		mcommon.EsigB.S.IntVal = *S
-
-		mcommon.EsigB.V = new(types.BigInt)
-		mcommon.EsigB.V.IntVal = *V
-
+		v.commonTools.CreateTmpPriKey(int(mcommon.Credential.Step))
+		err := v.commonTools.Esig(mcommon.EsigB)
+		if err != nil{
+			logger.Error(err.Error())
+			return
+		}
 
 		//sig V
 		mcommon.EsigV.round = mcommon.Credential.Round
@@ -1229,16 +1100,11 @@ func TestMCommon_EndConditionMax_validate(t *testing.T){
 		mcommon.EsigV.val= make([]byte , 0)
 		mcommon.EsigV.val = append(mcommon.EsigV.val , mcommon.Hash[:]...)
 
-		R,S,V = v.commonTools.ESIG(mcommon.Hash)
-
-		mcommon.EsigV.R = new(types.BigInt)
-		mcommon.EsigV.R.IntVal = *R
-
-		mcommon.EsigV.S =new(types.BigInt)
-		mcommon.EsigV.S.IntVal = *S
-
-		mcommon.EsigV.V = new(types.BigInt)
-		mcommon.EsigV.V.IntVal = *V
+		err = v.commonTools.Esig(mcommon.EsigV)
+		if err != nil {
+			logger.Error(err.Error())
+			return
+		}
 
 		an.SendDataPackToActualNode(mcommon)
 	}
@@ -1255,4 +1121,3 @@ func TestBp(t *testing.T) {
 	msgbp.Send()
 }
 
-*/
