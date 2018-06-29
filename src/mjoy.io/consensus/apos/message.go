@@ -32,16 +32,16 @@ import (
 )
 //go:generate msgp
 func (cs *CredentialSign) validate() (types.Address,error) {
-	leader := false
-	if 1 == cs.Step{
-		leader = true
-	}
-	hash := cs.Signature.hash()
+	//leader := false
+	//if 1 == cs.Step{
+	//	leader = true
+	//}
+	//hash := cs.Signature.hash()
 
 	//verify right
-	if isPotVerifier(hash.Bytes(), leader) == false {
-		return types.Address{}, errors.New("credential has no right to verify")
-	}
+	//if isPotVerifier(hash.Bytes(), leader) == false {
+	//	return types.Address{}, errors.New("credential has no right to verify")
+	//}
 
 	//verify signature
 	sender, err := cs.sender()

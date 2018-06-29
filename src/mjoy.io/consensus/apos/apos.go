@@ -30,6 +30,7 @@ import (
 	"mjoy.io/core/blockchain/block"
 	"time"
 	"fmt"
+	"container/heap"
 )
 
 const (
@@ -98,6 +99,7 @@ type Round struct {
 	lock           sync.RWMutex
 
 	leaders        map[types.Hash]*PotentialLeader
+	leadersPg      priorityQueue
 	maxLeaderNum   int
 	curLeaderNum   int
 	curLeaderDiff  *big.Int
@@ -124,6 +126,8 @@ func (this *Round)init(round int , apos *Apos , roundOverCh chan interface{}){
 	this.credentials = make(map[int]*CredentialSign)
 	this.allStepObj = make(map[int]*stepRoutine)
 	this.leaders = make(map[types.Hash]*PotentialLeader)
+	this.leadersPg = make(priorityQueue, 0)
+	heap.Init(&this.leadersPg)
 	this.quitCh = make(chan interface{} , 1)
 	this.msgs = make(map[types.Address]*peerMsgs)
 }
@@ -256,12 +260,39 @@ func (this *Round)receiveMsgCs(msg *CredentialSign) {
 }
 
 func (this *Round)saveBp(msg *BlockProposal) {
-	hash := msg.Block.Hash()
-	if _, ok := this.leaders[hash]; !ok {
-		pleader := &PotentialLeader{msg,make(map[uint]*VoteInfo)}
-		this.leaders[hash] = pleader
-		this.curLeaderNum++
+	maxNum := Config().maxPotLeaders
+	if maxNum.Uint64() <= 0 {
+		logger.Warn("config error: maxPotLeaders", maxNum.Uint64())
+		return
 	}
+
+	hash := msg.Block.Hash()
+	if _, ok := this.leaders[hash]; ok {
+		logger.Debug("duplicate Block Proposal message , ignore. hash:", hash.String())
+		return
+	}
+
+	msgPri := msg.Credential.sigHashBig()
+	pqitem := &pqItem{msg, msgPri}
+	heap.Push(&this.leadersPg, pqitem)
+
+	if len(this.leadersPg) > int(maxNum.Uint64()) {
+		itemPop := heap.Pop(&this.leadersPg).(*pqItem)
+		if(itemPop == pqitem) {
+			logger.Debug("message is not have leader right, ignore. hash:", msg.Credential.Signature.hash().String())
+			return
+		} else {
+			bp := itemPop.value.(*BlockProposal)
+			logger.Debug("saveBp. delete hash in map:", bp.Credential.Signature.hash().String(), bp.Block.Hash().String())
+			delete(this.leaders, bp.Block.Hash())
+			this.curLeaderNum--
+		}
+	}
+
+	logger.Debug("saveBp.add hash in map:", msg.Credential.Signature.hash().String(), hash.String())
+	pleader := &PotentialLeader{msg,make(map[uint]*VoteInfo)}
+	this.leaders[hash] = pleader
+	this.curLeaderNum++
 }
 
 func (this *Round)receiveMsgBp(msg *BlockProposal) {

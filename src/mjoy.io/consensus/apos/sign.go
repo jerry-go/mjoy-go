@@ -153,6 +153,11 @@ type CredentialSigForHash struct {
 	Quantity    []byte		// quantity(seed, Qr-1)
 }
 
+func (a *CredentialSign) sigHashBig() *big.Int {
+	h := a.Signature.hashBytes()
+	return new(big.Int).SetBytes(h)
+}
+
 func (a *CredentialSign)Cmp(b *CredentialSign)int{
 	h := a.Signature.hashBytes()
 	aInt := new(big.Int).SetBytes(h)

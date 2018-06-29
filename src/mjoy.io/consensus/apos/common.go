@@ -58,3 +58,36 @@ func isAbsHonest(vote int, leader bool) bool {
 	pH := big.NewInt(0).SetUint64(Config().prH)
 	return v.Div(v.Mul(v, honestPercision), a).Cmp(pH) >= 0
 }
+
+
+// priority queue Item
+type pqItem struct {
+	value     interface{}
+	priority  *big.Int
+}
+
+//priority Queue
+type priorityQueue []*pqItem
+
+func (pq priorityQueue) Len() int { return len(pq) }
+
+func (pq priorityQueue) Less(i, j int) bool {
+	return pq[i].priority.Cmp(pq[j].priority) > 0
+}
+func (pq priorityQueue) Swap(i, j int) {
+	pq[i], pq[j] = pq[j], pq[i]
+}
+
+func (pq *priorityQueue) Push(x interface{}) {
+	item := x.(*pqItem)
+	*pq = append(*pq, item)
+}
+
+//pop the highest priority item
+func (pq *priorityQueue) Pop() interface{} {
+	old := *pq
+	n := len(old)
+	item := old[n-1]
+	*pq = old[0 : n-1]
+	return item
+}
