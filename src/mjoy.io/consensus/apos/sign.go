@@ -87,7 +87,7 @@ func (s *Signature)hashBytes()[]byte{
 	return h
 }
 
-func (s *Signature)hash()types.Hash{
+func (s *Signature)Hash()types.Hash{
 	srcBytes := s.toBytes()
 	h := crypto.Keccak256(srcBytes)
 	hash := types.Hash{}

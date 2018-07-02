@@ -260,7 +260,7 @@ func (this *Round) verifyCredentialRight(msg *CredentialSign) error {
 	}
 	msgPri := msg.sigHashBig()
 
-	logger.Debug("verifyRight. message hash :", msg.Signature.hash().String())
+	logger.Debug("verifyRight. message hash :", msg.Signature.Hash().String())
 
 	if pqMsg, ok := this.csPg[step]; !ok {
 		pgcs := &pgCredential{make(priorityQueue, 0), make(map[string]*CredentialSign)}
@@ -282,12 +282,12 @@ func (this *Round) verifyCredentialRight(msg *CredentialSign) error {
 		if len(pqMsg.pq) > int(maxNum.Uint64()) {
 			itemPop := heap.Pop(&pqMsg.pq).(*pqItem)
 			if(itemPop == pqitem) {
-				logger.Debug("message is not have leader right, ignore. hash:", msg.Signature.hash().String())
+				logger.Debug("message is not have leader right, ignore. hash:", msg.Signature.Hash().String())
 				return errors.New("message have no right")
 			} else {
 				cs := itemPop.value.(*CredentialSign)
 				csPri := cs.sigHashBig()
-				logger.Debug("verifyRight. pop bigger hash :", cs.Signature.hash().String())
+				logger.Debug("verifyRight. pop bigger hash :", cs.Signature.Hash().String())
 				delete(pqMsg.credentials, csPri.String())
 			}
 		}
@@ -337,7 +337,7 @@ func (this *Round)saveBp(msg *BlockProposal) error{
 			pleader := &PotentialLeader{msg,make(map[uint]*VoteInfo)}
 			this.leaders[hash] = pleader
 			this.curLeaderNum++
-			logger.Debug("saveBp.add hash in map:", msg.Credential.Signature.hash().String(), hash.String())
+			logger.Debug("saveBp.add hash in map:", msg.Credential.Signature.Hash().String(), hash.String())
 			return nil
 		} else {
 			logger.Debug("Block Proposal message have not corresponding Credential 1, ignore. hash:", hash.String())
@@ -409,12 +409,12 @@ func (this *Round)receiveMsgGc(msg *GradedConsensus) {
 	}
 	step := int(msg.Credential.Step)
 	if pgcs, ok := this.csPg[step]; !ok{
-		logger.Debug("GradedConsensus message have not corresponding Credential 0, ignore. Credential hash:", msg.Credential.Signature.hash().String())
+		logger.Debug("GradedConsensus message have not corresponding Credential 0, ignore. Credential hash:", msg.Credential.Signature.Hash().String())
 		return
 	} else {
 		msgPri := msg.Credential.sigHashBig()
 		if _, ok := pgcs.credentials[msgPri.String()]; !ok {
-			logger.Debug("GradedConsensus message have not corresponding Credential 1, ignore. Credential hash:", msg.Credential.Signature.hash().String())
+			logger.Debug("GradedConsensus message have not corresponding Credential 1, ignore. Credential hash:", msg.Credential.Signature.Hash().String())
 			return
 		}
 	}
@@ -527,12 +527,12 @@ func (this *Round)receiveMsgBba(msg *BinaryByzantineAgreement) {
 
 	step := int(msg.Credential.Step)
 	if pgcs, ok := this.csPg[step]; !ok{
-		logger.Debug("BinaryByzantineAgreement message have not corresponding Credential 0, ignore. Credential hash:", msg.Credential.Signature.hash().String())
+		logger.Debug("BinaryByzantineAgreement message have not corresponding Credential 0, ignore. Credential hash:", msg.Credential.Signature.Hash().String())
 		return
 	} else {
 		msgPri := msg.Credential.sigHashBig()
 		if _, ok := pgcs.credentials[msgPri.String()]; !ok {
-			logger.Debug("BinaryByzantineAgreement message have not corresponding Credential 1, ignore. Credential hash:", msg.Credential.Signature.hash().String())
+			logger.Debug("BinaryByzantineAgreement message have not corresponding Credential 1, ignore. Credential hash:", msg.Credential.Signature.Hash().String())
 			return
 		}
 	}
@@ -741,7 +741,7 @@ func (this *Apos)StopCh()chan interface{}{
 }
 
 func (this *Apos)judgeVerifier(cs *CredentialSign, setp int) bool{
-	h := cs.Signature.hash()
+	h := cs.Signature.Hash()
 	leader := false
 	if 1 == setp {
 		leader = true

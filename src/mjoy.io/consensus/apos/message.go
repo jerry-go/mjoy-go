@@ -29,6 +29,7 @@ import (
 	"math/big"
 	"sync"
 	"reflect"
+	"mjoy.io/common"
 )
 //go:generate msgp
 func (cs *CredentialSign) validate() (types.Address,error) {
@@ -199,6 +200,14 @@ func (gc *GradedConsensus) validate() error{
 	return nil
 }
 
+func (gc *GradedConsensus) GcHash() types.Hash {
+		hash, err := common.MsgpHash(gc)
+		if err != nil {
+		return types.Hash{}
+	}
+	return hash
+}
+
 type msgGradedConsensus struct {
 	gc    *GradedConsensus
 	*message.MsgPriv
@@ -303,6 +312,14 @@ func (bba *BinaryByzantineAgreement) validate() error{
 	}
 
 	return nil
+}
+
+func (bba *BinaryByzantineAgreement) BbaHash() types.Hash {
+	hash, err := common.MsgpHash(bba)
+	if err != nil {
+		return types.Hash{}
+	}
+	return hash
 }
 
 type msgBinaryByzantineAgreement struct {

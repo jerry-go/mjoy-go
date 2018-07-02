@@ -43,6 +43,7 @@ import (
 	"mjoy.io/core/blockchain/block"
 	"mjoy.io/core/transaction"
 	"mjoy.io/common/types"
+	"mjoy.io/consensus/apos"
 )
 
 const (
@@ -675,6 +676,47 @@ func (pm *ProtocolManager) BroadcastTx(hash types.Hash, tx *transaction.Transact
 		peer.SendTransactions(transaction.Transactions{tx})
 	}
 	logger.Tracef("Broadcast transaction. hash %x, recipients %v", hash, len(peers))
+}
+
+
+func (pm *ProtocolManager) BroadcastCs(hash types.Hash, cs *apos.CredentialSign) {
+	// Broadcast Credential to a batch of peers not knowing about it
+	peers := pm.peers.PeersWithoutCss(hash)
+
+	for _, peer := range peers {
+		peer.SendCredential(cs)
+	}
+	logger.Tracef("Broadcast credential. hash %x, recipients %v", hash, len(peers))
+}
+
+func (pm *ProtocolManager) BroadcastBp(hash types.Hash, bp *apos.BlockProposal) {
+	// Broadcast BlockProposal to a batch of peers not knowing about it
+	peers := pm.peers.PeersWithoutBps(hash)
+
+	for _, peer := range peers {
+		peer.SendBlockProposal(bp)
+	}
+	logger.Tracef("Broadcast credential. hash %x, recipients %v", hash, len(peers))
+}
+
+func (pm *ProtocolManager) BroadcastGc(hash types.Hash, gc *apos.GradedConsensus) {
+	// Broadcast GradedConsensus to a batch of peers not knowing about it
+	peers := pm.peers.PeersWithoutGcs(hash)
+
+	for _, peer := range peers {
+		peer.SendGradedConsensus(gc)
+	}
+	logger.Tracef("Broadcast credential. hash %x, recipients %v", hash, len(peers))
+}
+
+func (pm *ProtocolManager) BroadcastBba(hash types.Hash, bba *apos.BinaryByzantineAgreement) {
+	// Broadcast BinaryByzantineAgreement to a batch of peers not knowing about it
+	peers := pm.peers.PeersWithoutBbas(hash)
+
+	for _, peer := range peers {
+		peer.SendBinaryByzantineAgreement(bba)
+	}
+	logger.Tracef("Broadcast credential. hash %x, recipients %v", hash, len(peers))
 }
 
 // Produced broadcast loop
