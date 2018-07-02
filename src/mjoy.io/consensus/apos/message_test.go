@@ -53,7 +53,7 @@ func TestBba_EndCondition0(t *testing.T){
 	//an.SendDataPackToActualNode(m1)
 	msgbp := NewMsgBlockProposal(bp)
 	msgbp.Send()
-
+	return
 	for i := 1 ;i <= 4; i++ {
 		time.Sleep(1 * time.Second)
 		priKey := generatePrivateKey()

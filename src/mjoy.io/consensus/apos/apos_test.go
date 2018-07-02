@@ -146,7 +146,7 @@ func TestM23(t *testing.T){
 			logger.Error(err.Error())
 			return
 		}
-
+		v.commonTools.DelTmpKey(int(m23.Credential.Step))
 		an.SendDataPackToActualNode(m23)
 	}
 	for{
@@ -186,6 +186,7 @@ func TestM23filter(t *testing.T){
 			return
 		}
 
+		v.commonTools.DelTmpKey(int(m23.Credential.Step))
 		an.SendDataPackToActualNode(m23)
 		an.SendDataPackToActualNode(m23)
 	}
@@ -239,6 +240,9 @@ func TestM23filter_malicious(t *testing.T){
 		m23_1.Hash = hash
 		m23.Credential = m23.Credential
 		m23_1.Esig = m23.Esig
+
+		v.commonTools.DelTmpKey(int(m23.Credential.Step))
+
 		//receive different  vote message m23, it must a malicious peer
 		an.SendDataPackToActualNode(m23_1)
 
@@ -295,6 +299,7 @@ func TestMCommon(t *testing.T){
 			return
 		}
 
+		v.commonTools.DelTmpKey(int(mcommon.Credential.Step))
 		an.SendDataPackToActualNode(mcommon)
 	}
 	for{
@@ -349,7 +354,7 @@ func TestMCommon_filter_duplicate(t *testing.T){
 			logger.Error(err.Error())
 			return
 		}
-
+		v.commonTools.DelTmpKey(int(mcommon.Credential.Step))
 		an.SendDataPackToActualNode(mcommon)
 		an.SendDataPackToActualNode(mcommon)
 	}
@@ -404,7 +409,7 @@ func TestMCommon_filter_duplicate2(t *testing.T){
 		}
 
 
-
+		v.commonTools.DelTmpKey(int(mcommon.Credential.Step))
 		an.SendDataPackToActualNode(mcommon)
 
 		mcommonXX := newBinaryByzantineAgreement()
@@ -468,6 +473,7 @@ func TestMCommon_filter_duplicate3(t *testing.T){
 			return
 		}
 
+		v.commonTools.DelTmpKey(int(mcommon.Credential.Step))
 		an.SendDataPackToActualNode(mcommon)
 
 		mcommonXX := newBinaryByzantineAgreement()
@@ -519,7 +525,7 @@ func TestMCommon_EndCondition0(t *testing.T){
 		logger.Error(err.Error())
 		return
 	}
-
+	v.commonTools.DelTmpKey(int(m1.Credential.Step))
 	an.SendDataPackToActualNode(m1)
 
 
@@ -558,8 +564,10 @@ func TestMCommon_EndCondition0(t *testing.T){
 			return
 		}
 
+		v.commonTools.DelTmpKey(int(mcommon.Credential.Step))
 		an.SendDataPackToActualNode(mcommon)
 	}
+
 	for{
 		time.Sleep(3*time.Second)
 		//fmt.Println("apos_test doing....")
@@ -601,6 +609,7 @@ func TestMCommon_EndCondition0_B1(t *testing.T){
 		return
 	}
 
+	v.commonTools.DelTmpKey(int(m1.Credential.Step))
 	an.SendDataPackToActualNode(m1)
 
 
@@ -639,6 +648,8 @@ func TestMCommon_EndCondition0_B1(t *testing.T){
 			logger.Error(err.Error())
 			return
 		}
+
+		v.commonTools.DelTmpKey(int(mcommon.Credential.Step))
 
 		an.SendDataPackToActualNode(mcommon)
 
@@ -682,6 +693,7 @@ func TestMCommon_EndCondition1(t *testing.T){
 		return
 	}
 
+	v.commonTools.DelTmpKey(int(m1.Credential.Step))
 	an.SendDataPackToActualNode(m1)
 
 
@@ -721,6 +733,7 @@ func TestMCommon_EndCondition1(t *testing.T){
 			return
 		}
 
+		v.commonTools.DelTmpKey(int(mcommon.Credential.Step))
 		an.SendDataPackToActualNode(mcommon)
 	}
 	for{
@@ -761,7 +774,7 @@ func TestMCommon_EndCondition1_b0(t *testing.T){
 		return
 	}
 
-
+	v.commonTools.DelTmpKey(int(m1.Credential.Step))
 	an.SendDataPackToActualNode(m1)
 
 
@@ -800,7 +813,7 @@ func TestMCommon_EndCondition1_b0(t *testing.T){
 			return
 		}
 
-
+		v.commonTools.DelTmpKey(int(mcommon.Credential.Step))
 		an.SendDataPackToActualNode(mcommon)
 	}
 	for{
@@ -841,7 +854,7 @@ func TestMCommon_EndCondition_s7_b0(t *testing.T){
 		return
 	}
 
-
+	v.commonTools.DelTmpKey(int(m1.Credential.Step))
 	an.SendDataPackToActualNode(m1)
 
 
@@ -879,6 +892,7 @@ func TestMCommon_EndCondition_s7_b0(t *testing.T){
 			return
 		}
 
+		v.commonTools.DelTmpKey(int(mcommon.Credential.Step))
 		an.SendDataPackToActualNode(mcommon)
 	}
 	for{
@@ -919,6 +933,7 @@ func TestMCommon_EndCondition_s7_b1(t *testing.T){
 		return
 	}
 
+	v.commonTools.DelTmpKey(int(m1.Credential.Step))
 	an.SendDataPackToActualNode(m1)
 
 
@@ -955,6 +970,8 @@ func TestMCommon_EndCondition_s7_b1(t *testing.T){
 			logger.Error(err.Error())
 			return
 		}
+
+		v.commonTools.DelTmpKey(int(mcommon.Credential.Step))
 
 		an.SendDataPackToActualNode(mcommon)
 	}
@@ -995,6 +1012,7 @@ func TestMCommon_EndConditionMax(t *testing.T){
 		return
 	}
 
+	v.commonTools.DelTmpKey(int(m1.Credential.Step))
 	an.SendDataPackToActualNode(m1)
 
 
@@ -1032,6 +1050,7 @@ func TestMCommon_EndConditionMax(t *testing.T){
 			return
 		}
 
+		v.commonTools.DelTmpKey(int(mcommon.Credential.Step))
 		an.SendDataPackToActualNode(mcommon)
 	}
 	for{
@@ -1070,6 +1089,7 @@ func TestMCommon_EndConditionMax_validate(t *testing.T){
 		return
 	}
 
+	v.commonTools.DelTmpKey(int(m1.Credential.Step))
 	an.SendDataPackToActualNode(m1)
 
 
@@ -1106,6 +1126,7 @@ func TestMCommon_EndConditionMax_validate(t *testing.T){
 			return
 		}
 
+		v.commonTools.DelTmpKey(int(mcommon.Credential.Step))
 		an.SendDataPackToActualNode(mcommon)
 	}
 	for{

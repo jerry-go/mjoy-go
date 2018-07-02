@@ -68,7 +68,7 @@ func TestStep3Result(t *testing.T){
 			return
 		}
 
-
+		v.commonTools.DelTmpKey(int(m2.Credential.Step))
 		an.SendDataPackToActualNode(m2)
 	}
 
@@ -117,6 +117,7 @@ func TestStep4Result(t *testing.T){
 			return
 		}
 
+		v.commonTools.DelTmpKey(int(m3.Credential.Step))
 		an.SendDataPackToActualNode(m3)
 	}
 
@@ -181,6 +182,7 @@ func TestStepCommonResult_ChangeHashAndB(t *testing.T){
 			return
 		}
 
+		v.commonTools.DelTmpKey(int(mc.Credential.Step))
 		an.SendDataPackToActualNode(mc)
 	}
 
