@@ -29,7 +29,6 @@ import (
 	"errors"
 	"mjoy.io/core/blockchain/block"
 	"time"
-	"fmt"
 	"container/heap"
 )
 
@@ -83,6 +82,11 @@ type peerMsgs struct {
 	honesty        uint
 }
 
+type pgCredential struct {
+	pq             priorityQueue
+	credentials    map[string]*CredentialSign
+}
+
 //round context
 type Round struct {
 	round          uint64
@@ -99,13 +103,13 @@ type Round struct {
 	lock           sync.RWMutex
 
 	leaders        map[types.Hash]*PotentialLeader
-	leadersPg      priorityQueue
 	maxLeaderNum   int
 	curLeaderNum   int
 	curLeaderDiff  *big.Int
 	curLeader      types.Hash
 
 	msgs           map[types.Address]*peerMsgs
+	csPg           map[int]*pgCredential
 
 	quitCh         chan interface{}
 	roundOverCh    chan interface{}
@@ -126,10 +130,9 @@ func (this *Round)init(round int , apos *Apos , roundOverCh chan interface{}){
 	this.credentials = make(map[int]*CredentialSign)
 	this.allStepObj = make(map[int]*stepRoutine)
 	this.leaders = make(map[types.Hash]*PotentialLeader)
-	this.leadersPg = make(priorityQueue, 0)
-	heap.Init(&this.leadersPg)
 	this.quitCh = make(chan interface{} , 1)
 	this.msgs = make(map[types.Address]*peerMsgs)
+	this.csPg = make(map[int]*pgCredential)
 }
 
 func (this *Round)setSmallestBrM1(bp *BlockProposal){
@@ -248,51 +251,94 @@ func (this *Round)filterMsgCs(msg *CredentialSign) error {
 	}
 	return nil
 }
-// hear M0 is the Credential message
+
+func (this *Round) verifyCredentialRight(msg *CredentialSign) error {
+	step := int(msg.Step)
+	maxNum := Config().maxPotLeaders
+	if step == 1 {
+		maxNum = Config().maxPotLeaders
+	}
+	msgPri := msg.sigHashBig()
+
+	logger.Debug("verifyRight. message hash :", msg.Signature.hash().String())
+
+	if pqMsg, ok := this.csPg[step]; !ok {
+		pgcs := &pgCredential{make(priorityQueue, 0), make(map[string]*CredentialSign)}
+
+		this.csPg[step] = pgcs
+		heap.Init(&pgcs.pq)
+
+		pqitem := &pqItem{msg, msgPri}
+		heap.Push(&pgcs.pq, pqitem)
+		pgcs.credentials[msgPri.String()] = msg
+	} else {
+		pqitem := &pqItem{msg, msgPri}
+		heap.Push(&pqMsg.pq, pqitem)
+
+		if len(pqMsg.pq) > int(maxNum.Uint64()) {
+			itemPop := heap.Pop(&pqMsg.pq).(*pqItem)
+			if(itemPop == pqitem) {
+				logger.Debug("message is not have leader right, ignore. hash:", msg.Signature.hash().String())
+				return errors.New("message have no right")
+			} else {
+				cs := itemPop.value.(*CredentialSign)
+				csPri := cs.sigHashBig()
+				logger.Debug("verifyRight. pop bigger hash :", cs.Signature.hash().String())
+				delete(pqMsg.credentials, csPri.String())
+			}
+		}
+
+		pqMsg.credentials[msgPri.String()] = msg
+	}
+	return nil
+}
+
+// process the Credential message
 func (this *Round)receiveMsgCs(msg *CredentialSign) {
 	logger.Info("Receive message CredentialSign")
+	if msg.Round != this.round {
+		logger.Warn("verify fail, Credential msg is not in current round", msg.Round, this.round)
+		return
+	}
 	if err := this.filterMsgCs(msg); err != nil {
-		logger.Info("filter m0 fail", err)
+		logger.Info("filter Credential fail", err)
+		return
+	}
+
+	if err := this.verifyCredentialRight(msg); err != nil {
+		logger.Info("verify Credential Right fail:", err)
 		return
 	}
 	//Propagate message via p2p
 	this.apos.outMsger.PropagateCredential(msg)
 }
 
-func (this *Round)saveBp(msg *BlockProposal) {
-	maxNum := Config().maxPotLeaders
-	if maxNum.Uint64() <= 0 {
-		logger.Warn("config error: maxPotLeaders", maxNum.Uint64())
-		return
-	}
+func (this *Round)saveBp(msg *BlockProposal) error{
 
 	hash := msg.Block.Hash()
 	if _, ok := this.leaders[hash]; ok {
 		logger.Debug("duplicate Block Proposal message , ignore. hash:", hash.String())
-		return
+		return errors.New("duplicate Block Proposal message")
 	}
 
-	msgPri := msg.Credential.sigHashBig()
-	pqitem := &pqItem{msg, msgPri}
-	heap.Push(&this.leadersPg, pqitem)
+	step := int(msg.Credential.Step)
 
-	if len(this.leadersPg) > int(maxNum.Uint64()) {
-		itemPop := heap.Pop(&this.leadersPg).(*pqItem)
-		if(itemPop == pqitem) {
-			logger.Debug("message is not have leader right, ignore. hash:", msg.Credential.Signature.hash().String())
-			return
+	if pgcs, ok := this.csPg[step]; !ok{
+		logger.Debug("Block Proposal message have not corresponding Credential 0, ignore. hash:", hash.String())
+		return errors.New("Block Proposal message have not corresponding Credential, 0")
+	} else {
+		msgPri := msg.Credential.sigHashBig()
+		if _, ok := pgcs.credentials[msgPri.String()]; ok {
+			pleader := &PotentialLeader{msg,make(map[uint]*VoteInfo)}
+			this.leaders[hash] = pleader
+			this.curLeaderNum++
+			logger.Debug("saveBp.add hash in map:", msg.Credential.Signature.hash().String(), hash.String())
+			return nil
 		} else {
-			bp := itemPop.value.(*BlockProposal)
-			logger.Debug("saveBp. delete hash in map:", bp.Credential.Signature.hash().String(), bp.Block.Hash().String())
-			delete(this.leaders, bp.Block.Hash())
-			this.curLeaderNum--
+			logger.Debug("Block Proposal message have not corresponding Credential 1, ignore. hash:", hash.String())
+			return errors.New("Block Proposal message have not corresponding Credential, 1")
 		}
 	}
-
-	logger.Debug("saveBp.add hash in map:", msg.Credential.Signature.hash().String(), hash.String())
-	pleader := &PotentialLeader{msg,make(map[uint]*VoteInfo)}
-	this.leaders[hash] = pleader
-	this.curLeaderNum++
 }
 
 func (this *Round)receiveMsgBp(msg *BlockProposal) {
@@ -302,14 +348,16 @@ func (this *Round)receiveMsgBp(msg *BlockProposal) {
 		return
 	}
 
+	if err := this.saveBp(msg); err != nil {
+		return
+	}
+
 	//send this msg to step2 goroutine
 	if stepObj, ok := this.allStepObj[2]; ok {
 		go stepObj.sendMsg(msg)
 	}
-
 	// for M1 Propagate process will in stepObj
 
-	this.saveBp(msg)
 }
 
 
@@ -494,7 +542,6 @@ func (this *Round)commonProcess() {
 		select {
 		// receive message
 		case outData := <-this.apos.outMsger.GetDataMsg():
-			fmt.Println("commonProcess Get Data.....",reflect.TypeOf(outData))
 			switch v := outData.(type) {
 			case *CredentialSign:
 				this.receiveMsgCs(v)

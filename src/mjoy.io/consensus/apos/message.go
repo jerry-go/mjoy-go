@@ -402,7 +402,6 @@ func (mt *msgTransfer) PropagateMsg(data dataPack) error {
 }
 
 func (mt *msgTransfer) Send2Apos(data dataPack) {
-	fmt.Println("Send2Apos type:" , reflect.TypeOf(data))
 	mt.receiveChan<-data
 }
 

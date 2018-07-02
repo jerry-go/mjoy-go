@@ -144,6 +144,52 @@ func TestCs_validate_fail_2(t *testing.T){
 	time.Sleep(2 * time.Second)
 }
 
+func TestCs_sava(t *testing.T){
+	Config().blockDelay = 20
+	Config().verifyDelay = 10
+	Config().maxBBASteps = 12
+	Config().maxPotLeaders = big.NewInt(3)
+	an := newAllNodeManager()
+	verifierCnt := an.initTestCommonNew(0)
+	logger.Debug(COLOR_PREFIX+COLOR_FRONT_BLUE+COLOR_SUFFIX , "Verifier Cnt:" , verifierCnt , COLOR_SHORT_RESET)
+
+	priKey := generatePrivateKey()
+	cs := &CredentialSign{}
+	cs.Round = 100
+	cs.Step = 1
+	cs.Signature.init()
+	if _,_,_, err := cs.sign(priKey); err != nil {
+		fmt.Println("111",err)
+		return
+	}
+
+	msgcs := NewMsgCredential(cs)
+	msgcs.Send()
+	msgcs.Send()
+
+	for i := 1 ;i <= 10; i++ {
+		time.Sleep(1 * time.Second)
+		priKey := generatePrivateKey()
+		cs := &CredentialSign{}
+		cs.Round = 100
+		cs.Step = 1
+		cs.Signature.init()
+		if _,_,_, err := cs.sign(priKey); err != nil {
+			fmt.Println("111",err)
+			return
+		}
+
+		msgcs := NewMsgCredential(cs)
+		msgcs.Send()
+		msgcs.Send()
+
+	}
+
+	select {
+	case <-an.actualNode.StopCh():
+	}
+}
+
 func TestBp_validate_success(t *testing.T){
 	Config().prVerifier = 10000000000
 	Config().prLeader = 10000000000
@@ -261,6 +307,11 @@ func TestBb_sava(t *testing.T){
 		return
 	}
 
+	msgcs := NewMsgCredential(cs)
+	msgcs.Send()
+	msgcs.Send()
+
+
 	bp := newBlockProposal()
 	bp.Credential = cs
 	bp.Block = an.actualNode.makeEmptyBlockForTest(bp.Credential)
@@ -290,6 +341,10 @@ func TestBb_sava(t *testing.T){
 			fmt.Println("111",err)
 			return
 		}
+
+		msgcs := NewMsgCredential(cs)
+		msgcs.Send()
+		msgcs.Send()
 
 		bp := newBlockProposal()
 		bp.Credential = cs
