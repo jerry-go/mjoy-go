@@ -20,8 +20,8 @@ func TestBba_EndCondition0(t *testing.T){
 	Config().blockDelay = 2
 	Config().verifyDelay = 1
 	Config().maxBBASteps = 12
-	Config().prVerifier = 10000000000
-	Config().prLeader = 10000000000
+	Config().maxPotLeaders = big.NewInt(3)
+	Config().maxPotVerifiers =  big.NewInt(4)
 	an := newAllNodeManager()
 	verifierCnt := an.initTestCommonNew(0)
 	logger.Debug(COLOR_PREFIX+COLOR_FRONT_BLUE+COLOR_SUFFIX , "Verifier Cnt:" , verifierCnt , COLOR_SHORT_RESET)
@@ -35,6 +35,8 @@ func TestBba_EndCondition0(t *testing.T){
 		fmt.Println("111",err)
 		return
 	}
+	msgcs := NewMsgCredential(cs)
+	msgcs.Send()
 
 	bp := newBlockProposal()
 	bp.Credential = cs
@@ -50,12 +52,14 @@ func TestBba_EndCondition0(t *testing.T){
 		fmt.Println("2222",err)
 	}
 
-	//an.SendDataPackToActualNode(m1)
 	msgbp := NewMsgBlockProposal(bp)
 	msgbp.Send()
-	return
+
+	msg_css := []*msgCredentialSig{}
+	msg_bbas := []*msgBinaryByzantineAgreement{}
+
 	for i := 1 ;i <= 4; i++ {
-		time.Sleep(1 * time.Second)
+		//time.Sleep(1 * time.Second)
 		priKey := generatePrivateKey()
 		cs := &CredentialSign{}
 		cs.Round = 100
@@ -65,6 +69,8 @@ func TestBba_EndCondition0(t *testing.T){
 			fmt.Println("333",err)
 			return
 		}
+		msgcs := NewMsgCredential(cs)
+		msg_css = append(msg_css, msgcs)
 		bba := newBinaryByzantineAgreement()
 
 		bba.Credential = cs
@@ -85,7 +91,16 @@ func TestBba_EndCondition0(t *testing.T){
 		bba.EsigV.sign(priKey)
 
 		msgBba := NewMsgBinaryByzantineAgreement(bba)
-		msgBba.Send()
+		msg_bbas = append(msg_bbas, msgBba)
+	}
+
+	for _, mcs := range msg_css {
+		mcs.Send()
+	}
+
+	for _, mbba := range msg_bbas {
+		time.Sleep(1*time.Second)
+		mbba.Send()
 	}
 
 	select {
@@ -309,7 +324,6 @@ func TestBb_sava(t *testing.T){
 
 	msgcs := NewMsgCredential(cs)
 	msgcs.Send()
-	msgcs.Send()
 
 
 	bp := newBlockProposal()
@@ -343,7 +357,6 @@ func TestBb_sava(t *testing.T){
 		}
 
 		msgcs := NewMsgCredential(cs)
-		msgcs.Send()
 		msgcs.Send()
 
 		bp := newBlockProposal()

@@ -234,7 +234,7 @@ func (this *Round)filterMsgCs(msg *CredentialSign) error {
 		}
 		if mCs, ok := peermsgs.msgCs[int(step)]; ok {
 			if mCs.Step == step {
-				return errors.New("duplicate message Credential Signature")
+				return errors.New("duplicate message Credential")
 			}
 		} else {
 			peermsgs.msgCs[int(step)] = msg
@@ -275,6 +275,10 @@ func (this *Round) verifyCredentialRight(msg *CredentialSign) error {
 		pqitem := &pqItem{msg, msgPri}
 		heap.Push(&pqMsg.pq, pqitem)
 
+		if _, ok := pqMsg.credentials[msgPri.String()]; ok {
+			return errors.New("duplicate message Credential Signature")
+		}
+
 		if len(pqMsg.pq) > int(maxNum.Uint64()) {
 			itemPop := heap.Pop(&pqMsg.pq).(*pqItem)
 			if(itemPop == pqitem) {
@@ -300,13 +304,14 @@ func (this *Round)receiveMsgCs(msg *CredentialSign) {
 		logger.Warn("verify fail, Credential msg is not in current round", msg.Round, this.round)
 		return
 	}
-	if err := this.filterMsgCs(msg); err != nil {
-		logger.Info("filter Credential fail", err)
-		return
-	}
 
 	if err := this.verifyCredentialRight(msg); err != nil {
 		logger.Info("verify Credential Right fail:", err)
+		return
+	}
+
+	if err := this.filterMsgCs(msg); err != nil {
+		logger.Info("filter Credential fail", err)
 		return
 	}
 	//Propagate message via p2p
@@ -402,6 +407,17 @@ func (this *Round)receiveMsgGc(msg *GradedConsensus) {
 		logger.Warn("verify fail, GradedConsensus msg is not in current round", msg.Credential.Round, this.round)
 		return
 	}
+	step := int(msg.Credential.Step)
+	if pgcs, ok := this.csPg[step]; !ok{
+		logger.Debug("GradedConsensus message have not corresponding Credential 0, ignore. Credential hash:", msg.Credential.Signature.hash().String())
+		return
+	} else {
+		msgPri := msg.Credential.sigHashBig()
+		if _, ok := pgcs.credentials[msgPri.String()]; !ok {
+			logger.Debug("GradedConsensus message have not corresponding Credential 1, ignore. Credential hash:", msg.Credential.Signature.hash().String())
+			return
+		}
+	}
 
 	if err := this.filterMsgGc(msg); err != nil {
 		logger.Info("filter m23 fail", err)
@@ -409,8 +425,7 @@ func (this *Round)receiveMsgGc(msg *GradedConsensus) {
 	}
 
 	//send this msg to step3 or step4 goroutine
-	step := msg.Credential.Step
-	if stepObj, ok := this.allStepObj[int(step) + 1]; ok {
+	if stepObj, ok := this.allStepObj[step + 1]; ok {
 		go stepObj.sendMsg(msg)
 	}
 
@@ -510,15 +525,25 @@ func (this *Round)receiveMsgBba(msg *BinaryByzantineAgreement) {
 		return
 	}
 
+	step := int(msg.Credential.Step)
+	if pgcs, ok := this.csPg[step]; !ok{
+		logger.Debug("BinaryByzantineAgreement message have not corresponding Credential 0, ignore. Credential hash:", msg.Credential.Signature.hash().String())
+		return
+	} else {
+		msgPri := msg.Credential.sigHashBig()
+		if _, ok := pgcs.credentials[msgPri.String()]; !ok {
+			logger.Debug("BinaryByzantineAgreement message have not corresponding Credential 1, ignore. Credential hash:", msg.Credential.Signature.hash().String())
+			return
+		}
+	}
+
 	if err := this.filterMsgBba(msg); err != nil {
 		logger.Info("filter bba message fail:", err)
 		return
 	}
 
-	step := msg.Credential.Step
-
 	//send this msg to step other goroutine
-	if stepObj, ok := this.allStepObj[int(step) + 1]; ok {
+	if stepObj, ok := this.allStepObj[step + 1]; ok {
 		go stepObj.sendMsg(msg)
 	}
 	//Propagate message via p2p
