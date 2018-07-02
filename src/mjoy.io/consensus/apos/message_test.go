@@ -242,6 +242,80 @@ func TestBp_validate_fail_2(t *testing.T){
 	time.Sleep(2 * time.Second)
 }
 
+func TestBb_sava(t *testing.T){
+	Config().blockDelay = 20
+	Config().verifyDelay = 10
+	Config().maxBBASteps = 12
+	Config().maxPotLeaders = big.NewInt(3)
+	an := newAllNodeManager()
+	verifierCnt := an.initTestCommonNew(0)
+	logger.Debug(COLOR_PREFIX+COLOR_FRONT_BLUE+COLOR_SUFFIX , "Verifier Cnt:" , verifierCnt , COLOR_SHORT_RESET)
+
+	priKey := generatePrivateKey()
+	cs := &CredentialSign{}
+	cs.Round = 100
+	cs.Step = 1
+	cs.Signature.init()
+	if _,_,_, err := cs.sign(priKey); err != nil {
+		fmt.Println("111",err)
+		return
+	}
+
+	bp := newBlockProposal()
+	bp.Credential = cs
+	bp.Block = an.actualNode.makeEmptyBlockForTest(bp.Credential)
+	//fmt.Println(bp.Block)
+	hash := bp.Block.Hash()
+
+	bp.Esig.round = bp.Credential.Round
+	bp.Esig.step = bp.Credential.Step
+	bp.Esig.val = hash.Bytes()
+	bp.Esig.Signature.init()
+	if _,_,_, err := bp.Esig.sign(priKey); err != nil {
+		fmt.Println("2222",err)
+	}
+
+	//an.SendDataPackToActualNode(m1)
+	msgbp := NewMsgBlockProposal(bp)
+	msgbp.Send()
+
+	for i := 1 ;i <= 10; i++ {
+		time.Sleep(1 * time.Second)
+		priKey := generatePrivateKey()
+		cs := &CredentialSign{}
+		cs.Round = 100
+		cs.Step = 1
+		cs.Signature.init()
+		if _,_,_, err := cs.sign(priKey); err != nil {
+			fmt.Println("111",err)
+			return
+		}
+
+		bp := newBlockProposal()
+		bp.Credential = cs
+		bp.Block = an.actualNode.makeEmptyBlockForTest(bp.Credential)
+		//fmt.Println(bp.Block)
+		hash := bp.Block.Hash()
+
+		bp.Esig.round = bp.Credential.Round
+		bp.Esig.step = bp.Credential.Step
+		bp.Esig.val = hash.Bytes()
+		bp.Esig.Signature.init()
+		if _,_,_, err := bp.Esig.sign(priKey); err != nil {
+			fmt.Println("2222",err)
+		}
+
+		//an.SendDataPackToActualNode(m1)
+		msgbp := NewMsgBlockProposal(bp)
+		msgbp.Send()
+		msgbp.Send()
+	}
+
+	select {
+	case <-an.actualNode.StopCh():
+	}
+}
+
 //BP verify ephemeral signature fail: invalid chain id for signer
 func TestBp_validate_fail_3(t *testing.T){
 	Config().prVerifier = 10000000000
