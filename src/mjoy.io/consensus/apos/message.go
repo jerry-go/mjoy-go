@@ -406,7 +406,7 @@ func (mt *msgTransfer) SendCredential(c *CredentialSign) error {
 }
 
 func (mt *msgTransfer) PropagateCredential(c *CredentialSign) error {
-	logger.Debug("PropagateCredential", c.Round, c.Step)
+	//logger.Debug("PropagateCredential", c.Round, c.Step)
 	go mt.csFeed.Send(CsEvent{c})
 	return nil
 }

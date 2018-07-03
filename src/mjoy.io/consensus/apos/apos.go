@@ -31,6 +31,7 @@ import (
 	"time"
 	"container/heap"
 	"fmt"
+	"crypto/ecdsa"
 )
 
 const (
@@ -646,6 +647,7 @@ type Apos struct {
 }
 
 
+
 //Create Apos
 func NewApos(msger OutMsger ,cmTools CommonTools)*Apos{
 	a := new(Apos)
@@ -659,6 +661,10 @@ func NewApos(msger OutMsger ,cmTools CommonTools)*Apos{
 	a.reset()
 
 	return a
+}
+
+func (this *Apos)SetPriKey(priKey *ecdsa.PrivateKey){
+	this.commonTools.SetPriKey(priKey)
 }
 
 func (this *Apos)makeEmptyBlockForTest(cs *CredentialSign)*block.Block{
@@ -687,17 +693,22 @@ func (this *Apos)SetOutMsger(outMsger OutMsger){
 	this.outMsger = outMsger
 }
 
+func SetTestConfig(){
+	//set config
+	Config().maxPotVerifiers = big.NewInt(1)
+	Config().prLeader = 10000000000
+	Config().prVerifier = 10000000000
+}
+
 //this is the main loop of Apos
 func (this *Apos)Run(){
+	SetTestConfig()
 
 	//start round
 	//this.roundOverCh<-1
 	fmt.Println("Apos Run round:" , this.commonTools.GetNextRound())
 	this.roundCtx = newRound(this.commonTools.GetNextRound(),this,this.roundOverCh)
-	//set config
-	Config().maxPotVerifiers = big.NewInt(1)
-	Config().prLeader = 10000000000
-	Config().prVerifier = 10000000000
+
 	go this.roundCtx.run()
 	logger.Info("Apos is running.....")
 	for{

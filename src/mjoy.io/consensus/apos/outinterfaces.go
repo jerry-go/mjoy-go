@@ -24,6 +24,7 @@ import (
 	"mjoy.io/common/types"
 	"math/big"
 	"mjoy.io/core/blockchain/block"
+	"crypto/ecdsa"
 )
 
 /*
@@ -70,7 +71,7 @@ type CommonTools interface {
 	GetNowBlockHash()types.Hash
 
 
-
+	SetPriKey(priKey *ecdsa.PrivateKey)
 	CreateTmpPriKey(step int)
 	DelTmpKey(step int)
 	ClearTmpKeys()

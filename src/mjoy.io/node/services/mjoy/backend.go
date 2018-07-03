@@ -193,15 +193,13 @@ func New(ctx *node.ServiceContext) (*Mjoy, error) {
 	//Init blockProducer
 	mjoy.blockproducer = blockproducer.New(mjoy,mjoy.interVm,mjoy.chainConfig,mjoy.EventMux() , mjoy.engine)
 	//run block producer first
-	go mjoy.StartProducing(true , "123")
 	time.Sleep(3*time.Second)
 	//Init apos tools
 
-	mjoy.toolsForApos = newAposTools(mjoy.blockchain.Config().ChainId , mjoy.accountManager ,mjoy.blockchain , mjoy.blockproducer)
+	mjoy.toolsForApos = newAposTools(mjoy.blockchain.Config().ChainId  ,mjoy.blockchain , mjoy.blockproducer)
 	//Init Consensus
 	mjoy.aposConsensus = apos.NewApos(apos.MsgTransfer() , mjoy.toolsForApos)
 	//start consensus
-	go mjoy.aposConsensus.Run()
 	mjoy.ApiBackend = &MjoyApiBackend{mjoy}
 
 
@@ -309,7 +307,7 @@ func (s *Mjoy) StartProducing(local bool, password string) error {
 		return fmt.Errorf("get sign key err: %v", err)
 	}
 	s.SetEngineKey(key)
-
+	s.aposConsensus.SetPriKey(key)
 	if local {
 		// If local (CPU) producing is started, we can disable the transaction rejection
 		// mechanism introduced to speed sync times. CPU producing on mainnet is ludicrous
@@ -318,6 +316,10 @@ func (s *Mjoy) StartProducing(local bool, password string) error {
 		atomic.StoreUint32(&s.protocolManager.acceptTxs, 1)
 	}
 	go s.blockproducer.Start(eb.Address)
+
+	//start the apos now
+	go s.aposConsensus.Run()
+	
 	return nil
 }
 

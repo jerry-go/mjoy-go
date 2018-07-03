@@ -151,9 +151,6 @@ type Backend interface {
 	// go, the same wallet might appear at a different positions in the list during
 	// subsequent retrievals.
 	Wallets() []Wallet
-
-	GetCoinBasePriKey()*ecdsa.PrivateKey
-
 	// Subscribe creates an async subscription to receive notifications when the
 	// backend detects the arrival or departure of a wallet.
 	Subscribe(sink chan<- WalletEvent) event.Subscription

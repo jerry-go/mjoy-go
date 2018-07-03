@@ -439,3 +439,6 @@ func (this *outCommonTools)InsertChain(chain block.Blocks) (int, error){
 	return 0 , nil
 }
 
+func (this *outCommonTools)SetPriKey(priKey *ecdsa.PrivateKey){
+
+}

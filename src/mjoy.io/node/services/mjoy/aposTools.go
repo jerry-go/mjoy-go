@@ -14,7 +14,6 @@ import (
 	"mjoy.io/common"
 	"mjoy.io/core/blockchain/block"
 	"reflect"
-	"mjoy.io/accounts/keystore"
 )
 
 type PriKeyHandler interface {
@@ -50,24 +49,22 @@ func generatePrivateKey()*ecdsa.PrivateKey{
 type aposTools struct {
 	lock sync.RWMutex
 	chanId *big.Int
+	basePriKey *ecdsa.PrivateKey
 	tmpPriKeys map[int]*ecdsa.PrivateKey
-	basePrivKeyHandler PriKeyHandler
 	blockChainHandler BlockChainHandler
 	producerHandler BlockProducerHandler
 	signer apos.Signer
 }
 
-func newAposTools(chanId *big.Int , keyHandler PriKeyHandler , bcHandler BlockChainHandler , producerHander BlockProducerHandler)*aposTools{
+func newAposTools(chanId *big.Int  , bcHandler BlockChainHandler , producerHander BlockProducerHandler)*aposTools{
 	a := new(aposTools)
 	//a.chanId = big.Int{}.Set(chanId)
 	a.chanId = big.NewInt(0).Set(chanId)
-	a.basePrivKeyHandler = keyHandler
+	a.basePriKey = nil
 	a.blockChainHandler = bcHandler
 	a.producerHandler = producerHander
 	return a
 }
-
-
 
 func (this *aposTools)CreateTmpPriKey(step int){
 	this.lock.Lock()
@@ -86,13 +83,18 @@ func (this *aposTools)CreateTmpPriKey(step int){
 	this.tmpPriKeys[step] = tmpKey
 }
 
+func (this *aposTools)SetPriKey(priKey *ecdsa.PrivateKey){
+	this.lock.Lock()
+	defer this.lock.Unlock()
+
+	this.basePriKey = priKey
+}
 
 func (this *aposTools)Sig(pCs *apos.CredentialSign)error{
-	priKey := this.basePrivKeyHandler.GetBasePriKey(keystore.KeyStoreType)
-	if priKey == nil {
-		fmt.Println("******Sig PriKey == nil")
-	}
-	_,_,_,err := pCs.Sign(priKey)
+	this.lock.RLock()
+	defer this.lock.RUnlock()
+
+	_,_,_,err := pCs.Sign(this.basePriKey)
 	return err
 }
 
@@ -128,7 +130,10 @@ func (this *aposTools)ClearTmpKeys(){
 }
 
 func (this *aposTools)SigHash(hash types.Hash)(R,S,V *big.Int){
-	sig , err := crypto.Sign(hash[:] , this.basePrivKeyHandler.GetBasePriKey(keystore.KeyStoreType))
+	this.lock.RLock()
+	defer this.lock.RUnlock()
+
+	sig , err := crypto.Sign(hash[:] , this.basePriKey)
 	if err != nil{
 		logger.Error("aposTools SigErr:" , err.Error())
 		return nil , nil , nil
