@@ -110,6 +110,69 @@ func TestBba_EndCondition0(t *testing.T){
 	}
 }
 
+func TestEvent1(t *testing.T){
+	Config().blockDelay = 2
+	Config().verifyDelay = 1
+	Config().maxBBASteps = 12
+	Config().prLeader = 10000000000
+	Config().prVerifier = 10000000000
+	Config().maxPotLeaders = big.NewInt(3)
+	Config().maxPotVerifiers =  big.NewInt(4)
+
+	actualNode := NewApos(MsgTransfer() , newOutCommonTools())
+
+	csCh := make(chan CsEvent, 1000)
+	csSub := MsgTransfer().SubscribeCsEvent(csCh)
+	fcs := func() {
+		for {
+			select {
+			case event := <-csCh:
+				logger.Info("Test: receive cs message", event.Cs.Round, event.Cs.Step)
+				// Err() channel will be closed when unsubscribing.
+			case <-csSub.Err():
+				logger.Info("Test :receive cs stop message")
+				return
+			}
+		}
+	}
+
+	bbach := make(chan BbaEvent, 1000)
+	bbaSub := MsgTransfer().SubscribeBbaEvent(bbach)
+	fbba := func() {
+		for {
+			select {
+			case event := <-bbach:
+				logger.Info("Test: receive bba message", event.Bba.Credential.Round, event.Bba.Credential.Step)
+				// Err() channel will be closed when unsubscribing.
+			case <-bbaSub.Err():
+				logger.Info("Test :receive bba stop message")
+				return
+			}
+		}
+	}
+
+	go actualNode.Run()
+	go fcs()
+	go fbba()
+
+	priKey := generatePrivateKey()
+	cs := &CredentialSign{}
+	cs.Round = 100
+	cs.Step = 1
+	cs.Signature.init()
+	if _,_,_, err := cs.sign(priKey); err != nil {
+		fmt.Println("111",err)
+		return
+	}
+	msgcs := NewMsgCredential(cs)
+	msgcs.Send()
+
+
+	select {
+	case <-actualNode.StopCh():
+	}
+}
+
 func TestCs_validate_success(t *testing.T){
 	Config().prVerifier = 10000000000
 	priKey := generatePrivateKey()

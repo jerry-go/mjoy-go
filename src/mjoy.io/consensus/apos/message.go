@@ -402,7 +402,6 @@ func (mt *msgTransfer) GetSubDataMsg()<-chan dataPack{
 }
 
 func (mt *msgTransfer) SendCredential(c *CredentialSign) error {
-	mt.receiveChan<-c
 	return nil
 }
 
