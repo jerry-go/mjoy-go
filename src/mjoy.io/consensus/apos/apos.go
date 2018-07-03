@@ -168,7 +168,7 @@ func (this *Round)generateCredentials() {
 		isVerfier := this.apos.judgeVerifier(credential, i)
 		//logger.Info("GenerateCredential step:",i,"  isVerifier:",isVerfier)
 		if isVerfier {
-			//logger.Info("GenerateCredential step:",i,"  isVerifier:",isVerfier)
+			logger.Info("GenerateCredential step:",i,"  isVerifier:",isVerfier)
 			this.credentials[i] = credential
 			this.apos.commonTools.CreateTmpPriKey(i)
 		}
@@ -178,8 +178,8 @@ func (this *Round)generateCredentials() {
 func (this *Round)broadcastCredentials() {
 	for i, credential := range this.credentials {
 		_ = i
-		//logger.Info("SendCredential round", this.round.IntVal.Uint64(), "step", i)
-		this.apos.outMsger.SendCredential(credential)
+		logger.Info("SendCredential round", this.round, "step", i)
+		this.apos.outMsger.SendInner(credential)
 	}
 }
 
@@ -254,13 +254,13 @@ func (this *Round)filterMsgCs(msg *CredentialSign) error {
 
 func (this *Round) verifyCredentialRight(msg *CredentialSign) error {
 	step := int(msg.Step)
-	maxNum := Config().maxPotLeaders
+	maxNum := Config().maxPotVerifiers
 	if step == 1 {
 		maxNum = Config().maxPotLeaders
 	}
 	msgPri := msg.sigHashBig()
 
-	logger.Debug("verifyRight. message hash :", msg.Signature.Hash().String())
+	logger.Debug("verifyRight. message hash :", msg.Signature.Hash().String(), "round:", msg.Round, "step",  msg.Step)
 
 	if pqMsg, ok := this.csPg[step]; !ok {
 		pgcs := &pgCredential{make(priorityQueue, 0), make(map[string]*CredentialSign)}

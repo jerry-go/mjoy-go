@@ -20,6 +20,8 @@ func TestBba_EndCondition0(t *testing.T){
 	Config().blockDelay = 2
 	Config().verifyDelay = 1
 	Config().maxBBASteps = 12
+	Config().prLeader = 10000000000
+	Config().prVerifier = 10000000000
 	Config().maxPotLeaders = big.NewInt(3)
 	Config().maxPotVerifiers =  big.NewInt(4)
 	an := newAllNodeManager()

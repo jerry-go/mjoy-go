@@ -64,6 +64,8 @@ func (c *config) setDefault() {
 	c.prVerifier = 5000000000 	// 0.5
 	c.maxBBASteps = 180
 	c.maxNodesPerRound = 10
+	c.maxPotLeaders = big.NewInt(3)
+	c.maxPotLeaders = big.NewInt(4)
 	c.prH = 67
 	c.blockDelay = 10
 	c.verifyDelay = 5
@@ -83,7 +85,7 @@ func Config() *config {
 		}
 		instance.setDefault()
 		instance.Verify()
-		instance.verifier()
+		//instance.verifier()
 		instance.chain()
 	})
 

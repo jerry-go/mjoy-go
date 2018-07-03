@@ -53,6 +53,8 @@ const (
 	// txChanSize is the size of channel listening to TxPreEvent.
 	// The number is referenced from the size of tx pool.
 	txChanSize = 4096
+
+	csChanSize = 4096
 )
 
 var (
@@ -85,6 +87,10 @@ type ProtocolManager struct {
 	eventMux      *event.TypeMux
 	txCh          chan core.TxPreEvent
 	txSub         event.Subscription
+
+	csCh          chan apos.CsEvent
+	csSub         event.Subscription
+
 	producedBlockSub *event.TypeMuxSubscription
 
 	// channels for fetcher, syncer, txsyncLoop
@@ -206,6 +212,10 @@ func (pm *ProtocolManager) removePeer(id string) {
 func (pm *ProtocolManager) Start(maxPeers int) {
 	pm.maxPeers = maxPeers
 
+	pm.csCh = make(chan apos.CsEvent, csChanSize)
+	pm.csSub = apos.MsgTransfer().SubscribeCsEvent(pm.csCh)
+	go pm.csBroadcastLoop()
+
 	// broadcast transactions
 	pm.txCh = make(chan core.TxPreEvent, txChanSize)
 	pm.txSub = pm.txpool.SubscribeTxPreEvent(pm.txCh)
@@ -225,6 +235,8 @@ func (pm *ProtocolManager) Stop() {
 
 	pm.txSub.Unsubscribe()         // quits txBroadcastLoop
 	pm.producedBlockSub.Unsubscribe() // quits blockBroadcastLoop
+
+	pm.csSub.Unsubscribe()
 
 	// Quit the sync loop.
 	// After this send has completed, no new peers will be accepted.
@@ -739,6 +751,19 @@ func (self *ProtocolManager) txBroadcastLoop() {
 
 		// Err() channel will be closed when unsubscribing.
 		case <-self.txSub.Err():
+			return
+		}
+	}
+}
+
+func (self *ProtocolManager) csBroadcastLoop() {
+	for {
+		select {
+		case event := <-self.csCh:
+			self.BroadcastCs(event.Cs.Signature.Hash(), event.Cs)
+
+			// Err() channel will be closed when unsubscribing.
+		case <-self.csSub.Err():
 			return
 		}
 	}
