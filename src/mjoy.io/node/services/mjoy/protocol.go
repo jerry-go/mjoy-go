@@ -40,7 +40,7 @@ var ProtocolName = "mjoy"
 var ProtocolVersions = []uint{mjoy63}
 
 // Number of implemented message corresponding to different protocol versions.
-var ProtocolLengths = []uint64{17}
+var ProtocolLengths = []uint64{36}
 
 const ProtocolMaxMsgSize = 10 * 1024 * 1024 // Maximum cap on the size of a protocol message
 
