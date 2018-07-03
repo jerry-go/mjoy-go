@@ -27,8 +27,6 @@ import (
 	"sync/atomic"
 	"mjoy.io/consensus"
 
-	"time"
-	"math/rand"
 )
 
 type CpuAgent struct {
@@ -113,7 +111,7 @@ func (self *CpuAgent) blockproducer(work *Work, stop <-chan struct{}) {
 
 		logger.Infof("Successfully sealed new block number: %d  hash:0x%x\n" , result.Number() , result.Hash())
 		//fmt.Println("ProduceBlock: num:" , result.Number().String(),"  Hash:",result.Hash().String())
-		time.Sleep(time.Duration(rand.Intn(20))*time.Second)
+		//time.Sleep(time.Duration(rand.Intn(20))*time.Second)//when we add apos,here no need wait,we need speed
 		self.returnCh <- &Result{work, result}
 		//fmt.Printf("!!!!!Return Produce work......")
 

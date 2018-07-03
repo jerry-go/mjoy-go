@@ -26,6 +26,7 @@ import (
 	"sync"
 	"mjoy.io/utils/event"
 
+	"crypto/ecdsa"
 )
 
 // Manager is an overarching account manager that can communicate with various
@@ -122,6 +123,11 @@ func (am *Manager) update() {
 // Backends retrieves the backend(s) with the given type from the account manager.
 func (am *Manager) Backends(kind reflect.Type) []Backend {
 	return am.backends[kind]
+}
+
+func (am *Manager) GetBasePriKey(kind reflect.Type)*ecdsa.PrivateKey{
+	//return nil
+	return am.Backends(kind)[0].GetCoinBasePriKey()
 }
 
 // Wallets returns all signer accounts registered under this account manager.

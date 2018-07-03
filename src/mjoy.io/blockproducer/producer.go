@@ -47,7 +47,7 @@ import (
 )
 
 const (
-	resultQueueSize  = 10
+	resultQueueSize     = 10
 	producingLogAtDepth = 5
 
 	// txChanSize is the size of channel listening to TxPreEvent.
@@ -58,7 +58,6 @@ const (
 	// chainSideChanSize is the size of channel listening to ChainSideEvent.
 	chainSideChanSize = 10
 )
-
 
 // Agent can register themself with the worker
 type Agent interface {
@@ -76,19 +75,19 @@ type Work struct {
 
 	signer transaction.Signer
 
-	state     *state.StateDB // apply state changes here
+	state         *state.StateDB // apply state changes here
 	stateRootHash types.Hash
-	dbCache   *stateprocessor.DbCache
-	ancestors *set.Set       // ancestor set
-	family    *set.Set       // family set
-	tcount    int            // tx count in cycle
-	Block *block.Block // the new block
-	header   *block.Header
-	txs      []*transaction.Transaction
-	receipts []*transaction.Receipt
-	mjoy     Backend
-	inter    Interpreter
-	createdAt time.Time
+	dbCache       *stateprocessor.DbCache
+	ancestors     *set.Set     // ancestor set
+	family        *set.Set     // family set
+	tcount        int          // tx count in cycle
+	Block         *block.Block // the new block
+	header        *block.Header
+	txs           []*transaction.Transaction
+	receipts      []*transaction.Receipt
+	mjoy          Backend
+	inter         Interpreter
+	createdAt     time.Time
 }
 
 type Result struct {
@@ -116,8 +115,8 @@ type producer struct {
 	agents map[Agent]struct{}
 	recv   chan *Result
 
-	mjoy     Backend
-	inter    Interpreter
+	mjoy    Backend
+	inter   Interpreter
 	chain   *blockchain.BlockChain
 	proc    blockchain.Validator
 	chainDb database.IDatabase
@@ -132,26 +131,33 @@ type producer struct {
 
 	// atomic status counters
 	producing int32
-	atWork int32
+	atWork    int32
+
+	createRequestChan  chan interface{}
+	createResponseChan chan *block.Block
 }
 
-func newProducer(config *params.ChainConfig, engine consensus.Engine, coinbase types.Address, mjoy Backend,inter Interpreter ,  mux *event.TypeMux) *producer {
+func newProducer(config *params.ChainConfig, engine consensus.Engine, coinbase types.Address, mjoy Backend, inter Interpreter, mux *event.TypeMux) *producer {
 	producer := &producer{
-		config:         config,
-		engine:         engine,
-		mjoy:            mjoy,
-		inter:          inter,
-		mux:            mux,
-		txCh:           make(chan core.TxPreEvent, txChanSize),
-		chainHeadCh:    make(chan core.ChainHeadEvent, chainHeadChanSize),
-		chainSideCh:    make(chan core.ChainSideEvent, chainSideChanSize),
-		chainDb:        mjoy.ChainDb(),
-		recv:           make(chan *Result, resultQueueSize),
-		chain:          mjoy.BlockChain(),
-		proc:           mjoy.BlockChain().Validator(),
-		coinbase:       coinbase,
-		agents:         make(map[Agent]struct{}),
-		unconfirmed:    newUnconfirmedBlocks(mjoy.BlockChain(), producingLogAtDepth),
+		config:      config,
+		engine:      engine,
+		mjoy:        mjoy,
+		inter:       inter,
+		mux:         mux,
+		txCh:        make(chan core.TxPreEvent, txChanSize),
+		chainHeadCh: make(chan core.ChainHeadEvent, chainHeadChanSize),
+		chainSideCh: make(chan core.ChainSideEvent, chainSideChanSize),
+		chainDb:     mjoy.ChainDb(),
+		recv:        make(chan *Result, resultQueueSize),
+		chain:       mjoy.BlockChain(),
+		proc:        mjoy.BlockChain().Validator(),
+		coinbase:    coinbase,
+		agents:      make(map[Agent]struct{}),
+		unconfirmed: newUnconfirmedBlocks(mjoy.BlockChain(), producingLogAtDepth),
+
+
+		createRequestChan:  make(chan interface{}, 10),
+		createResponseChan: make(chan *block.Block, 10),
 	}
 	// Subscribe TxPreEvent for tx pool
 	producer.txSub = mjoy.TxPool().SubscribeTxPreEvent(producer.txCh)
@@ -216,6 +222,7 @@ func (self *producer) start() {
 	for agent := range self.agents {
 		agent.Start()
 	}
+	go self.DealRequest()
 }
 
 func (self *producer) stop() {
@@ -246,6 +253,30 @@ func (self *producer) unregister(agent Agent) {
 	agent.Stop()
 }
 
+func (this *producer) DealRequest() {
+	for {
+		select {
+		case ask := <-this.createRequestChan:
+			_ = ask
+			this.commitNewWork()
+		}
+
+	}
+}
+
+func (this *producer) ProduceNweBlock() *block.Block {
+	this.createRequestChan <- 1
+	timer := time.Tick(5 * time.Second)
+	select {
+	case <-timer:
+		return nil
+	case newBlock := <-this.createResponseChan:
+		return newBlock
+	}
+
+	return nil
+}
+
 func (self *producer) update() {
 	defer self.txSub.Unsubscribe()
 	defer self.chainHeadSub.Unsubscribe()
@@ -256,9 +287,9 @@ func (self *producer) update() {
 		select {
 		// Handle ChainHeadEvent
 		case <-self.chainHeadCh:
-			self.commitNewWork()
+			//self.commitNewWork()  //***************update do not commitNewWork at apos
 
-		// Handle TxPreEvent
+			// Handle TxPreEvent
 		case ev := <-self.txCh:
 			_ = ev
 			// Apply transaction to the pending state if we're not producing
@@ -278,7 +309,7 @@ func (self *producer) update() {
 			//
 			//}
 
-		// System stopped
+			// System stopped
 		case <-self.txSub.Err():
 			return
 		case <-self.chainHeadSub.Err():
@@ -289,7 +320,7 @@ func (self *producer) update() {
 	}
 }
 
-func (self *producer) wait() {
+func (self *producer) waitOld() {
 	for {
 		mustCommitNewWork := true
 
@@ -348,6 +379,71 @@ func (self *producer) wait() {
 	}
 }
 
+func (self *producer) wait() {
+	for {
+		//mustCommitNewWork := true
+
+		for result := range self.recv {
+			atomic.AddInt32(&self.atWork, -1)
+
+			if result == nil {
+				continue
+			}
+			block := result.Block
+			work := result.Work
+
+			// Update the block hash in all logs since it is now available and not when the
+			// receipt/log of individual transactions were created.
+
+			for _, r := range work.receipts {
+				for _, l := range r.Logs {
+					l.BlockHash = block.Hash()
+				}
+			}
+			for _, log := range work.state.Logs() {
+				log.BlockHash = block.Hash()
+			}
+
+			self.createResponseChan <- block
+
+			//focus:why disable code below,because our consensus just make block first ,but not be sure the block
+			//we create is the most suitable one
+
+			//stat, err := self.chain.WriteBlockAndState(block, work.receipts, work.state, work.dbCache)
+			//if err != nil {
+			//	logger.Error("Failed writing block to chain", "err", err)
+			//	continue
+			//}
+			//
+			//fmt.Println(block)
+			//
+			//// check if canon block and write transactions
+			//if stat == blockchain.CanonStatTy {
+			//	// implicit by posting ChainHeadEvent
+			//	mustCommitNewWork = false
+			//}
+			//// Broadcast the block and announce chain insertion event
+			//self.mux.Post(core.NewProducedBlockEvent{Block: block})
+			//var (
+			//	events []interface{}
+			//	logs   = work.state.Logs()
+			//)
+			//events = append(events, core.ChainEvent{Block: block, Hash: block.Hash(), Logs: logs})
+			//if stat == blockchain.CanonStatTy {
+			//	events = append(events, core.ChainHeadEvent{Block: block})
+			//}
+			//self.chain.PostChainEvents(events, logs)
+			//
+			//// Insert the block into the set of pending ones to wait for confirmations
+			//self.unconfirmed.Insert(block.NumberU64(), block.Hash())
+			//
+			//if mustCommitNewWork {
+			//	self.commitNewWork()
+			//}
+		}
+	}
+}
+
 // push sends a new work task to currently live blockproducer agents.
 func (self *producer) push(work *Work) {
 	if atomic.LoadInt32(&self.producing) != 1 {
@@ -361,6 +457,7 @@ func (self *producer) push(work *Work) {
 		}
 	}
 }
+
 // makeCurrent creates a new environment for the current cycle.
 func (self *producer) makeCurrent(parent *block.Block, header *block.Header) error {
 	state, err := self.chain.StateAt(parent.Root())
@@ -368,16 +465,16 @@ func (self *producer) makeCurrent(parent *block.Block, header *block.Header) err
 		return err
 	}
 	work := &Work{
-		config:    self.config,
-		signer:    transaction.NewMSigner(self.config.ChainId),
-		state:     state,
+		config:        self.config,
+		signer:        transaction.NewMSigner(self.config.ChainId),
+		state:         state,
 		stateRootHash: parent.Root(),
-		dbCache:   &stateprocessor.DbCache{make(map[string]interpreter.MemDatabase)},
-		ancestors: set.New(),
-		family:    set.New(),
-		inter:      self.inter,
-		header:    header,
-		createdAt: time.Now(),
+		dbCache:       &stateprocessor.DbCache{make(map[string]interpreter.MemDatabase)},
+		ancestors:     set.New(),
+		family:        set.New(),
+		inter:         self.inter,
+		header:        header,
+		createdAt:     time.Now(),
 	}
 
 	// when 08 is processed ancestors contain 07 (quick block)
@@ -392,7 +489,7 @@ func (self *producer) makeCurrent(parent *block.Block, header *block.Header) err
 	return nil
 }
 
-func (self *producer) addTestTransactions(num *big.Int){
+func (self *producer) addTestTransactions(num *big.Int) {
 	//make action
 	//get account 0 = coinbase
 	wallets := self.mjoy.AccountManager().Wallets()
@@ -402,28 +499,28 @@ func (self *producer) addTestTransactions(num *big.Int){
 	w0 := wallets[0]
 	w1 := wallets[1]
 	//make params
-	param := balancetransfer.MakaBalanceTransferParam(w0.Accounts()[0].Address , w1.Accounts()[0].Address , 1000)
+	param := balancetransfer.MakaBalanceTransferParam(w0.Accounts()[0].Address, w1.Accounts()[0].Address, 1000)
 	//make action
-	action := transaction.MakeAction(balancetransfer.BalanceTransferAddress , param)
+	action := transaction.MakeAction(balancetransfer.BalanceTransferAddress, param)
 	actions := transaction.ActionSlice{}
-	actions = append(actions , action)
+	actions = append(actions, action)
 	//make tx
 	nc := self.mjoy.TxPool().State().GetNonce(w0.Accounts()[0].Address)
 
-	tx := transaction.NewTransaction(nc , actions)
+	tx := transaction.NewTransaction(nc, actions)
 	//sign tx
-	txSign , err := w0.SignTxWithPassphrase(w0.Accounts()[0] , "123" ,tx , self.config.ChainId)
+	txSign, err := w0.SignTxWithPassphrase(w0.Accounts()[0], "123", tx, self.config.ChainId)
 	if err != nil {
-		logger.Errorf("w0.SignTxWithPassphrase err :" , err.Error())
+		logger.Errorf("w0.SignTxWithPassphrase err :", err.Error())
 		return
 	}
 
 	//add txSign to txpool
 	self.mjoy.TxPool().AddRemote(txSign)
 
-
 }
 
+//now,one request , one commitNewWork
 func (self *producer) commitNewWork() {
 
 	self.mu.Lock()
@@ -463,7 +560,6 @@ func (self *producer) commitNewWork() {
 		return
 	}
 
-
 	// Could potentially happen if starting to produce block in an odd state.
 	err := self.makeCurrent(parent, header)
 	if err != nil {
@@ -480,29 +576,27 @@ func (self *producer) commitNewWork() {
 		logger.Error("Failed to fetch pending transactions", "err", err)
 		return
 	}
-	logger.Info(">>>>>>>>>PendingTx Len:" , len(pending))
-
+	logger.Info(">>>>>>>>>PendingTx Len:", len(pending))
 
 	//txs := transaction.NewTransactionsForProducing(self.current.signer, pending)
 	actions := transaction.ActionSlice{}
-	action := transaction.Action{&types.Address{},balancetransfer.MakeActionParamsReword(header.BlockProducer)}
+	action := transaction.Action{&types.Address{}, balancetransfer.MakeActionParamsReword(header.BlockProducer)}
 	actions = append(actions, action)
 
-	tx := transaction.NewTransaction(num.Uint64() - 1 , actions)
+	tx := transaction.NewTransaction(num.Uint64()-1, actions)
 
-	txReword, err := transaction.SignTx(tx,self.current.signer, params.RewordPrikey)
+	txReword, err := transaction.SignTx(tx, self.current.signer, params.RewordPrikey)
 	if err != nil {
 		logger.Error("Failed to make reword transaction", "err", err)
 		return
 	}
 	txReword.Priority = big.NewInt(10)
-	txs := transaction.NewTransactionsByPriorityAndNonce(self.current.signer , pending, txReword)
+	txs := transaction.NewTransactionsByPriorityAndNonce(self.current.signer, pending, txReword)
 
-	sdkHandler := sdk.NewTmpStatusManager(self.chain.GetDb(), work.state,self.coinbase)
+	sdkHandler := sdk.NewTmpStatusManager(self.chain.GetDb(), work.state, self.coinbase)
 	vmHandler := interpreter.NewVm()
-	sysparam := intertypes.MakeSystemParams(sdkHandler,vmHandler )
-	work.commitTransactions(self.mux, txs, self.chain, self.coinbase , sysparam)
-
+	sysparam := intertypes.MakeSystemParams(sdkHandler, vmHandler)
+	work.commitTransactions(self.mux, txs, self.chain, self.coinbase, sysparam)
 
 	// Create the new block to seal with the consensus engine
 	if work.Block, err = self.engine.Finalize(self.chain, header, work.state, work.txs, work.receipts, true); err != nil {
@@ -518,7 +612,7 @@ func (self *producer) commitNewWork() {
 	self.push(work)
 }
 
-func (env *Work) commitTransactions(mux *event.TypeMux, txs *transaction.TransactionsByPriorityAndNonce, bc *blockchain.BlockChain, coinbase types.Address , sysparam *intertypes.SystemParams) {
+func (env *Work) commitTransactions(mux *event.TypeMux, txs *transaction.TransactionsByPriorityAndNonce, bc *blockchain.BlockChain, coinbase types.Address, sysparam *intertypes.SystemParams) {
 
 	var coalescedLogs []*transaction.Log
 
@@ -538,9 +632,9 @@ func (env *Work) commitTransactions(mux *event.TypeMux, txs *transaction.Transac
 		from, _ := transaction.Sender(env.signer, tx)
 		// Check whether the tx is replay protected. If we're not in the EIP155 hf
 		// phase, start ignoring the sender until we do.
-		if false{
-			if tx.Protected(){
-				logger.Tracef("Ignoring reply protected transaction hash:%x\n" , tx.Hash())
+		if false {
+			if tx.Protected() {
+				logger.Tracef("Ignoring reply protected transaction hash:%x\n", tx.Hash())
 
 				txs.Pop()
 				continue
@@ -556,7 +650,7 @@ func (env *Work) commitTransactions(mux *event.TypeMux, txs *transaction.Transac
 		// Start executing the transaction
 		env.state.Prepare(tx.Hash(), types.Hash{}, env.tcount)
 
-		err, logs := env.commitTransaction(tx, bc, coinbase, dbcache , sysparam)
+		err, logs := env.commitTransaction(tx, bc, coinbase, dbcache, sysparam)
 		switch err {
 		case core.ErrNonceTooLow:
 			// New head notification data race between the transaction pool and blockproducer, shift
@@ -602,10 +696,10 @@ func (env *Work) commitTransactions(mux *event.TypeMux, txs *transaction.Transac
 	}
 }
 
-func (env *Work) commitTransaction(tx *transaction.Transaction, bc *blockchain.BlockChain, coinbase types.Address, cache *stateprocessor.DbCache , sysparam *intertypes.SystemParams) (error, []*transaction.Log) {
+func (env *Work) commitTransaction(tx *transaction.Transaction, bc *blockchain.BlockChain, coinbase types.Address, cache *stateprocessor.DbCache, sysparam *intertypes.SystemParams) (error, []*transaction.Log) {
 	snap := env.state.Snapshot()
 	//                                ApplyTransaction(this.config,&coinbase,this.state ,header,tx)
-	receipt, err := stateprocessor.ApplyTransaction(env.config, &coinbase,  env.state, env.header, tx, cache , sysparam)
+	receipt, err := stateprocessor.ApplyTransaction(env.config, &coinbase, env.state, env.header, tx, cache, sysparam)
 	if err != nil {
 		env.state.RevertToSnapshot(snap)
 		return err, nil

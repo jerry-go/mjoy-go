@@ -107,7 +107,7 @@ type Round struct {
 
 	msgs           map[types.Address]*peerMsgs
 
-	quitCh         chan interface{}
+	quitCh         chan *block.Block
 	roundOverCh    chan interface{}
 }
 
@@ -128,7 +128,7 @@ func (this *Round)init(round int , apos *Apos , roundOverCh chan interface{}){
 	this.leaders = make(map[types.Hash]*PotentialLeader)
 	this.leadersPg = make(priorityQueue, 0)
 	heap.Init(&this.leadersPg)
-	this.quitCh = make(chan interface{} , 1)
+	this.quitCh = make(chan *block.Block , 1)
 	this.msgs = make(map[types.Address]*peerMsgs)
 }
 
@@ -480,12 +480,26 @@ func (this *Round)receiveMsgBba(msg *BinaryByzantineAgreement) {
 	ret := this.saveMsgBba(msg)
 
 	if ret != IDLE {
+
 		//end condition 0, 1 or maxstep
 		this.broadCastStop()
 		//todo need import block to block chain
 
 		logger.Info("OK Consensus....ret:",ret)
-		this.quitCh <- 1
+		var consensusBlock *block.Block
+
+		switch ret {
+		case ENDCONDITION0:
+			logger.Debug(">>>>>>>>>>>>>>>>>Endcondition0's Block")
+			potLeader := this.leaders[msg.Hash]
+			consensusBlock = potLeader.bp.Block
+		default:
+			logger.Debug(">>>>>>>>>>>>>>>>>Endcondition default's Block")
+			consensusBlock = this.apos.makeEmptyBlockForTest(this.credentials[0])
+		}
+
+		this.quitCh <- consensusBlock
+
 	}
 }
 
@@ -507,7 +521,13 @@ func (this *Round)commonProcess() {
 			default:
 				logger.Warn("invalid message type ",reflect.TypeOf(v))
 			}
-		case <-this.quitCh:
+		case consensusBlock:=<-this.quitCh:
+			fmt.Println("CommonProcess end block:" , consensusBlock)
+			bs := block.Blocks{}
+			bs = append(bs , consensusBlock)
+			_ , err := this.apos.commonTools.InsertChain(bs)
+			fmt.Println("InsertOneBlock    ErrStatus:" , err)
+
 			logger.Info("round exit ")
 			return
 		}
@@ -517,6 +537,7 @@ func (this *Round)commonProcess() {
 
 func (this *Round)run(){
 	wg := sync.WaitGroup{}
+	logger.Debug("run()......step1")
 	// make verifiers Credential
 	this.generateCredentials()
 
@@ -524,7 +545,7 @@ func (this *Round)run(){
 	this.broadcastCredentials()
 
 	this.startVerify(&wg)
-
+	logger.Debug("run()......step2")
 	this.commonProcess()
 	wg.Wait()
 	this.roundOverCh<-1 //inform the caller,the mission complete
@@ -566,7 +587,8 @@ func NewApos(msger OutMsger ,cmTools CommonTools)*Apos{
 }
 
 func (this *Apos)makeEmptyBlockForTest(cs *CredentialSign)*block.Block{
-	header := &block.Header{Number:types.NewBigInt(*big.NewInt(int64(this.commonTools.GetNowBlockNum()))),Time:types.NewBigInt(*big.NewInt(time.Now().Unix()))}
+	header := &block.Header{Number:types.NewBigInt(*big.NewInt(int64(this.commonTools.GetNextRound()))),Time:types.NewBigInt(*big.NewInt(time.Now().Unix())),
+							ParentHash:this.commonTools.GetNowBlockHash()}
 	//chainId := big.NewInt(100)
 	//signer := block.NewBlockSigner(chainId)
 	srcBytes := []byte{}
@@ -595,15 +617,19 @@ func (this *Apos)Run(){
 
 	//start round
 	//this.roundOverCh<-1
+	fmt.Println("Apos Run round:" , this.commonTools.GetNextRound())
 	this.roundCtx = newRound(this.commonTools.GetNextRound(),this,this.roundOverCh)
+	//set config
+	Config().maxPotVerifiers = big.NewInt(1)
 	go this.roundCtx.run()
 	logger.Info("Apos is running.....")
 	for{
 		select {
 		case <-this.roundOverCh:
-			logger.Info("round overs ", this.roundCtx.round)
-			this.aposStopCh<-1
-			return //if apos deal once ,stop it
+			//logger.Info("round overs ", this.roundCtx.round)
+			//this.aposStopCh<-1
+			//return //if apos deal once ,stop it
+			logger.Debug("Apos New Round Running...............")
 			this.roundCtx = newRound(this.commonTools.GetNextRound(),this,this.roundOverCh)
 			go this.roundCtx.run()
 		}
@@ -634,7 +660,8 @@ func (this *Apos)makeCredential(s int) *CredentialSign{
 	//r := this.commonTools.GetNowBlockNum()
 	//k := this.algoParam.GetK()
 	//get Qr_k
-	r := this.commonTools.GetNowBlockNum()
+	//r := this.commonTools.GetNowBlockNum()
+	r := this.commonTools.GetNextRound()
 	//k := 1
 	//
 	//Qr_k := this.commonTools.GetQr_k(k)
@@ -669,6 +696,7 @@ func (this *Apos)StopCh()chan interface{}{
 }
 
 func (this *Apos)judgeVerifier(cs *CredentialSign, setp int) bool{
+	return true
 	h := cs.Signature.hash()
 	leader := false
 	if 1 == setp {
@@ -710,7 +738,7 @@ func (this *Apos) stepsFactory(ctx *stepCtx) (stepObj step) {
 	switch ctx.getStep() {
 	case 1:
 		ctx.makeEmptyBlockForTest = this.makeEmptyBlockForTest
-
+		ctx.getProducerNewBlock = this.commonTools.GetProducerNewBlock
 		stepObj = makeStepObj1()
 		stepObj.setCtx(ctx)
 

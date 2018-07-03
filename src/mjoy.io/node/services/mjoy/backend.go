@@ -52,6 +52,8 @@ import (
 	"mjoy.io/accounts/keystore"
 	"crypto/ecdsa"
 	"mjoy.io/core/interpreter"
+	"mjoy.io/consensus/apos"
+	"time"
 )
 
 type LesServer interface {
@@ -89,7 +91,10 @@ type Mjoy struct {
 	ApiBackend *MjoyApiBackend
 
 
-	blockproducer     *blockproducer.Blockproducer
+	blockproducer     *blockproducer.Blockproducer  //create newBlock
+	aposConsensus     *apos.Apos                    //judge the last Block
+	toolsForApos      *aposTools                    //tools for aposConsensus
+
 	interVm             *interpreter.Vms
 	coinbase types.Address
 
@@ -185,9 +190,18 @@ func New(ctx *node.ServiceContext) (*Mjoy, error) {
 		return nil, err
 	}
 
-	//Init miner
+	//Init blockProducer
 	mjoy.blockproducer = blockproducer.New(mjoy,mjoy.interVm,mjoy.chainConfig,mjoy.EventMux() , mjoy.engine)
+	//run block producer first
+	go mjoy.StartProducing(true , "123")
+	time.Sleep(3*time.Second)
+	//Init apos tools
 
+	mjoy.toolsForApos = newAposTools(mjoy.blockchain.Config().ChainId , mjoy.accountManager ,mjoy.blockchain , mjoy.blockproducer)
+	//Init Consensus
+	mjoy.aposConsensus = apos.NewApos(apos.MsgTransfer() , mjoy.toolsForApos)
+	//start consensus
+	go mjoy.aposConsensus.Run()
 	mjoy.ApiBackend = &MjoyApiBackend{mjoy}
 
 
@@ -357,7 +371,7 @@ func (s *Mjoy) Start(srvr *p2p.Server) error {
 	}
 	//when start mjoy service,not start blockproducer,except the cmd order we should start it
 	if s.config.StartBlockproducerAtStart{
-		fmt.Println("Start Blockproducer At Service Start.......................")
+		fmt.Println("Start Blockproducer At Service Start.......................New")
 		//s.blockproducer.Start(eb)
 	}else {
 		fmt.Println("Not Start Blockproducer At Service Start........................")

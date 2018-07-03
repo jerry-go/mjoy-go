@@ -57,8 +57,8 @@ func DeriveSha(list DerivableList) types.Hash {
 
 
 type ConsensusData struct{
-	Id     string
-	Para   []byte
+	Id     string   //"apos"
+	Para   []byte   //!=hash{}
 }
 
 // block header

@@ -23,6 +23,7 @@ package apos
 import (
 	"mjoy.io/common/types"
 	"math/big"
+	"mjoy.io/core/blockchain/block"
 )
 
 /*
@@ -66,10 +67,16 @@ type CommonTools interface {
 	GetQr_k(k int)types.Hash
 	GetNowBlockNum()int
 	GetNextRound()int
+	GetNowBlockHash()types.Hash
+
 
 
 	CreateTmpPriKey(step int)
 	DelTmpKey(step int)
+	ClearTmpKeys()
+
+	GetProducerNewBlock()*block.Block   //get a new block from block producer
+	InsertChain(chain block.Blocks) (int, error)
 }
 
 

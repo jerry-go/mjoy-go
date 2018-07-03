@@ -337,6 +337,11 @@ func (bc *BlockChain) LastBlockHash() types.Hash {
 	return bc.currentBlock.Hash()
 }
 
+func (bc *BlockChain)GetNowBlockHash()types.Hash{
+	return bc.LastBlockHash()
+}
+
+
 // CurrentBlock retrieves the current head block of the canonical chain. The
 // block is retrieved from the blockchain's internal cache.
 func (bc *BlockChain) CurrentBlock() *block.Block {
@@ -344,6 +349,13 @@ func (bc *BlockChain) CurrentBlock() *block.Block {
 	defer bc.mu.RUnlock()
 
 	return bc.currentBlock
+}
+
+func (bc *BlockChain)CurrentBlockNum()uint64{
+	bc.mu.RLock()
+	defer bc.mu.RUnlock()
+
+	return bc.currentBlock.Header().Number.IntVal.Uint64()
 }
 
 // CurrentFastBlock retrieves the current fast-sync head block of the canonical
@@ -870,6 +882,12 @@ func (bc *BlockChain) InsertChain(chain block.Blocks) (int, error) {
 	n, events, logs, err := bc.insertChain(chain)
 	bc.PostChainEvents(events, logs)
 	return n, err
+}
+
+func (bc *BlockChain)InsertOneBlock(b *block.Block)(int , error){
+	bs := block.Blocks{}
+	bs = append(bs , b)
+	return bc.InsertChain(bs)
 }
 
 // insertChain will execute the actual chain insertion and event aggregation. The

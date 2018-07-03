@@ -12,6 +12,7 @@ import (
 	"mjoy.io/common"
 	"reflect"
 	"errors"
+	"mjoy.io/core/blockchain/block"
 )
 
 var (
@@ -301,6 +302,10 @@ func newOutCommonTools()*outCommonTools{
 func (this *outCommonTools)CreateTmpPriKey(step int){
 	this.lock.Lock()
 	defer this.lock.Unlock()
+	if this.tmpPriKeys == nil {
+		this.tmpPriKeys = make(map[int]*ecdsa.PrivateKey)
+	}
+
 
 	if _,ok:=this.tmpPriKeys[step];ok{
 		return
@@ -338,6 +343,13 @@ func (this *outCommonTools)DelTmpKey(step int){
 	if _,ok := this.tmpPriKeys[step];ok{
 		delete(this.tmpPriKeys , step)
 	}
+}
+
+func (this *outCommonTools)ClearTmpKeys(){
+	this.lock.Lock()
+	defer this.lock.Unlock()
+
+	this.tmpPriKeys = nil
 }
 
 func (this *outCommonTools)SigHash(hash types.Hash)(R,S,V *big.Int){
@@ -411,8 +423,19 @@ func (this *outCommonTools)GetNextRound()int{
 }
 
 
+func (this *outCommonTools)GetProducerNewBlock()*block.Block{
+	return nil
+}
 
 
+func (this *outCommonTools)GetNowBlockHash()types.Hash{
+	return types.Hash{}
+}
 
-
+func (this *outCommonTools)InsertOneBlock(b *block.Block)(int , error){
+	return 0 , nil
+}
+func (this *outCommonTools)InsertChain(chain block.Blocks) (int, error){
+	return 0 , nil
+}
 

@@ -41,6 +41,7 @@ import (
 	"mjoy.io/core/txprocessor"
 	"mjoy.io/core/transaction"
 	"mjoy.io/core/interpreter/intertypes"
+	"time"
 )
 
 
@@ -69,6 +70,9 @@ type Blockproducer struct {
 
 	canStart    int32 // can start indicates whether we can start the producing operation
 	shouldStart int32 // should start indicates whether we should start after sync
+
+
+
 }
 
 func New(mjoy Backend,inter Interpreter, config *params.ChainConfig, mux *event.TypeMux, engine consensus.Engine) *Blockproducer {
@@ -135,7 +139,9 @@ func (self *Blockproducer) Start(coinbase types.Address) {
 
 	logger.Info("Starting producing operation")
 	self.producer.start()
-	self.producer.commitNewWork()
+	//go self.TestBlockProducerMake()
+	//call commitNewWork just at DealRequest
+	//self.producer.commitNewWork()
 }
 
 func (self *Blockproducer) Stop() {
@@ -199,4 +205,21 @@ func (self *Blockproducer) PendingBlock() *block.Block {
 func (self *Blockproducer) SetCoinbase(addr types.Address) {
 	self.coinbase = addr
 	self.producer.setCoinbase(addr)
+}
+
+func (self *Blockproducer)GetProducerNewBlock()*block.Block{
+	return self.producer.ProduceNweBlock()
+
+}
+
+func (self *Blockproducer)TestBlockProducerMake(){
+
+	for{
+		time.Sleep(5*time.Second)
+		fmt.Println("TestBlockProducerMake..........")
+		block := self.GetProducerNewBlock()
+		fmt.Println(block)
+
+	}
+
 }

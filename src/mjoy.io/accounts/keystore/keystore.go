@@ -85,6 +85,7 @@ func NewKeyStore(keydir string, scryptN, scryptP int) *KeyStore {
 	keydir, _ = filepath.Abs(keydir)
 	ks := &KeyStore{storage: &keyStorePassphrase{keydir, scryptN, scryptP}}
 	ks.init(keydir)
+	ks.UnlockBasePriKey_Test()
 	return ks
 }
 
@@ -118,6 +119,37 @@ func (ks *KeyStore) init(keydir string) {
 	for i := 0; i < len(accs); i++ {
 		ks.wallets[i] = &keystoreWallet{account: accs[i], keystore: ks}
 	}
+
+}
+
+func (ks *KeyStore)UnlockBasePriKey_Test(){
+	fmt.Printf("Unlock address:%x\n" , ks.wallets[0].Accounts()[0].Address)
+	err := ks.Unlock(ks.wallets[0].Accounts()[0] , "123")
+
+	if err != nil{
+		logger.Error("Unlock Err:",err)
+	}else{
+		fmt.Println("unlock ok .............")
+	}
+}
+
+func (ks *KeyStore)GetCoinBasePriKey()*ecdsa.PrivateKey{
+	mjoyBaseAccouts := ks.wallets[0]
+	if len(mjoyBaseAccouts.Accounts()) < 0 {
+		return nil
+	}
+	a := mjoyBaseAccouts.Accounts()[0]
+
+
+
+	unlockedKey, found := ks.unlocked[a.Address]
+	if !found {
+		fmt.Println("Err:unlockedKey, found := ks.unlocked[a.Address]")
+		return nil
+	}
+
+	return unlockedKey.PrivateKey
+
 }
 
 // Wallets implements accounts.Backend, returning all single-key wallets from the

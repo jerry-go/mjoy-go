@@ -63,6 +63,10 @@ func (s *Signature) init() {
 	s.V = new(types.BigInt)
 }
 
+func (s *Signature)Init(){
+	s.init()
+}
+
 type signValue interface {
 	// check the signature obj is initialized, if not, throw painc
 	checkObj()
@@ -177,7 +181,9 @@ func (this *CredentialSign)ToCredentialSigKey()*CredentialSigForKey{
 	r.V     = this.V.IntVal.Uint64()
 	return r
 }
-
+func (cret *CredentialSign)Sign(prv *ecdsa.PrivateKey)(R *types.BigInt, S *types.BigInt, V *types.BigInt, err error){
+	return cret.sign(prv)
+}
 func (cret *CredentialSign) sign(prv *ecdsa.PrivateKey) (R *types.BigInt, S *types.BigInt, V *types.BigInt, err error) {
 	if prv == nil {
 		err := errors.New(fmt.Sprintf("private key is empty"))
@@ -255,6 +261,13 @@ type EphemeralSigForHash struct {
 	Val		    []byte		// Val = Hash(B), or Val = 0, or Val = 1
 }
 
+func (esig *EphemeralSign)GetStep()uint64{
+	return esig.step
+}
+func (esig *EphemeralSign) Sign(prv *ecdsa.PrivateKey) (R *types.BigInt, S *types.BigInt, V *types.BigInt, err error) {
+	return esig.sign(prv)
+}
+
 func (esig *EphemeralSign) sign(prv *ecdsa.PrivateKey) (R *types.BigInt, S *types.BigInt, V *types.BigInt, err error) {
 	if prv == nil {
 		err := errors.New(fmt.Sprintf("private key is empty"))
@@ -317,6 +330,9 @@ func (esig *EphemeralSign) hash() types.Hash {
 	return hash
 }
 
+func RecoverPlain(sighash types.Hash, R, S, Vb *big.Int, homestead bool) (types.Address, error) {
+	return recoverPlain(sighash , R,S,Vb , homestead)
+}
 func recoverPlain(sighash types.Hash, R, S, Vb *big.Int, homestead bool) (types.Address, error) {
 	if Vb.BitLen() > 8 {
 		return types.Address{}, ErrInvalidSig
