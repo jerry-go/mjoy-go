@@ -31,6 +31,7 @@ import (
 	"mjoy.io/common/types"
 	"mjoy.io/core/transaction"
 	"mjoy.io/core/blockchain/block"
+	"mjoy.io/consensus/apos"
 )
 
 var (
@@ -42,6 +43,7 @@ var (
 const (
 	maxKnownTxs      = 32768 // Maximum transactions hashes to keep in the known list (prevent DOS)
 	maxKnownBlocks   = 1024  // Maximum block hashes to keep in the known list (prevent DOS)
+	maxKnownApos = 1024
 	handshakeTimeout = 5 * time.Second
 )
 
@@ -72,6 +74,11 @@ type peer struct {
 
 	knownTxs    *set.Set // Set of transaction hashes known to be known by this peer
 	knownBlocks *set.Set // Set of block hashes known to be known by this peer
+
+	knownCss    *set.Set
+	knownBps    *set.Set
+	knownGcs    *set.Set
+	knownBbas   *set.Set
 }
 
 func newPeer(version int, p *p2p.Peer, rw p2p.MsgReadWriter) *peer {
@@ -84,6 +91,10 @@ func newPeer(version int, p *p2p.Peer, rw p2p.MsgReadWriter) *peer {
 		id:          fmt.Sprintf("%x", id[:8]),
 		knownTxs:    set.New(),
 		knownBlocks: set.New(),
+		knownCss:    set.New(),
+		knownBps:    set.New(),
+		knownGcs:    set.New(),
+		knownBbas:   set.New(),
 	}
 }
 
@@ -135,6 +146,55 @@ func (p *peer) MarkTransaction(hash types.Hash) {
 		p.knownTxs.Pop()
 	}
 	p.knownTxs.Add(hash)
+}
+
+func (p *peer) MarkCredential(hash types.Hash) {
+	// If we reached the memory allowance, drop a previously known  hash
+	for p.knownCss.Size() >= maxKnownApos {
+		p.knownCss.Pop()
+	}
+	p.knownCss.Add(hash)
+}
+
+func (p *peer) MarkBlockProposal(hash types.Hash) {
+	// If we reached the memory allowance, drop a previously known  hash
+	for p.knownBps.Size() >= maxKnownApos {
+		p.knownBps.Pop()
+	}
+	p.knownBps.Add(hash)
+}
+
+func (p *peer) MarkGradedConsensus(hash types.Hash) {
+	// If we reached the memory allowance, drop a previously known  hash
+	for p.knownGcs.Size() >= maxKnownApos {
+		p.knownGcs.Pop()
+	}
+	p.knownGcs.Add(hash)
+}
+
+func (p *peer) MarkBinaryByzantineAgreement(hash types.Hash) {
+	// If we reached the memory allowance, drop a previously known  hash
+	for p.knownBbas.Size() >= maxKnownApos {
+		p.knownBbas.Pop()
+	}
+	p.knownBbas.Add(hash)
+}
+
+func (p *peer) SendCredential(cs *apos.CredentialSign) error {
+	p.knownCss.Add(cs.Signature.Hash())
+	return p2p.Send(p.rw, CsMsg, cs)
+}
+func (p *peer) SendBlockProposal(bp *apos.BlockProposal) error {
+	p.knownBps.Add(bp.Block.Hash())
+	return p2p.Send(p.rw, BpMsg, bp)
+}
+func (p *peer) SendGradedConsensus(gc *apos.GradedConsensus) error {
+	p.knownGcs.Add(gc.GcHash())
+	return p2p.Send(p.rw, GcMsg, gc)
+}
+func (p *peer) SendBinaryByzantineAgreement(bba *apos.BinaryByzantineAgreement) error {
+	p.knownBbas.Add(bba.BbaHash())
+	return p2p.Send(p.rw, BbaMsg, bba)
 }
 
 // SendTransactions sends transactions to the peer and includes the hashes
@@ -407,6 +467,55 @@ func (ps *peerSet) PeersWithoutTx(hash types.Hash) []*peer {
 	list := make([]*peer, 0, len(ps.peers))
 	for _, p := range ps.peers {
 		if !p.knownTxs.Has(hash) {
+			list = append(list, p)
+		}
+	}
+	return list
+}
+
+func (ps *peerSet) PeersWithoutCss(hash types.Hash) []*peer {
+	ps.lock.RLock()
+	defer ps.lock.RUnlock()
+
+	list := make([]*peer, 0, len(ps.peers))
+	for _, p := range ps.peers {
+		if !p.knownCss.Has(hash) {
+			list = append(list, p)
+		}
+	}
+	return list
+}
+func (ps *peerSet) PeersWithoutBps(hash types.Hash) []*peer {
+	ps.lock.RLock()
+	defer ps.lock.RUnlock()
+
+	list := make([]*peer, 0, len(ps.peers))
+	for _, p := range ps.peers {
+		if !p.knownBps.Has(hash) {
+			list = append(list, p)
+		}
+	}
+	return list
+}
+func (ps *peerSet) PeersWithoutGcs(hash types.Hash) []*peer {
+	ps.lock.RLock()
+	defer ps.lock.RUnlock()
+
+	list := make([]*peer, 0, len(ps.peers))
+	for _, p := range ps.peers {
+		if !p.knownGcs.Has(hash) {
+			list = append(list, p)
+		}
+	}
+	return list
+}
+func (ps *peerSet) PeersWithoutBbas(hash types.Hash) []*peer {
+	ps.lock.RLock()
+	defer ps.lock.RUnlock()
+
+	list := make([]*peer, 0, len(ps.peers))
+	for _, p := range ps.peers {
+		if !p.knownBbas.Has(hash) {
 			list = append(list, p)
 		}
 	}

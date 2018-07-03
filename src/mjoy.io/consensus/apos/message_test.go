@@ -20,8 +20,10 @@ func TestBba_EndCondition0(t *testing.T){
 	Config().blockDelay = 2
 	Config().verifyDelay = 1
 	Config().maxBBASteps = 12
-	Config().prVerifier = 10000000000
 	Config().prLeader = 10000000000
+	Config().prVerifier = 10000000000
+	Config().maxPotLeaders = big.NewInt(3)
+	Config().maxPotVerifiers =  big.NewInt(4)
 	an := newAllNodeManager()
 	verifierCnt := an.initTestCommonNew(0)
 	logger.Debug(COLOR_PREFIX+COLOR_FRONT_BLUE+COLOR_SUFFIX , "Verifier Cnt:" , verifierCnt , COLOR_SHORT_RESET)
@@ -35,6 +37,8 @@ func TestBba_EndCondition0(t *testing.T){
 		fmt.Println("111",err)
 		return
 	}
+	msgcs := NewMsgCredential(cs)
+	msgcs.Send()
 
 	bp := newBlockProposal()
 	bp.Credential = cs
@@ -50,12 +54,14 @@ func TestBba_EndCondition0(t *testing.T){
 		fmt.Println("2222",err)
 	}
 
-	//an.SendDataPackToActualNode(m1)
 	msgbp := NewMsgBlockProposal(bp)
 	msgbp.Send()
-	return
+
+	msg_css := []*msgCredentialSig{}
+	msg_bbas := []*msgBinaryByzantineAgreement{}
+
 	for i := 1 ;i <= 4; i++ {
-		time.Sleep(1 * time.Second)
+		//time.Sleep(1 * time.Second)
 		priKey := generatePrivateKey()
 		cs := &CredentialSign{}
 		cs.Round = 100
@@ -65,6 +71,8 @@ func TestBba_EndCondition0(t *testing.T){
 			fmt.Println("333",err)
 			return
 		}
+		msgcs := NewMsgCredential(cs)
+		msg_css = append(msg_css, msgcs)
 		bba := newBinaryByzantineAgreement()
 
 		bba.Credential = cs
@@ -85,11 +93,83 @@ func TestBba_EndCondition0(t *testing.T){
 		bba.EsigV.sign(priKey)
 
 		msgBba := NewMsgBinaryByzantineAgreement(bba)
-		msgBba.Send()
+		msg_bbas = append(msg_bbas, msgBba)
+	}
+
+	for _, mcs := range msg_css {
+		mcs.Send()
+	}
+
+	for _, mbba := range msg_bbas {
+		time.Sleep(1*time.Second)
+		mbba.Send()
 	}
 
 	select {
 		case <-an.actualNode.StopCh():
+	}
+}
+
+func TestEvent1(t *testing.T){
+	Config().blockDelay = 2
+	Config().verifyDelay = 1
+	Config().maxBBASteps = 12
+	Config().prLeader = 10000000000
+	Config().prVerifier = 10000000000
+	Config().maxPotLeaders = big.NewInt(3)
+	Config().maxPotVerifiers =  big.NewInt(4)
+
+	actualNode := NewApos(MsgTransfer() , newOutCommonTools())
+
+	csCh := make(chan CsEvent, 1000)
+	csSub := MsgTransfer().SubscribeCsEvent(csCh)
+	fcs := func() {
+		for {
+			select {
+			case event := <-csCh:
+				logger.Info("Test: receive cs message", event.Cs.Round, event.Cs.Step)
+				// Err() channel will be closed when unsubscribing.
+			case <-csSub.Err():
+				logger.Info("Test :receive cs stop message")
+				return
+			}
+		}
+	}
+
+	bbach := make(chan BbaEvent, 1000)
+	bbaSub := MsgTransfer().SubscribeBbaEvent(bbach)
+	fbba := func() {
+		for {
+			select {
+			case event := <-bbach:
+				logger.Info("Test: receive bba message", event.Bba.Credential.Round, event.Bba.Credential.Step)
+				// Err() channel will be closed when unsubscribing.
+			case <-bbaSub.Err():
+				logger.Info("Test :receive bba stop message")
+				return
+			}
+		}
+	}
+
+	go actualNode.Run()
+	go fcs()
+	go fbba()
+
+	priKey := generatePrivateKey()
+	cs := &CredentialSign{}
+	cs.Round = 100
+	cs.Step = 1
+	cs.Signature.init()
+	if _,_,_, err := cs.sign(priKey); err != nil {
+		fmt.Println("111",err)
+		return
+	}
+	msgcs := NewMsgCredential(cs)
+	msgcs.Send()
+
+
+	select {
+	case <-actualNode.StopCh():
 	}
 }
 
@@ -142,6 +222,52 @@ func TestCs_validate_fail_2(t *testing.T){
 	msgcs := NewMsgCredential(cs)
 	msgcs.Send()
 	time.Sleep(2 * time.Second)
+}
+
+func TestCs_sava(t *testing.T){
+	Config().blockDelay = 20
+	Config().verifyDelay = 10
+	Config().maxBBASteps = 12
+	Config().maxPotLeaders = big.NewInt(3)
+	an := newAllNodeManager()
+	verifierCnt := an.initTestCommonNew(0)
+	logger.Debug(COLOR_PREFIX+COLOR_FRONT_BLUE+COLOR_SUFFIX , "Verifier Cnt:" , verifierCnt , COLOR_SHORT_RESET)
+
+	priKey := generatePrivateKey()
+	cs := &CredentialSign{}
+	cs.Round = 100
+	cs.Step = 1
+	cs.Signature.init()
+	if _,_,_, err := cs.sign(priKey); err != nil {
+		fmt.Println("111",err)
+		return
+	}
+
+	msgcs := NewMsgCredential(cs)
+	msgcs.Send()
+	msgcs.Send()
+
+	for i := 1 ;i <= 10; i++ {
+		time.Sleep(1 * time.Second)
+		priKey := generatePrivateKey()
+		cs := &CredentialSign{}
+		cs.Round = 100
+		cs.Step = 1
+		cs.Signature.init()
+		if _,_,_, err := cs.sign(priKey); err != nil {
+			fmt.Println("111",err)
+			return
+		}
+
+		msgcs := NewMsgCredential(cs)
+		msgcs.Send()
+		msgcs.Send()
+
+	}
+
+	select {
+	case <-an.actualNode.StopCh():
+	}
 }
 
 func TestBp_validate_success(t *testing.T){
@@ -261,6 +387,10 @@ func TestBb_sava(t *testing.T){
 		return
 	}
 
+	msgcs := NewMsgCredential(cs)
+	msgcs.Send()
+
+
 	bp := newBlockProposal()
 	bp.Credential = cs
 	bp.Block = an.actualNode.makeEmptyBlockForTest(bp.Credential)
@@ -290,6 +420,9 @@ func TestBb_sava(t *testing.T){
 			fmt.Println("111",err)
 			return
 		}
+
+		msgcs := NewMsgCredential(cs)
+		msgcs.Send()
 
 		bp := newBlockProposal()
 		bp.Credential = cs

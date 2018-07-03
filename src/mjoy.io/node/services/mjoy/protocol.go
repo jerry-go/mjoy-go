@@ -40,7 +40,7 @@ var ProtocolName = "mjoy"
 var ProtocolVersions = []uint{mjoy63}
 
 // Number of implemented message corresponding to different protocol versions.
-var ProtocolLengths = []uint64{17}
+var ProtocolLengths = []uint64{36}
 
 const ProtocolMaxMsgSize = 10 * 1024 * 1024 // Maximum cap on the size of a protocol message
 
@@ -59,6 +59,11 @@ const (
 	NodeDataMsg    = 0x0e
 	GetReceiptsMsg = 0x0f
 	ReceiptsMsg    = 0x10
+
+	CsMsg          = 0x20
+	BpMsg          = 0x21
+	GcMsg          = 0x22
+	BbaMsg         = 0x23
 )
 
 type errCode int

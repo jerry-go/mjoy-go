@@ -29,6 +29,8 @@ import (
 	"math/big"
 	"sync"
 	"reflect"
+	"mjoy.io/common"
+	"mjoy.io/utils/event"
 )
 //go:generate msgp
 func (cs *CredentialSign) validate() (types.Address,error) {
@@ -199,6 +201,14 @@ func (gc *GradedConsensus) validate() error{
 	return nil
 }
 
+func (gc *GradedConsensus) GcHash() types.Hash {
+		hash, err := common.MsgpHash(gc)
+		if err != nil {
+		return types.Hash{}
+	}
+	return hash
+}
+
 type msgGradedConsensus struct {
 	gc    *GradedConsensus
 	*message.MsgPriv
@@ -305,6 +315,14 @@ func (bba *BinaryByzantineAgreement) validate() error{
 	return nil
 }
 
+func (bba *BinaryByzantineAgreement) BbaHash() types.Hash {
+	hash, err := common.MsgpHash(bba)
+	if err != nil {
+		return types.Hash{}
+	}
+	return hash
+}
+
 type msgBinaryByzantineAgreement struct {
 	bba    *BinaryByzantineAgreement
 	*message.MsgPriv
@@ -338,6 +356,12 @@ type msgTransfer struct {
 	somebodyGetSubChan bool
 	receiveChan chan dataPack    //receive message from BBa, Gc, Bp and etc.
 	sendChan    chan dataPack
+
+	csFeed       event.Feed
+	bpFeed       event.Feed
+	gcFeed       event.Feed
+	bbaFeed      event.Feed
+	scope        event.SubscriptionScope
 }
 
 // about MsgTransfer singleton
@@ -382,27 +406,65 @@ func (mt *msgTransfer) SendCredential(c *CredentialSign) error {
 }
 
 func (mt *msgTransfer) PropagateCredential(c *CredentialSign) error {
+	logger.Debug("PropagateCredential", c.Round, c.Step)
+	go mt.csFeed.Send(CsEvent{c})
 	return nil
 }
 
-func (mt *msgTransfer) SendInner(data dataPack) error {
-	//todo here need to validate process??
-	fmt.Println("SendInner type:" , reflect.TypeOf(data))
+func (mt *msgTransfer) sendInner(data dataPack) {
 	mt.receiveChan<-data
+
 	//send the data to receiveSubCh
 	if mt.somebodyGetSubChan {
 		mt.receiveSubChan<-data
 	}
+}
+
+func (mt *msgTransfer) SendInner(data dataPack) error {
+	//todo here need to validate process??
+	logger.Debug("SendInner type:" , reflect.TypeOf(data))
+	go mt.sendInner(data)
 
 	return nil
 }
 
 func (mt *msgTransfer) PropagateMsg(data dataPack) error {
+	logger.Debug("msgTransfer PropagateMsg in, data type:", reflect.TypeOf(data))
+	switch v := data.(type) {
+	case *CredentialSign:
+		go mt.csFeed.Send(CsEvent{v})
+	case *BlockProposal:
+		go mt.bpFeed.Send(BpEvent{v})
+	case *GradedConsensus:
+		go mt.gcFeed.Send(GcEvent{v})
+	case *BinaryByzantineAgreement:
+		go mt.bbaFeed.Send(BbaEvent{v})
+	default:
+		logger.Warn("in PropagateMsg invalid message type ",reflect.TypeOf(v))
+	}
 	return nil
 }
 
 func (mt *msgTransfer) Send2Apos(data dataPack) {
-	fmt.Println("Send2Apos type:" , reflect.TypeOf(data))
 	mt.receiveChan<-data
 }
+
+
+func (mt *msgTransfer) SubscribeCsEvent(ch chan<- CsEvent) event.Subscription {
+	return mt.scope.Track(mt.csFeed.Subscribe(ch))
+}
+func (mt *msgTransfer) SubscribeBpEvent(ch chan<- BpEvent) event.Subscription {
+	return mt.scope.Track(mt.bpFeed.Subscribe(ch))
+}
+func (mt *msgTransfer) SubscribeGcEvent(ch chan<- GcEvent) event.Subscription {
+	return mt.scope.Track(mt.gcFeed.Subscribe(ch))
+}
+func (mt *msgTransfer) SubscribeBbaEvent(ch chan<- BbaEvent) event.Subscription {
+	return mt.scope.Track(mt.bbaFeed.Subscribe(ch))
+}
+
+type CsEvent struct{ Cs *CredentialSign}
+type BpEvent struct{ Bp *BlockProposal}
+type GcEvent struct{ Gc *GradedConsensus}
+type BbaEvent struct{ Bba *BinaryByzantineAgreement}
 

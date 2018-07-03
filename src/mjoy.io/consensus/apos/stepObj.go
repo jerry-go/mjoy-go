@@ -154,6 +154,7 @@ func (this *stepObj2)dataHandle(data interface{}){
 	}
 	if this.smallestLBr == nil {
 		this.smallestLBr = m1
+		this.ctx.propagateMsg(m1)
 		return
 	}
 	//compare M1 before and M1 current

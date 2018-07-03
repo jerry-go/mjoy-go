@@ -43,6 +43,7 @@ import (
 	"mjoy.io/core/blockchain/block"
 	"mjoy.io/core/transaction"
 	"mjoy.io/common/types"
+	"mjoy.io/consensus/apos"
 )
 
 const (
@@ -52,6 +53,8 @@ const (
 	// txChanSize is the size of channel listening to TxPreEvent.
 	// The number is referenced from the size of tx pool.
 	txChanSize = 4096
+
+	aposChanSize = 4096
 )
 
 var (
@@ -84,6 +87,18 @@ type ProtocolManager struct {
 	eventMux      *event.TypeMux
 	txCh          chan core.TxPreEvent
 	txSub         event.Subscription
+
+	csCh          chan apos.CsEvent
+	csSub         event.Subscription
+	bpCh          chan apos.BpEvent
+	bpSub         event.Subscription
+	gcCh          chan apos.GcEvent
+	gcSub         event.Subscription
+	bbaCh         chan apos.BbaEvent
+	bbaSub        event.Subscription
+
+
+
 	producedBlockSub *event.TypeMuxSubscription
 
 	// channels for fetcher, syncer, txsyncLoop
@@ -205,6 +220,22 @@ func (pm *ProtocolManager) removePeer(id string) {
 func (pm *ProtocolManager) Start(maxPeers int) {
 	pm.maxPeers = maxPeers
 
+	pm.csCh = make(chan apos.CsEvent, aposChanSize)
+	pm.csSub = apos.MsgTransfer().SubscribeCsEvent(pm.csCh)
+	go pm.csBroadcastLoop()
+
+	pm.bpCh = make(chan apos.BpEvent, aposChanSize)
+	pm.bpSub = apos.MsgTransfer().SubscribeBpEvent(pm.bpCh)
+	go pm.bpBroadcastLoop()
+
+	pm.gcCh = make(chan apos.GcEvent, aposChanSize)
+	pm.gcSub = apos.MsgTransfer().SubscribeGcEvent(pm.gcCh)
+	go pm.gcBroadcastLoop()
+
+	pm.bbaCh = make(chan apos.BbaEvent, aposChanSize)
+	pm.bbaSub = apos.MsgTransfer().SubscribeBbaEvent(pm.bbaCh)
+	go pm.bbaBroadcastLoop()
+
 	// broadcast transactions
 	pm.txCh = make(chan core.TxPreEvent, txChanSize)
 	pm.txSub = pm.txpool.SubscribeTxPreEvent(pm.txCh)
@@ -224,6 +255,11 @@ func (pm *ProtocolManager) Stop() {
 
 	pm.txSub.Unsubscribe()         // quits txBroadcastLoop
 	pm.producedBlockSub.Unsubscribe() // quits blockBroadcastLoop
+
+	pm.csSub.Unsubscribe()
+	pm.bpSub.Unsubscribe()
+	pm.gcSub.Unsubscribe()
+	pm.bbaSub.Unsubscribe()
 
 	// Quit the sync loop.
 	// After this send has completed, no new peers will be accepted.
@@ -626,6 +662,48 @@ func (pm *ProtocolManager) handleMsg(p *peer) error {
 		}
 		pm.txpool.AddRemotes(txs)
 
+	case msg.Code == CsMsg:
+		var cs apos.CredentialSign
+		if err := msg.Decode(&cs); err != nil {
+			return errResp(ErrDecode, "msg %v: %v", msg, err)
+		}
+
+		p.MarkCredential(cs.Signature.Hash())
+
+		msgCs := apos.NewMsgCredential(&cs)
+		msgCs.Send()
+	case msg.Code == BpMsg:
+		var bp apos.BlockProposal
+		if err := msg.Decode(&bp); err != nil {
+			return errResp(ErrDecode, "msg %v: %v", msg, err)
+		}
+
+		p.MarkBlockProposal(bp.Block.Hash())
+
+		msgBp := apos.NewMsgBlockProposal(&bp)
+		msgBp.Send()
+	case msg.Code == GcMsg:
+		var gc apos.GradedConsensus
+		if err := msg.Decode(&gc); err != nil {
+			return errResp(ErrDecode, "msg %v: %v", msg, err)
+		}
+
+		p.MarkGradedConsensus(gc.GcHash())
+
+		msgGc := apos.NewMsgGradedConsensus(&gc)
+		msgGc.Send()
+	case msg.Code == BbaMsg:
+		var bba apos.BinaryByzantineAgreement
+		if err := msg.Decode(&bba); err != nil {
+			return errResp(ErrDecode, "msg %v: %v", msg, err)
+		}
+
+		p.MarkBinaryByzantineAgreement(bba.BbaHash())
+
+		msgBba := apos.NewMsgBinaryByzantineAgreement(&bba)
+		msgBba.Send()
+
+
 	default:
 		return errResp(ErrInvalidMsgCode, "%v", msg.Code)
 	}
@@ -677,6 +755,47 @@ func (pm *ProtocolManager) BroadcastTx(hash types.Hash, tx *transaction.Transact
 	logger.Tracef("Broadcast transaction. hash %x, recipients %v", hash, len(peers))
 }
 
+
+func (pm *ProtocolManager) BroadcastCs(hash types.Hash, cs *apos.CredentialSign) {
+	// Broadcast Credential to a batch of peers not knowing about it
+	peers := pm.peers.PeersWithoutCss(hash)
+
+	for _, peer := range peers {
+		peer.SendCredential(cs)
+	}
+	logger.Tracef("Broadcast credential. hash %x, recipients %v", hash, len(peers))
+}
+
+func (pm *ProtocolManager) BroadcastBp(hash types.Hash, bp *apos.BlockProposal) {
+	// Broadcast BlockProposal to a batch of peers not knowing about it
+	peers := pm.peers.PeersWithoutBps(hash)
+
+	for _, peer := range peers {
+		peer.SendBlockProposal(bp)
+	}
+	logger.Tracef("Broadcast credential. hash %x, recipients %v", hash, len(peers))
+}
+
+func (pm *ProtocolManager) BroadcastGc(hash types.Hash, gc *apos.GradedConsensus) {
+	// Broadcast GradedConsensus to a batch of peers not knowing about it
+	peers := pm.peers.PeersWithoutGcs(hash)
+
+	for _, peer := range peers {
+		peer.SendGradedConsensus(gc)
+	}
+	logger.Tracef("Broadcast credential. hash %x, recipients %v", hash, len(peers))
+}
+
+func (pm *ProtocolManager) BroadcastBba(hash types.Hash, bba *apos.BinaryByzantineAgreement) {
+	// Broadcast BinaryByzantineAgreement to a batch of peers not knowing about it
+	peers := pm.peers.PeersWithoutBbas(hash)
+
+	for _, peer := range peers {
+		peer.SendBinaryByzantineAgreement(bba)
+	}
+	logger.Tracef("Broadcast credential. hash %x, recipients %v", hash, len(peers))
+}
+
 // Produced broadcast loop
 func (self *ProtocolManager) producedBroadcastLoop() {
 	// automatically stops if unsubscribe
@@ -697,6 +816,58 @@ func (self *ProtocolManager) txBroadcastLoop() {
 
 		// Err() channel will be closed when unsubscribing.
 		case <-self.txSub.Err():
+			return
+		}
+	}
+}
+
+func (self *ProtocolManager) csBroadcastLoop() {
+	for {
+		select {
+		case event := <-self.csCh:
+			self.BroadcastCs(event.Cs.Signature.Hash(), event.Cs)
+
+		// Err() channel will be closed when unsubscribing.
+		case <-self.csSub.Err():
+			return
+		}
+	}
+}
+
+func (self *ProtocolManager) bpBroadcastLoop() {
+	for {
+		select {
+		case event := <-self.bpCh:
+			self.BroadcastBp(event.Bp.Block.Hash(), event.Bp)
+
+		// Err() channel will be closed when unsubscribing.
+		case <-self.bpSub.Err():
+			return
+		}
+	}
+}
+
+func (self *ProtocolManager) gcBroadcastLoop() {
+	for {
+		select {
+		case event := <-self.gcCh:
+			self.BroadcastGc(event.Gc.GcHash(), event.Gc)
+
+		// Err() channel will be closed when unsubscribing.
+		case <-self.gcSub.Err():
+			return
+		}
+	}
+}
+
+func (self *ProtocolManager) bbaBroadcastLoop() {
+	for {
+		select {
+		case event := <-self.bbaCh:
+			self.BroadcastBba(event.Bba.BbaHash(), event.Bba)
+
+		// Err() channel will be closed when unsubscribing.
+		case <-self.bbaSub.Err():
 			return
 		}
 	}
