@@ -696,6 +696,8 @@ func (this *Apos)Run(){
 	this.roundCtx = newRound(this.commonTools.GetNextRound(),this,this.roundOverCh)
 	//set config
 	Config().maxPotVerifiers = big.NewInt(1)
+	Config().prLeader = 10000000000
+	Config().prVerifier = 10000000000
 	go this.roundCtx.run()
 	logger.Info("Apos is running.....")
 	for{
