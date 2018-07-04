@@ -258,15 +258,19 @@ func (this *producer) DealRequest() {
 	for {
 		select {
 		case ask := <-this.createRequestChan:
-			_ = ask
-			this.commitNewWork()
+			emyptyBlock := ask.(bool)
+			if emyptyBlock {
+				this.makeEmptyBlock()
+			} else {
+				this.commitNewWork()
+			}
 		}
 
 	}
 }
 
-func (this *producer) ProduceNweBlock() *block.Block {
-	this.createRequestChan <- 1
+func (this *producer) ProduceNewBlock(emptyBlock bool) *block.Block {
+	this.createRequestChan <- emptyBlock
 	timer := time.Tick(5 * time.Second)
 	select {
 	case <-timer:
@@ -519,6 +523,28 @@ func (self *producer) addTestTransactions(num *big.Int) {
 	//add txSign to txpool
 	self.mjoy.TxPool().AddRemote(txSign)
 
+}
+
+func (self *producer) outputEmptyBlock(b *block.Block)  {
+	self.createResponseChan <- b
+}
+
+func (self *producer) makeEmptyBlock() {
+	parent := self.chain.CurrentBlock()
+	header := block.CopyHeader(parent.B_header)
+
+	//r = r-1 + 1
+	header.Number = types.NewBigInt(*big.NewInt(header.Number.IntVal.Int64() + 1))
+
+	b := block.NewBlock(header , nil , nil)
+	//use system private key to sign the block
+	err := block.SignHeaderInner(b.B_header, block.NewBlockSigner(self.config.ChainId), params.RewordPrikey)
+	if err != nil {
+		logger.Error("makeEmptyBlock error:", err)
+		return
+	}
+
+	go self.outputEmptyBlock(b)
 }
 
 //now,one request , one commitNewWork

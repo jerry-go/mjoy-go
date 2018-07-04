@@ -418,7 +418,7 @@ func (this *outCommonTools)GetNextRound()int{
 }
 
 
-func (this *outCommonTools)GetProducerNewBlock()*block.Block{
+func (this *outCommonTools)GetProducerNewBlock(emptyblock bool)*block.Block{
 	return nil
 }
 

@@ -572,7 +572,7 @@ func (this *Round)receiveMsgBba(msg *BinaryByzantineAgreement) {
 			consensusBlock = potLeader.bp.Block
 		default:
 			logger.Debug(">>>>>>>>>>>>>>>>>Endcondition default's Block")
-			consensusBlock = this.apos.makeEmptyBlockForTest(this.credentials[0])
+			consensusBlock = this.apos.commonTools.GetProducerNewBlock(true)
 		}
 
 		this.quitCh <- consensusBlock
