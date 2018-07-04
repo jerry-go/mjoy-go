@@ -21,6 +21,7 @@ type PriKeyHandler interface {
 }
 
 type BlockChainHandler interface {
+	CurrentBlock() *block.Block
 	CurrentBlockNum()uint64
 	GetNowBlockHash()types.Hash
 	InsertChain(chain block.Blocks) (int, error)
@@ -172,9 +173,11 @@ func (this *aposTools)ESender(hash types.Hash , sig []byte)(types.Address , erro
 	return types.Address{} , nil
 }
 
-func (this *aposTools)GetQr_k(k int)types.Hash{
-	qrKStr := "qrk=1"
-	return types.BytesToHash([]byte(qrKStr))
+func (this *aposTools) GetQr_k(k int) types.Hash {
+	ConsensusData := this.blockChainHandler.CurrentBlock().B_header.ConsensusData.Para
+	hash := types.Hash{}
+	hash.SetBytes(ConsensusData)
+	return hash
 }
 
 func (this *aposTools)GetNowBlockNum()int{
