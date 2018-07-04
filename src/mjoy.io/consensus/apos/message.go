@@ -278,11 +278,13 @@ func (bba *BinaryByzantineAgreement) validate() error{
 			logger.Info("bba m + 3 step message'b is not equal 1", bba.B)
 			return errors.New("bba m + 3 step message'b is not equal 1")
 		}
-		// todo verify empty block hash, need get right empty block
-		//if v.apos.makeEmptyBlockForTest().Hash() != msg.Hash {
-		//	logger.Info("m + 3 message hash is not empty block hash", err)
-		//	return errors.New("m + 3 message hash is not empty block hash")
-		//}
+		//verify empty block hash
+		if gCommonTools != nil {
+			if gCommonTools.GetProducerNewBlock(true).Hash() != bba.Hash {
+				logger.Info("m + 3 message hash is not empty block hash", err)
+				return errors.New("m + 3 message hash is not empty block hash")
+			}
+		}
 	}
 
 	//verify B ephemeral signature

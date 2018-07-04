@@ -756,27 +756,8 @@ func (this *Apos)getSender(cs *CredentialSig) (types.Address, error){
 }
 
 //Create The Credential
-//todo need private key for sign
 func (this *Apos)makeCredential(s int) *CredentialSign{
-	//create the credential and check i is the potential leader or verifier
-	//r := this.commonTools.GetNowBlockNum()
-	//k := this.algoParam.GetK()
-	//get Qr_k
-	//r := this.commonTools.GetNowBlockNum()
 	r := this.commonTools.GetNextRound()
-	//k := 1
-	//
-	//Qr_k := this.commonTools.GetQr_k(k)
-	////str := fmt.Sprintf("%d%d%s",r,k,Qr_k.Hex())
-	////get sig
-	//cd := CredentialData{*types.NewBigInt(*big.NewInt(int64(r))),*types.NewBigInt(*big.NewInt(int64(s))), Qr_k}
-	//
-	////R,S,V := this.commonTools.SIG(types.BytesToHash([]byte(str)))
-	//R,S,V := this.commonTools.SIG(cd.Hash())
-
-	//if endFloat <= this.algoParam
-
-
 	c := new(CredentialSign)
 	c.Signature.init()
 	c.Round = uint64(r)
@@ -789,8 +770,6 @@ func (this *Apos)makeCredential(s int) *CredentialSign{
 	}
 
 	return c
-
-
 }
 
 func (this *Apos)StopCh()chan interface{}{
