@@ -35,6 +35,8 @@ import (
 var (
 	ErrInvalidSig = errors.New("invalid  v, r, s values")
 	ErrInvalidChainId = errors.New("invalid chain id for signer")
+
+	gCommonTools      CommonTools
 )
 
 // Signer encapsulates apos signature handling. Note that this interface is not a
@@ -235,7 +237,7 @@ func (cret *CredentialSign) hash() types.Hash {
 	cretforhash := &CredentialSigForHash{
 		cret.Round,
 		cret.Step,
-		[]byte{0},	// TODO: to get Quantity !!!!!!!!!!!!!!! need to implement a global function(round)
+		gCommonTools.GetQr_k(1).Bytes(),	// TODO: to get Quantity !!!!!!!!!!!!!!! need to implement a global function(round)
 	}
 	hash, err := common.MsgpHash(cretforhash)
 	if err != nil {
