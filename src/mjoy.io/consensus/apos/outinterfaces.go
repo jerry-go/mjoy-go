@@ -22,7 +22,6 @@ package apos
 
 import (
 	"mjoy.io/common/types"
-	"math/big"
 	"mjoy.io/core/blockchain/block"
 	"crypto/ecdsa"
 )
@@ -56,7 +55,7 @@ type CommonTools interface {
 	//
 	Sig(pCs *CredentialSign)error
 	Esig(pEphemeralSign *EphemeralSign)error
-	SigHash(hash types.Hash)(R,S,V *big.Int)
+	SigHash(hash types.Hash)[]byte
 
 	SigVerify(hash types.Hash, sig *SignatureVal) (error)
 	Sender(hash types.Hash, sig *SignatureVal) (types.Address, error)

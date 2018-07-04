@@ -44,6 +44,7 @@ import (
 	"mjoy.io/core/interpreter/balancetransfer"
 	"mjoy.io/core/interpreter/intertypes"
 	"fmt"
+	"mjoy.io/consensus/apos"
 )
 
 const (
@@ -545,10 +546,29 @@ func (self *producer) commitNewWork() {
 
 	num := parent.Number()
 
+	lastQr_1 := parent.B_header.ConsensusData.Para
+	lastQr_1Hash:=types.Hash{}
+	lastQr_1Hash.SetBytes(lastQr_1)
+	signature := apos.MakeEmptySignature()
+	//make sg
+	sig := self.mjoy.AposTools().SigHash(lastQr_1Hash)
+	//fill
+	signature.FillBySig(sig)
+
+	quantity := &apos.Quantity{
+		Signature:*signature,
+		Round:num.Uint64()+1,
+	}
+
+
 	header := &block.Header{
 		ParentHash: parent.Hash(),
 		Number:     &types.BigInt{*num.Add(num, common.Big1)},
 		Time:       &types.BigInt{*big.NewInt(tstamp)},
+		ConsensusData:block.ConsensusData{
+			Id:apos.ConsensusDataId,
+			Para:quantity.Hash().Bytes(),
+		},
 	}
 	// Only set the coinbase if we are producing (avoid spurious block rewards)
 	if atomic.LoadInt32(&self.producing) == 1 {

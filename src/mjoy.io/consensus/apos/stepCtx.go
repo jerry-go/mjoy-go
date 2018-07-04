@@ -45,7 +45,14 @@ func makeStepCtxData(apos *Apos , pCredential *CredentialSig)*stepCtxData{
 
 
 func (this *stepCtxData) ESIG(h types.Hash) (R,S,V *big.Int) {
-	return this.apos.commonTools.SigHash(h)
+
+	signature := MakeEmptySignature()
+	sig := this.apos.commonTools.SigHash(h)
+	R,S,V,err:=signature.FillBySig(sig)
+	if err != nil{
+		logger.Error("signature.fillBySig wrong:",err.Error())
+	}
+	return R,S,V
 }
 
 func (this *stepCtxData) SendInner(dp dataPack) error {

@@ -352,19 +352,14 @@ func (this *outCommonTools)ClearTmpKeys(){
 	this.tmpPriKeys = nil
 }
 
-func (this *outCommonTools)SigHash(hash types.Hash)(R,S,V *big.Int){
+func (this *outCommonTools)SigHash(hash types.Hash)[]byte{
 
 	sig , err := crypto.Sign(hash[:] , this.pri)
 	if err != nil {
 		logger.Errorf("outCommontTools SigErr:" , err.Error())
-		return nil,nil,nil
+		return nil
 	}
-	R,S,V,err = this.signer.SignatureValues(sig)
-	if err != nil {
-		logger.Errorf("OutCommonTools Err:%s" , err.Error())
-		return nil,nil,nil
-	}
-	return R,S,V
+	return sig
 
 }
 

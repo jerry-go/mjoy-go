@@ -647,7 +647,6 @@ type Apos struct {
 }
 
 
-
 //Create Apos
 func NewApos(msger OutMsger ,cmTools CommonTools)*Apos{
 	a := new(Apos)
@@ -680,7 +679,20 @@ func (this *Apos)makeEmptyBlockForTest(cs *CredentialSign)*block.Block{
 	h := crypto.Keccak256(srcBytes)
 	header.ConsensusData.Id = ConsensusDataId
 	header.ConsensusData.Para = h
-	R,S,V := this.commonTools.SigHash(header.HashNoSig())
+	signature := MakeEmptySignature()
+
+	sig := this.commonTools.SigHash(header.HashNoSig())
+	if sig == nil {
+		logger.Error("sig == nil")
+		return nil
+	}
+	R,S,V,err := signature.FillBySig(sig)
+	if err != nil{
+		logger.Error("makeEmptyBlockForTest Err:" , err.Error())
+		return nil
+	}
+
+
 	header.R = &types.BigInt{*R}
 	header.S = &types.BigInt{*S}
 	header.V = &types.BigInt{*V}

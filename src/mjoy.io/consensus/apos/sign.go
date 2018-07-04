@@ -50,11 +50,32 @@ type signer interface {
 	hash() types.Hash
 }
 
+type Quantity struct {
+	Signature
+	Round uint64
+}
+
+
+func (this *Quantity)Hash()types.Hash{
+	h , err := common.MsgpHash(this)
+	if err != nil{
+		return types.Hash{}
+	}
+	return h
+}
+
+
 // signature R, S, V
 type Signature struct {
 	R *types.BigInt
 	S *types.BigInt
 	V *types.BigInt
+}
+
+func MakeEmptySignature()*Signature{
+	s := new(Signature)
+	s.init()
+	return s
 }
 
 func (s *Signature) init() {
@@ -86,17 +107,18 @@ func (s *Signature) checkObj() {
 }
 
 func (s *Signature)hashBytes()[]byte{
-	srcBytes := s.toBytes()
-	h := crypto.Keccak256(srcBytes)
-	return h
+	return s.Hash().Bytes()
+
 }
 
 func (s *Signature)Hash()types.Hash{
-	srcBytes := s.toBytes()
-	h := crypto.Keccak256(srcBytes)
-	hash := types.Hash{}
-	copy(hash[:] , h)
-	return hash
+
+	h  , err := common.MsgpHash(s)
+	if err != nil {
+		return types.Hash{}
+	}
+	return h
+
 }
 func (s *Signature) get(sig []byte) (err error) {
 	s.checkObj()
@@ -115,6 +137,24 @@ func (s *Signature) get(sig []byte) (err error) {
 		}
 	}
 	return nil
+}
+
+func (s *Signature)FillBySig(sig []byte)(R,S,V *big.Int,err error){
+	err = s.get(sig)
+	if err != nil{
+		return nil,nil,nil,err
+	}
+
+	R = new(big.Int)
+	R.Set(&s.R.IntVal)
+
+	S = new(big.Int)
+	S.Set(&s.S.IntVal)
+
+	V = new(big.Int)
+	V.Set(&s.V.IntVal)
+
+	return R,S,V,nil
 }
 
 func (s Signature) toBytes() (sig []byte) {

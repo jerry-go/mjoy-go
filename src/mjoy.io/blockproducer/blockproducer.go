@@ -42,6 +42,7 @@ import (
 	"mjoy.io/core/transaction"
 	"mjoy.io/core/interpreter/intertypes"
 	"time"
+	"mjoy.io/consensus/apos"
 )
 
 
@@ -51,6 +52,7 @@ type Backend interface {
 	BlockChain() *blockchain.BlockChain
 	TxPool() *txprocessor.TxPool
 	ChainDb() database.IDatabase
+	AposTools() apos.CommonTools
 }
 //Interpreter
 type Interpreter interface {

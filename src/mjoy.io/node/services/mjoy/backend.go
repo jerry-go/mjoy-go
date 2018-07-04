@@ -53,7 +53,6 @@ import (
 	"crypto/ecdsa"
 	"mjoy.io/core/interpreter"
 	"mjoy.io/consensus/apos"
-	"time"
 )
 
 type LesServer interface {
@@ -193,7 +192,6 @@ func New(ctx *node.ServiceContext) (*Mjoy, error) {
 	//Init blockProducer
 	mjoy.blockproducer = blockproducer.New(mjoy,mjoy.interVm,mjoy.chainConfig,mjoy.EventMux() , mjoy.engine)
 	//run block producer first
-	time.Sleep(3*time.Second)
 	//Init apos tools
 
 	mjoy.toolsForApos = newAposTools(mjoy.blockchain.Config().ChainId  ,mjoy.blockchain , mjoy.blockproducer)
@@ -228,6 +226,10 @@ func CreateDB(ctx *node.ServiceContext, config *Config, name string) (database.I
 func CreateConsensusEngine(mjoy *Mjoy) consensus.Engine {
 	engine := consensus.NewBasicEngine(nil)
 	return engine
+}
+
+func (s *Mjoy)AposTools() apos.CommonTools{
+	return s.toolsForApos
 }
 
 func (s *Mjoy) SetEngineKey(pri *ecdsa.PrivateKey) {

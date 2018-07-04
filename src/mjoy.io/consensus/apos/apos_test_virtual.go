@@ -83,7 +83,14 @@ func (this *virtualNode)makeEmptyBlock()*block.Block{
 	header := &block.Header{Number:types.NewBigInt(*big.NewInt(int64(this.commonTools.GetNowBlockNum()))),Time:types.NewBigInt(*big.NewInt(0))}
 	//chainId := big.NewInt(100)
 	//signer := block.NewBlockSigner(chainId)
-	R,S,V := this.commonTools.SigHash(header.Hash())
+	signature := MakeEmptySignature()
+
+	sig := this.commonTools.SigHash(header.Hash())
+	R,S,V,err:=signature.FillBySig(sig)
+	if err != nil {
+		logger.Error("makeEmptyBlock err:" , err.Error())
+		return nil
+	}
 	header.R = &types.BigInt{*R}
 	header.S = &types.BigInt{*S}
 	header.V = &types.BigInt{*V}

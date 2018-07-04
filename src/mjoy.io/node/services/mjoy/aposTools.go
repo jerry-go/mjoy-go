@@ -53,7 +53,6 @@ type aposTools struct {
 	tmpPriKeys map[int]*ecdsa.PrivateKey
 	blockChainHandler BlockChainHandler
 	producerHandler BlockProducerHandler
-	signer apos.Signer
 }
 
 func newAposTools(chanId *big.Int  , bcHandler BlockChainHandler , producerHander BlockProducerHandler)*aposTools{
@@ -137,22 +136,17 @@ func (this *aposTools)ClearTmpKeys(){
 	this.tmpPriKeys = nil
 }
 
-func (this *aposTools)SigHash(hash types.Hash)(R,S,V *big.Int){
+func (this *aposTools)SigHash(hash types.Hash)[]byte{
 	this.lock.RLock()
 	defer this.lock.RUnlock()
 
 	sig , err := crypto.Sign(hash[:] , this.basePriKey)
 	if err != nil{
 		logger.Error("aposTools SigErr:" , err.Error())
-		return nil , nil , nil
+		return nil
 	}
 
-	R,S,V , err  = this.signer.SignatureValues(sig)
-	if err != nil{
-		logger.Errorf("aposTools Err:%s" , err.Error())
-		return nil , nil , nil
-	}
-	return R,S,V
+	return sig
 }
 
 func (this *aposTools)SigVerify(h types.Hash , sig *apos.SignatureVal)error{
