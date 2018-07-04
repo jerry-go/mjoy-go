@@ -2,31 +2,31 @@ package apos
 
 const(
 	//font style
-	COLOR_STYLE_RESET           = "0;"
-	COLOR_STYLE_HIGHLIGHT       = "1;"
-	COLOR_STYLE_DIM             ="2;"
-	COLOR_STYLE_UNDERLINE       ="4;"
-	COLOR_STYLE_REV             ="7;"
+	COLOR_STYLE_RESET           = ";0"
+	COLOR_STYLE_HIGHLIGHT       = ";1"
+	COLOR_STYLE_DIM             =";2"
+	COLOR_STYLE_UNDERLINE       =";4"
+	COLOR_STYLE_REV             =";7"
 
 	//front color
-	COLOR_FRONT_BLACK           ="30;"
-	COLOR_FRONT_RED             ="31;"
-	COLOR_FRONT_GREEN           ="32;"
-	COLOR_FRONT_YELLOW          ="33;"
-	COLOR_FRONT_BLUE            ="34;"
-	COLOR_FRONT_PINK            ="35;"
-	COLOR_FRONT_CYAN            ="36;"
-	COLOR_FRONT_WHITE           ="37;"
+	COLOR_FRONT_BLACK           =";30"
+	COLOR_FRONT_RED             =";31"
+	COLOR_FRONT_GREEN           =";32"
+	COLOR_FRONT_YELLOW          =";33"
+	COLOR_FRONT_BLUE            =";34"
+	COLOR_FRONT_PINK            =";35"
+	COLOR_FRONT_CYAN            =";36"
+	COLOR_FRONT_WHITE           =";37"
 
 	//background color
-	COLOR_BACK_BLACK           ="40;"
-	COLOR_BACK_RED             ="41;"
-	COLOR_BACK_GREEN           ="42;"
-	COLOR_BACK_YELLOW          ="43;"
-	COLOR_BACK_BLUE            ="44;"
-	COLOR_BACK_PINK            ="45;"
-	COLOR_BACK_CYAN            ="46;"
-	COLOR_BACK_WHITE           ="47;"
+	COLOR_BACK_BLACK           =";40"
+	COLOR_BACK_RED             =";41"
+	COLOR_BACK_GREEN           =";42"
+	COLOR_BACK_YELLOW          =";43"
+	COLOR_BACK_BLUE            =";44"
+	COLOR_BACK_PINK            =";45"
+	COLOR_BACK_CYAN            =";46"
+	COLOR_BACK_WHITE           =";47"
 
 	//prefix
 	COLOR_PREFIX                    ="\033["

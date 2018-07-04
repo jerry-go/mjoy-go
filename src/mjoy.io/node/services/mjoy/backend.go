@@ -319,7 +319,7 @@ func (s *Mjoy) StartProducing(local bool, password string) error {
 
 	//start the apos now
 	go s.aposConsensus.Run()
-	
+
 	return nil
 }
 

@@ -71,7 +71,7 @@ func (c *Config) Register(name string, config Iconfig) error {
 	}
 
 	path := filepath.Join(c.path, name + ".toml")
-
+	logger.Debug("LoadConfig Path:" , path)
 	if err := loadConfig(path, config); err != nil{
 		return err
 	}

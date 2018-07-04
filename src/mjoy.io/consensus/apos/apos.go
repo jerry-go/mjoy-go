@@ -341,7 +341,7 @@ func (this *Round)saveBp(msg *BlockProposal) error{
 			pleader := &PotentialLeader{msg,make(map[uint]*VoteInfo)}
 			this.leaders[hash] = pleader
 			this.curLeaderNum++
-			logger.Debug("saveBp.add hash in map:", msg.Credential.Signature.Hash().String(), hash.String())
+			logger.Debug("saveBp.add hash in map: CreHash:", msg.Credential.Signature.Hash().String(),"  BlockHash:", hash.String())
 			return nil
 		} else {
 			logger.Debug("Block Proposal message have not corresponding Credential 1, ignore. hash:", hash.String())
@@ -695,7 +695,8 @@ func (this *Apos)SetOutMsger(outMsger OutMsger){
 
 func SetTestConfig(){
 	//set config
-	Config().maxPotVerifiers = big.NewInt(1)
+	Config().maxPotVerifiers = big.NewInt(2)
+	Config().maxBBASteps = 12
 	Config().prLeader = 10000000000
 	Config().prVerifier = 10000000000
 }

@@ -69,7 +69,7 @@ func newAposTools(chanId *big.Int  , bcHandler BlockChainHandler , producerHande
 func (this *aposTools)CreateTmpPriKey(step int){
 	this.lock.Lock()
 	defer this.lock.Unlock()
-
+	return
 	if this.tmpPriKeys == nil {
 		this.tmpPriKeys = make(map[int]*ecdsa.PrivateKey)
 	}
@@ -104,11 +104,18 @@ func (this *aposTools)Esig(pEphemeralSign *apos.EphemeralSign)error{
 
 	step := int(pEphemeralSign.GetStep())
 
-	if pri , ok := this.tmpPriKeys[step];ok{
+	if true{
 		pEphemeralSign.Signature.Init()
-		_,_,_,err := pEphemeralSign.Sign(pri)
+		_,_,_,err := pEphemeralSign.Sign(this.basePriKey)
 		return err
+	}else{
+		if pri , ok := this.tmpPriKeys[step];ok{
+			pEphemeralSign.Signature.Init()
+			_,_,_,err := pEphemeralSign.Sign(pri)
+			return err
+		}
 	}
+
 
 	return errors.New(fmt.Sprintf("Not Find TmpPrivKey About:%d" , step))
 }
@@ -116,7 +123,7 @@ func (this *aposTools)Esig(pEphemeralSign *apos.EphemeralSign)error{
 func (this *aposTools)DelTmpKey(step int){
 	this.lock.Lock()
 	defer this.lock.Unlock()
-
+	return
 	if _,ok := this.tmpPriKeys[step];ok{
 		delete(this.tmpPriKeys , step)
 	}
@@ -126,6 +133,7 @@ func (this *aposTools)ClearTmpKeys(){
 	this.lock.Lock()
 	defer this.lock.Unlock()
 
+	return
 	this.tmpPriKeys = nil
 }
 
