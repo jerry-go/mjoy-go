@@ -62,6 +62,7 @@ func (this *stepObj1)timerHandle(){
 	bcd.Id = ConsensusDataId
 	bcd.Para = m1.Credential.Signature.toBytes()
 	m1.Block = this.ctx.getProducerNewBlock(bcd)
+	fmt.Println(m1.Block)
 
 	m1.Esig.round = m1.Credential.Round
 	m1.Esig.step = 1

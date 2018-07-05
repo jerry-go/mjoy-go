@@ -203,6 +203,7 @@ func (this *aposTools)MakeEmptyBlock(data *block.ConsensusData)*block.Block{
 	parent := this.blockChainHandler.CurrentBlock()
 
 	header := block.CopyHeader(parent.B_header)
+	header.ParentHash = parent.Hash()
 
 	//r = r-1 + 1
 	header.Number = types.NewBigInt(*big.NewInt(header.Number.IntVal.Int64() + 1))
