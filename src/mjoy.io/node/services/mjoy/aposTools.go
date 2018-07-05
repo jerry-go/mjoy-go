@@ -173,11 +173,9 @@ func (this *aposTools)ESender(hash types.Hash , sig []byte)(types.Address , erro
 	return types.Address{} , nil
 }
 
-func (this *aposTools) GetQr_k(k int) types.Hash {
-	ConsensusData := this.blockChainHandler.CurrentBlock().B_header.ConsensusData.Para
-	hash := types.Hash{}
-	hash.SetBytes(ConsensusData)
-	return hash
+func (this *aposTools) GetLastQrSignature() []byte{
+	consensusData := this.blockChainHandler.CurrentBlock().B_header.ConsensusData.Para
+	return consensusData
 }
 
 func (this *aposTools)GetNowBlockNum()int{

@@ -749,12 +749,6 @@ func (this *Apos)reset(){
 }
 
 
-func (this *Apos)getSender(cs *CredentialSig) (types.Address, error){
-	cd := CredentialData{cs.Round,cs.Step, this.commonTools.GetQr_k(1)}
-	sig := &SignatureVal{&cs.R, &cs.S, &cs.V}
-	return this.commonTools.Sender(cd.Hash(), sig)
-}
-
 //Create The Credential
 func (this *Apos)makeCredential(s int) *CredentialSign{
 	r := this.commonTools.GetNextRound()

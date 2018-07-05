@@ -64,7 +64,7 @@ type CommonTools interface {
 	ESigVerify(hash types.Hash, sig []byte) (error)
 	ESender(hash types.Hash, sig []byte) (types.Address, error)
 
-	GetQr_k(k int)types.Hash
+	GetLastQrSignature() []byte
 	GetNowBlockNum()int
 	GetNextRound()int
 	GetNowBlockHash()types.Hash

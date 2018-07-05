@@ -22,6 +22,7 @@ package apos
 
 import (
 	"math/big"
+	"mjoy.io/common/types"
 )
 var TestPotVerifier = 0
 // Determine a potential verifier(leader) by hash
@@ -90,6 +91,18 @@ func (pq *priorityQueue) Pop() interface{} {
 	item := old[n-1]
 	*pq = old[0 : n-1]
 	return item
+}
+
+//H(SIGℓr (Qr−1), r)
+func getQuantity(sigByte []byte, round uint64)  (types.Hash, error){
+	q := Quantity{}
+	q.Signature.init()
+	err := q.Signature.get(sigByte)
+	if err != nil {
+		return types.Hash{}, nil
+	}
+	q.Round = round
+	return q.Hash(), nil
 }
 
 

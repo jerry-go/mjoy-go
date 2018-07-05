@@ -52,8 +52,9 @@ type signer interface {
 	hash() types.Hash
 }
 
+// Qr = H(SIGℓr (Qr−1), r),
 type Quantity struct {
-	Signature
+	Signature      // SIGℓr (Qr−1) is the signature of leader m1
 	Round uint64
 }
 
@@ -287,10 +288,17 @@ func (cret *CredentialSign) sender() (types.Address, error) {
 }
 
 func (cret *CredentialSign) hash() types.Hash {
+
+	//get Q(r-1)
+	qr_1, err := getQuantity(gCommonTools.GetLastQrSignature(), cret.Round - 1)
+	if err != nil {
+		logger.Error("get Quantity fail")
+		return types.Hash{}
+	}
 	cretforhash := &CredentialSigForHash{
 		cret.Round,
 		cret.Step,
-		gCommonTools.GetQr_k(1).Bytes(),	// TODO: to get Quantity !!!!!!!!!!!!!!! need to implement a global function(round)
+		qr_1.Bytes(),	// TODO: to get Quantity !!!!!!!!!!!!!!! need to implement a global function(round)
 	}
 	hash, err := common.MsgpHash(cretforhash)
 	if err != nil {

@@ -403,9 +403,9 @@ func (this *outCommonTools)ESender(h types.Hash , sig []byte)(types.Address , er
 }
 
 
-func (this *outCommonTools)GetQr_k(k int)types.Hash{
+func (this *outCommonTools) GetLastQrSignature() []byte{
 	qrKStr := "qrk=1"
-	return types.BytesToHash([]byte(qrKStr))
+	return []byte(qrKStr)
 
 }
 
