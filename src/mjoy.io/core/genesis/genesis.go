@@ -30,6 +30,8 @@ import (
 	"mjoy.io/core/blockchain"
 	"mjoy.io/core/blockchain/block"
 	"mjoy.io/core/state"
+	"mjoy.io/utils/crypto"
+	hexutil "mjoy.io/common/types/util/hex"
 )
 
 var errGenesisNoConfig = errors.New("genesis has no chain configuration")
@@ -45,6 +47,7 @@ type Genesis struct {
 	// in actual genesis blocks.
 	Number     uint64     `json:"number"`
 	ParentHash types.Hash `json:"parentHash"`
+	ConsensusData block.ConsensusData
 }
 
 type GenesisAlloc map[types.Address]GenesisAccount
@@ -132,15 +135,29 @@ func (g *Genesis) configOrDefault(ghash types.Hash) *params.ChainConfig {
 	}
 }
 
+func MakeAposGenesisConsensusData(seed types.Hash) *block.ConsensusData{
+	bcd := &block.ConsensusData{}
+	bcd.Id = "apos"
 
+	sig, err := crypto.Sign(seed[:], params.RewordPrikey)
+	if err != nil {
+		return nil
+	}
+	bcd.Para = sig
+	return bcd
+}
 // DefaultGenesisBlock returns the mjoy main net genesis block.
 func DefaultGenesisBlock() *Genesis {
+	in := hexutil.MustDecode("0x571be45c5e74ddafe129d20fe3e21c4c76be925aa32967cda0b073a7cb51cb9e")
+	hash := types.Hash{}
+	hash.SetBytes(in)
 	return &Genesis{
 		Config:     params.DefaultChainConfig,
 		Alloc: map[types.Address]GenesisAccount{
 			// todo : here  just avoid stateobject deltete empty object bug when inner contract has no code field
 			types.Address{}: {Code: []byte{1,2,3,4,5}},
 		},
+		ConsensusData : *MakeAposGenesisConsensusData(hash),
 	}
 }
 
@@ -162,6 +179,7 @@ func (g *Genesis) ToBlock() (*block.Block, *state.StateDB) {
 		Time:       		types.NewBigInt(*new(big.Int).SetUint64(g.Timestamp)),
 		ParentHash: 		g.ParentHash,
 		StateRootHash: 		root,
+		ConsensusData: 		g.ConsensusData,
 	}
 
 	return block.NewBlock(head, nil, nil), statedb
