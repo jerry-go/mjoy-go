@@ -92,6 +92,10 @@ func Config() *config {
 	return instance
 }
 
+func (c *config)GetChainId()*big.Int{
+	return c.chainId
+}
+
 func (c *config) precision() *big.Int {
 	if c.prP == nil {
 		c.prP = new(big.Int).Exp(decimal, big.NewInt(0).SetUint64(c.prPrecision), big.NewInt(0))

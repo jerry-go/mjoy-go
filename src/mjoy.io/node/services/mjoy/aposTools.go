@@ -14,6 +14,7 @@ import (
 	"mjoy.io/common"
 	"mjoy.io/core/blockchain/block"
 	"reflect"
+	"mjoy.io/params"
 )
 
 type PriKeyHandler interface {
@@ -28,7 +29,7 @@ type BlockChainHandler interface {
 }
 
 type BlockProducerHandler interface {
-	GetProducerNewBlock(emptyBlock bool, data *block.ConsensusData)*block.Block
+	GetProducerNewBlock(data *block.ConsensusData)*block.Block
 }
 
 func generatePrivateKey()*ecdsa.PrivateKey{
@@ -186,14 +187,32 @@ func (this *aposTools)GetNextRound()int{
 	return int(this.blockChainHandler.CurrentBlockNum() + 1)
 }
 
+func (this *aposTools)MakeEmptyBlock(data *block.ConsensusData)*block.Block{
+	parent := this.blockChainHandler.CurrentBlock()
+
+	header := block.CopyHeader(parent.B_header)
+
+	//r = r-1 + 1
+	header.Number = types.NewBigInt(*big.NewInt(header.Number.IntVal.Int64() + 1))
+	header.ConsensusData = *data
+
+	b := block.NewBlock(header , nil , nil)
+	//use system private key to sign the block
+	err := block.SignHeaderInner(b.B_header, block.NewBlockSigner(apos.Config().GetChainId()), params.RewordPrikey)
+	if err != nil {
+		logger.Error("makeEmptyBlock error:", err)
+		return nil
+	}
+	return b
+}
 
 func (this *aposTools)GetNowBlockHash()types.Hash{
 	return this.blockChainHandler.GetNowBlockHash()
 }
 
 
-func (this *aposTools)GetProducerNewBlock(emptyBlock bool, data *block.ConsensusData)*block.Block{
-	return this.producerHandler.GetProducerNewBlock(emptyBlock, data)
+func (this *aposTools)GetProducerNewBlock(data *block.ConsensusData)*block.Block{
+	return this.producerHandler.GetProducerNewBlock(data)
 }
 
 

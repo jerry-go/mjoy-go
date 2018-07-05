@@ -418,10 +418,13 @@ func (this *outCommonTools)GetNextRound()int{
 }
 
 
-func (this *outCommonTools)GetProducerNewBlock(emptyblock bool, data *block.ConsensusData)*block.Block{
+func (this *outCommonTools)GetProducerNewBlock(data *block.ConsensusData)*block.Block{
 	return nil
 }
 
+func (this *outCommonTools)MakeEmptyBlock(data *block.ConsensusData)*block.Block{
+	return nil
+}
 
 func (this *outCommonTools)GetNowBlockHash()types.Hash{
 	return types.Hash{}

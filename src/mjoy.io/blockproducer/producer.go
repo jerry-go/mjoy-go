@@ -96,7 +96,6 @@ type Result struct {
 }
 
 type blockRequest struct {
-	emptyBlock bool
 	data       *block.ConsensusData
 }
 
@@ -262,18 +261,14 @@ func (this *producer) DealRequest() {
 	for {
 		select {
 		case ask := <-this.createRequestChan:
-			if ask.emptyBlock {
-				this.makeEmptyBlock(ask.data)
-			} else {
-				this.commitNewWork(ask.data)
-			}
+			this.commitNewWork(ask.data)
 		}
 
 	}
 }
 
-func (this *producer) ProduceNewBlock(emptyBlock bool, data *block.ConsensusData) *block.Block {
-	br := blockRequest{emptyBlock, data}
+func (this *producer) ProduceNewBlock(data *block.ConsensusData) *block.Block {
+	br := blockRequest{ data}
 	this.createRequestChan <- br
 	timer := time.Tick(5 * time.Second)
 	select {
