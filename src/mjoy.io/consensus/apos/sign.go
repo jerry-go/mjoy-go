@@ -66,6 +66,19 @@ func (this *Quantity)Hash()types.Hash{
 	return h
 }
 
+// empty block Qr = H(Qr−1, r)
+type QuantityEmpty struct {
+	LstQuantity types.Hash
+	Round       uint64
+}
+
+func (this *QuantityEmpty)Hash()types.Hash{
+	h , err := common.MsgpHash(this)
+	if err != nil{
+		return types.Hash{}
+	}
+	return h
+}
 
 // signature R, S, V
 type Signature struct {

@@ -536,6 +536,16 @@ func (self *producer) makeEmptyBlock() {
 	//r = r-1 + 1
 	header.Number = types.NewBigInt(*big.NewInt(header.Number.IntVal.Int64() + 1))
 
+	//update Qr for empty block
+	lastQr := types.Hash{}
+	lastQr.SetBytes(header.ConsensusData.Para)
+
+	quantity := &apos.QuantityEmpty{
+		LstQuantity: lastQr,
+		Round:       header.Number.IntVal.Uint64(),
+	}
+	header.ConsensusData.Para = quantity.Hash().Bytes()
+
 	b := block.NewBlock(header , nil , nil)
 	//use system private key to sign the block
 	err := block.SignHeaderInner(b.B_header, block.NewBlockSigner(self.config.ChainId), params.RewordPrikey)

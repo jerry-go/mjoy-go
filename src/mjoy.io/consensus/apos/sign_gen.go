@@ -643,6 +643,125 @@ func (z *Quantity) Msgsize() (s int) {
 }
 
 // DecodeMsg implements msgp.Decodable
+func (z *QuantityEmpty) DecodeMsg(dc *msgp.Reader) (err error) {
+	var field []byte
+	_ = field
+	var zb0001 uint32
+	zb0001, err = dc.ReadMapHeader()
+	if err != nil {
+		return
+	}
+	for zb0001 > 0 {
+		zb0001--
+		field, err = dc.ReadMapKeyPtr()
+		if err != nil {
+			return
+		}
+		switch msgp.UnsafeString(field) {
+		case "LstQuantity":
+			err = z.LstQuantity.DecodeMsg(dc)
+			if err != nil {
+				return
+			}
+		case "Round":
+			z.Round, err = dc.ReadUint64()
+			if err != nil {
+				return
+			}
+		default:
+			err = dc.Skip()
+			if err != nil {
+				return
+			}
+		}
+	}
+	return
+}
+
+// EncodeMsg implements msgp.Encodable
+func (z *QuantityEmpty) EncodeMsg(en *msgp.Writer) (err error) {
+	// map header, size 2
+	// write "LstQuantity"
+	err = en.Append(0x82, 0xab, 0x4c, 0x73, 0x74, 0x51, 0x75, 0x61, 0x6e, 0x74, 0x69, 0x74, 0x79)
+	if err != nil {
+		return
+	}
+	err = z.LstQuantity.EncodeMsg(en)
+	if err != nil {
+		return
+	}
+	// write "Round"
+	err = en.Append(0xa5, 0x52, 0x6f, 0x75, 0x6e, 0x64)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint64(z.Round)
+	if err != nil {
+		return
+	}
+	return
+}
+
+// MarshalMsg implements msgp.Marshaler
+func (z *QuantityEmpty) MarshalMsg(b []byte) (o []byte, err error) {
+	o = msgp.Require(b, z.Msgsize())
+	// map header, size 2
+	// string "LstQuantity"
+	o = append(o, 0x82, 0xab, 0x4c, 0x73, 0x74, 0x51, 0x75, 0x61, 0x6e, 0x74, 0x69, 0x74, 0x79)
+	o, err = z.LstQuantity.MarshalMsg(o)
+	if err != nil {
+		return
+	}
+	// string "Round"
+	o = append(o, 0xa5, 0x52, 0x6f, 0x75, 0x6e, 0x64)
+	o = msgp.AppendUint64(o, z.Round)
+	return
+}
+
+// UnmarshalMsg implements msgp.Unmarshaler
+func (z *QuantityEmpty) UnmarshalMsg(bts []byte) (o []byte, err error) {
+	var field []byte
+	_ = field
+	var zb0001 uint32
+	zb0001, bts, err = msgp.ReadMapHeaderBytes(bts)
+	if err != nil {
+		return
+	}
+	for zb0001 > 0 {
+		zb0001--
+		field, bts, err = msgp.ReadMapKeyZC(bts)
+		if err != nil {
+			return
+		}
+		switch msgp.UnsafeString(field) {
+		case "LstQuantity":
+			bts, err = z.LstQuantity.UnmarshalMsg(bts)
+			if err != nil {
+				return
+			}
+		case "Round":
+			z.Round, bts, err = msgp.ReadUint64Bytes(bts)
+			if err != nil {
+				return
+			}
+		default:
+			bts, err = msgp.Skip(bts)
+			if err != nil {
+				return
+			}
+		}
+	}
+	o = bts
+	return
+}
+
+// Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
+func (z *QuantityEmpty) Msgsize() (s int) {
+	s = 1 + 12 + z.LstQuantity.Msgsize() + 6 + msgp.Uint64Size
+	return
+}
+
+// DecodeMsg implements msgp.Decodable
 func (z *Signature) DecodeMsg(dc *msgp.Reader) (err error) {
 	var field []byte
 	_ = field
