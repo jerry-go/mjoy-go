@@ -75,7 +75,7 @@ type CommonTools interface {
 	DelTmpKey(step int)
 	ClearTmpKeys()
 
-	GetProducerNewBlock(emptyBlock bool)*block.Block   //get a new block from block producer
+	GetProducerNewBlock(emptyBlock bool, data *block.ConsensusData) *block.Block   //get a new block from block producer
 	InsertChain(chain block.Blocks) (int, error)
 }
 

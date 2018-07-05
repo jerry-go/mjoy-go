@@ -418,7 +418,7 @@ func (this *outCommonTools)GetNextRound()int{
 }
 
 
-func (this *outCommonTools)GetProducerNewBlock(emptyblock bool)*block.Block{
+func (this *outCommonTools)GetProducerNewBlock(emptyblock bool, data *block.ConsensusData)*block.Block{
 	return nil
 }
 

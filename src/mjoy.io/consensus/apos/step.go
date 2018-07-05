@@ -129,6 +129,6 @@ type stepCtx struct {
 	setRound func(*Round)
 	makeEmptyBlockForTest func(cs *CredentialSign)*block.Block
 	getEphemeralSig func(signed []byte) Signature
-	getProducerNewBlock func(emptyBlock bool)*block.Block
+	getProducerNewBlock func(emptyBlock bool, data *block.ConsensusData)*block.Block
 	//getPrivKey
 }

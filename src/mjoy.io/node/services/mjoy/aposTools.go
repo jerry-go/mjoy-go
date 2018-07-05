@@ -28,7 +28,7 @@ type BlockChainHandler interface {
 }
 
 type BlockProducerHandler interface {
-	GetProducerNewBlock(emptyBlock bool)*block.Block
+	GetProducerNewBlock(emptyBlock bool, data *block.ConsensusData)*block.Block
 }
 
 func generatePrivateKey()*ecdsa.PrivateKey{
@@ -192,8 +192,8 @@ func (this *aposTools)GetNowBlockHash()types.Hash{
 }
 
 
-func (this *aposTools)GetProducerNewBlock(emptyBlock bool)*block.Block{
-	return this.producerHandler.GetProducerNewBlock(emptyBlock)
+func (this *aposTools)GetProducerNewBlock(emptyBlock bool, data *block.ConsensusData)*block.Block{
+	return this.producerHandler.GetProducerNewBlock(emptyBlock, data)
 }
 
 

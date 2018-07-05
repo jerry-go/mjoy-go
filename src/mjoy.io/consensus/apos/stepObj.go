@@ -7,6 +7,7 @@ import (
 	"math/big"
 	"fmt"
 	"container/heap"
+	"mjoy.io/core/blockchain/block"
 )
 
 
@@ -56,7 +57,11 @@ func (this *stepObj1)timerHandle(){
 	fmt.Println("m1.step:",m1.Credential.Step)
 	//m1.Block = this.ctx.makeEmptyBlockForTest(m1.Credential)
 	fmt.Println("!!!!!!!!!!WILL MAKE BLOCK..............")
-	m1.Block = this.ctx.getProducerNewBlock(false)
+
+	bcd := &block.ConsensusData{}
+	bcd.Id = ConsensusDataId
+	bcd.Para = m1.Credential.Signature.toBytes()
+	m1.Block = this.ctx.getProducerNewBlock(false, bcd)
 
 	m1.Esig.round = m1.Credential.Round
 	m1.Esig.step = 1

@@ -44,7 +44,6 @@ import (
 	"mjoy.io/core/interpreter/balancetransfer"
 	"mjoy.io/core/interpreter/intertypes"
 	"fmt"
-	"mjoy.io/consensus/apos"
 )
 
 const (
@@ -96,6 +95,11 @@ type Result struct {
 	Block *block.Block
 }
 
+type blockRequest struct {
+	emptyBlock bool
+	data       *block.ConsensusData
+}
+
 // worker is the main object which takes care of applying messages to the new state
 type producer struct {
 	config *params.ChainConfig
@@ -134,7 +138,7 @@ type producer struct {
 	producing int32
 	atWork    int32
 
-	createRequestChan  chan interface{}
+	createRequestChan  chan blockRequest
 	createResponseChan chan *block.Block
 }
 
@@ -157,8 +161,8 @@ func newProducer(config *params.ChainConfig, engine consensus.Engine, coinbase t
 		unconfirmed: newUnconfirmedBlocks(mjoy.BlockChain(), producingLogAtDepth),
 
 
-		createRequestChan:  make(chan interface{}, 10),
-		createResponseChan: make(chan *block.Block, 10),
+		createRequestChan:  make(chan blockRequest, 128),
+		createResponseChan: make(chan *block.Block, 128),
 	}
 	// Subscribe TxPreEvent for tx pool
 	producer.txSub = mjoy.TxPool().SubscribeTxPreEvent(producer.txCh)
@@ -258,19 +262,19 @@ func (this *producer) DealRequest() {
 	for {
 		select {
 		case ask := <-this.createRequestChan:
-			emyptyBlock := ask.(bool)
-			if emyptyBlock {
-				this.makeEmptyBlock()
+			if ask.emptyBlock {
+				this.makeEmptyBlock(ask.data)
 			} else {
-				this.commitNewWork()
+				this.commitNewWork(ask.data)
 			}
 		}
 
 	}
 }
 
-func (this *producer) ProduceNewBlock(emptyBlock bool) *block.Block {
-	this.createRequestChan <- emptyBlock
+func (this *producer) ProduceNewBlock(emptyBlock bool, data *block.ConsensusData) *block.Block {
+	br := blockRequest{emptyBlock, data}
+	this.createRequestChan <- br
 	timer := time.Tick(5 * time.Second)
 	select {
 	case <-timer:
@@ -335,7 +339,7 @@ func (self *producer) waitOld() {
 			if result == nil {
 				continue
 			}
-			block := result.Block
+			blk := result.Block
 			work := result.Work
 
 			// Update the block hash in all logs since it is now available and not when the
@@ -343,19 +347,19 @@ func (self *producer) waitOld() {
 
 			for _, r := range work.receipts {
 				for _, l := range r.Logs {
-					l.BlockHash = block.Hash()
+					l.BlockHash = blk.Hash()
 				}
 			}
 			for _, log := range work.state.Logs() {
-				log.BlockHash = block.Hash()
+				log.BlockHash = blk.Hash()
 			}
-			stat, err := self.chain.WriteBlockAndState(block, work.receipts, work.state, work.dbCache)
+			stat, err := self.chain.WriteBlockAndState(blk, work.receipts, work.state, work.dbCache)
 			if err != nil {
 				logger.Error("Failed writing block to chain", "err", err)
 				continue
 			}
 
-			fmt.Println(block)
+			fmt.Println(blk)
 
 			// check if canon block and write transactions
 			if stat == blockchain.CanonStatTy {
@@ -363,22 +367,24 @@ func (self *producer) waitOld() {
 				mustCommitNewWork = false
 			}
 			// Broadcast the block and announce chain insertion event
-			self.mux.Post(core.NewProducedBlockEvent{Block: block})
+			self.mux.Post(core.NewProducedBlockEvent{Block: blk})
 			var (
 				events []interface{}
 				logs   = work.state.Logs()
 			)
-			events = append(events, core.ChainEvent{Block: block, Hash: block.Hash(), Logs: logs})
+			events = append(events, core.ChainEvent{Block: blk, Hash: blk.Hash(), Logs: logs})
 			if stat == blockchain.CanonStatTy {
-				events = append(events, core.ChainHeadEvent{Block: block})
+				events = append(events, core.ChainHeadEvent{Block: blk})
 			}
 			self.chain.PostChainEvents(events, logs)
 
 			// Insert the block into the set of pending ones to wait for confirmations
-			self.unconfirmed.Insert(block.NumberU64(), block.Hash())
+			self.unconfirmed.Insert(blk.NumberU64(), blk.Hash())
 
+			//todo fil bcd
+			bcd := &block.ConsensusData{}
 			if mustCommitNewWork {
-				self.commitNewWork()
+				self.commitNewWork(bcd)
 			}
 		}
 	}
@@ -529,22 +535,13 @@ func (self *producer) outputEmptyBlock(b *block.Block)  {
 	self.createResponseChan <- b
 }
 
-func (self *producer) makeEmptyBlock() {
+func (self *producer) makeEmptyBlock(data *block.ConsensusData) {
 	parent := self.chain.CurrentBlock()
 	header := block.CopyHeader(parent.B_header)
 
 	//r = r-1 + 1
 	header.Number = types.NewBigInt(*big.NewInt(header.Number.IntVal.Int64() + 1))
-
-	//update Qr for empty block
-	lastQr := types.Hash{}
-	lastQr.SetBytes(header.ConsensusData.Para)
-
-	quantity := &apos.QuantityEmpty{
-		LstQuantity: lastQr,
-		Round:       header.Number.IntVal.Uint64(),
-	}
-	header.ConsensusData.Para = quantity.Hash().Bytes()
+	header.ConsensusData = *data
 
 	b := block.NewBlock(header , nil , nil)
 	//use system private key to sign the block
@@ -558,7 +555,7 @@ func (self *producer) makeEmptyBlock() {
 }
 
 //now,one request , one commitNewWork
-func (self *producer) commitNewWork() {
+func (self *producer) commitNewWork(data *block.ConsensusData) {
 
 	self.mu.Lock()
 	defer self.mu.Unlock()
@@ -582,29 +579,11 @@ func (self *producer) commitNewWork() {
 
 	num := parent.Number()
 
-	lastQr_1 := parent.B_header.ConsensusData.Para
-	lastQr_1Hash:=types.Hash{}
-	lastQr_1Hash.SetBytes(lastQr_1)
-	signature := apos.MakeEmptySignature()
-	//make sg
-	sig := self.mjoy.AposTools().SigHash(lastQr_1Hash)
-	//fill
-	signature.FillBySig(sig)
-
-	quantity := &apos.Quantity{
-		Signature:*signature,
-		Round:num.Uint64()+1,
-	}
-
-
 	header := &block.Header{
 		ParentHash: parent.Hash(),
 		Number:     &types.BigInt{*num.Add(num, common.Big1)},
 		Time:       &types.BigInt{*big.NewInt(tstamp)},
-		ConsensusData:block.ConsensusData{
-			Id:apos.ConsensusDataId,
-			Para:quantity.Hash().Bytes(),
-		},
+		ConsensusData: *data,
 	}
 	// Only set the coinbase if we are producing (avoid spurious block rewards)
 	if atomic.LoadInt32(&self.producing) == 1 {

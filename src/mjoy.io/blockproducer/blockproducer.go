@@ -209,8 +209,8 @@ func (self *Blockproducer) SetCoinbase(addr types.Address) {
 	self.producer.setCoinbase(addr)
 }
 
-func (self *Blockproducer)GetProducerNewBlock(emptyBlock bool)*block.Block{
-	return self.producer.ProduceNewBlock(emptyBlock)
+func (self *Blockproducer)GetProducerNewBlock(emptyBlock bool, data *block.ConsensusData)*block.Block{
+	return self.producer.ProduceNewBlock(emptyBlock, data)
 
 }
 
@@ -219,7 +219,8 @@ func (self *Blockproducer)TestBlockProducerMake(){
 	for{
 		time.Sleep(5*time.Second)
 		fmt.Println("TestBlockProducerMake..........")
-		block := self.GetProducerNewBlock(false)
+		bcd := &block.ConsensusData{}
+		block := self.GetProducerNewBlock(false, bcd)
 		fmt.Println(block)
 
 	}
