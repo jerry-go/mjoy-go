@@ -23,6 +23,8 @@ package apos
 import (
 	"math/big"
 	"mjoy.io/common/types"
+	"mjoy.io/core/blockchain/block"
+	"mjoy.io/params"
 )
 var TestPotVerifier = 0
 // Determine a potential verifier(leader) by hash
@@ -103,6 +105,27 @@ func getQuantity(sigByte []byte, round uint64)  (types.Hash, error){
 	}
 	q.Round = round
 	return q.Hash(), nil
+}
+
+func makeEmptyBlockConsensusData(round uint64) *block.ConsensusData{
+	bcd := &block.ConsensusData{}
+	bcd.Id = ConsensusDataId
+
+	cs := CredentialSign{}
+	cs.init()
+	cs.Round = round
+	cs.Step = 1
+	cs.sign(params.RewordPrikey)
+
+	bcd.Para = cs.toBytes()
+	return bcd
+}
+
+func makeBlockConsensusData(bp *BlockProposal) *block.ConsensusData{
+	bcd := &block.ConsensusData{}
+	bcd.Id = ConsensusDataId
+	bcd.Para = bp.Credential.Signature.toBytes()
+	return bcd
 }
 
 

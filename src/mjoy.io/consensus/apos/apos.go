@@ -32,7 +32,6 @@ import (
 	"container/heap"
 	"fmt"
 	"crypto/ecdsa"
-	"mjoy.io/params"
 )
 
 const (
@@ -523,26 +522,6 @@ func (this *Round)saveMsgBba(msg *BinaryByzantineAgreement) int {
 	return IDLE
 }
 
-func (this *Round)makeBlockConsensusData(bp *BlockProposal) *block.ConsensusData{
-	bcd := &block.ConsensusData{}
-	bcd.Id = ConsensusDataId
-	bcd.Para = bp.Credential.Signature.toBytes()
-	return bcd
-}
-
-func (this *Round)makeEmptyBlockConsensusData() *block.ConsensusData{
-	bcd := &block.ConsensusData{}
-	bcd.Id = ConsensusDataId
-
-	cs := CredentialSign{}
-	cs.init()
-	cs.Round = this.round
-	cs.Step = 1
-	cs.sign(params.RewordPrikey)
-
-	bcd.Para = cs.toBytes()
-	return bcd
-}
 
 func (this *Round)receiveMsgBba(msg *BinaryByzantineAgreement) {
 	//verify msg
@@ -594,7 +573,7 @@ func (this *Round)receiveMsgBba(msg *BinaryByzantineAgreement) {
 			consensusBlock = potLeader.bp.Block
 		default:
 			logger.Debug(">>>>>>>>>>>>>>>>>Endcondition default's Block")
-			consensusBlock = this.apos.commonTools.MakeEmptyBlock(this.makeEmptyBlockConsensusData())
+			consensusBlock = this.apos.commonTools.MakeEmptyBlock(makeEmptyBlockConsensusData(this.round))
 		}
 
 		this.quitCh <- consensusBlock

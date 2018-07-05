@@ -409,6 +409,11 @@ func (this *outCommonTools) GetLastQrSignature() []byte{
 
 }
 
+func (this *outCommonTools) GetQrSignature(round uint64) []byte{
+	qrKStr := "qrk=1"
+	return []byte(qrKStr)
+}
+
 func (this *outCommonTools)GetNowBlockNum()int{
 	return 100
 }
@@ -421,6 +426,7 @@ func (this *outCommonTools)GetNextRound()int{
 func (this *outCommonTools)GetProducerNewBlock(data *block.ConsensusData)*block.Block{
 	return nil
 }
+
 
 func (this *outCommonTools)MakeEmptyBlock(data *block.ConsensusData)*block.Block{
 	return nil

@@ -289,7 +289,7 @@ func (cret *CredentialSign) sender() (types.Address, error) {
 
 func (cret *CredentialSign) hash() types.Hash {
 	//get Q(r-1)
-	qr_1, err := getQuantity(gCommonTools.GetLastQrSignature(), cret.Round - 1)
+	qr_1, err := getQuantity(gCommonTools.GetQrSignature(cret.Round - 1), cret.Round - 1)
 	if err != nil {
 		logger.Error("get Quantity fail")
 		return types.Hash{}

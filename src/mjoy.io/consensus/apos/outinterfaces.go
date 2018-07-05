@@ -65,6 +65,7 @@ type CommonTools interface {
 	ESender(hash types.Hash, sig []byte) (types.Address, error)
 
 	GetLastQrSignature() []byte
+	GetQrSignature(round uint64) []byte
 	GetNowBlockNum()int
 	GetNextRound()int
 	GetNowBlockHash()types.Hash

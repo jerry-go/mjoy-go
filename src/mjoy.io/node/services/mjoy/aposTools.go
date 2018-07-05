@@ -26,6 +26,7 @@ type BlockChainHandler interface {
 	CurrentBlockNum()uint64
 	GetNowBlockHash()types.Hash
 	InsertChain(chain block.Blocks) (int, error)
+	GetBlockByNumber(number uint64) *block.Block
 }
 
 type BlockProducerHandler interface {
@@ -175,8 +176,19 @@ func (this *aposTools)ESender(hash types.Hash , sig []byte)(types.Address , erro
 }
 
 func (this *aposTools) GetLastQrSignature() []byte{
-	consensusData := this.blockChainHandler.CurrentBlock().B_header.ConsensusData.Para
-	return consensusData
+	blk := this.blockChainHandler.CurrentBlock()
+	if blk == nil {
+		return nil
+	}
+	return blk.B_header.ConsensusData.Para
+}
+
+func (this *aposTools) GetQrSignature(round uint64) []byte {
+	blk := this.blockChainHandler.GetBlockByNumber(round)
+	if blk == nil {
+		return nil
+	}
+	return blk.B_header.ConsensusData.Para
 }
 
 func (this *aposTools)GetNowBlockNum()int{
