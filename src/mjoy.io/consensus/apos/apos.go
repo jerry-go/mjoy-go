@@ -84,7 +84,7 @@ type peerMsgs struct {
 	honesty        uint
 }
 
-type pgCredential struct {
+type pqCredential struct {
 	pq             priorityQueue
 	credentials    map[string]*CredentialSign
 }
@@ -111,7 +111,7 @@ type Round struct {
 	curLeader      types.Hash
 
 	msgs           map[types.Address]*peerMsgs
-	csPg           map[int]*pgCredential
+	csPq          map[int]*pqCredential
 
 	quitCh         chan *block.Block
 	roundOverCh    chan interface{}
@@ -136,7 +136,7 @@ func (this *Round)init(round int , apos *Apos , roundOverCh chan interface{}){
 	this.quitCh = make(chan *block.Block , 1)
 
 	this.msgs = make(map[types.Address]*peerMsgs)
-	this.csPg = make(map[int]*pgCredential)
+	this.csPq = make(map[int]*pqCredential)
 }
 
 func (this *Round)setSmallestBrM1(bp *BlockProposal){
@@ -266,22 +266,22 @@ func (this *Round) verifyCredentialRight(msg *CredentialSign) error {
 
 	logger.Debug("verifyRight. message hash :", msg.Signature.Hash().String(), "round:", msg.Round, "step",  msg.Step)
 
-	if pqMsg, ok := this.csPg[step]; !ok {
-		pgcs := &pgCredential{make(priorityQueue, 0), make(map[string]*CredentialSign)}
+	if pqMsg, ok := this.csPq[step]; !ok {
+		pqcs := &pqCredential{make(priorityQueue, 0), make(map[string]*CredentialSign)}
 
-		this.csPg[step] = pgcs
-		heap.Init(&pgcs.pq)
+		this.csPq[step] = pqcs
+		heap.Init(&pqcs.pq)
 
 		pqitem := &pqItem{msg, msgPri}
-		heap.Push(&pgcs.pq, pqitem)
-		pgcs.credentials[msgPri.String()] = msg
+		heap.Push(&pqcs.pq, pqitem)
+		pqcs.credentials[msgPri.String()] = msg
 	} else {
 		pqitem := &pqItem{msg, msgPri}
-		heap.Push(&pqMsg.pq, pqitem)
 
 		if _, ok := pqMsg.credentials[msgPri.String()]; ok {
 			return errors.New("duplicate message Credential Signature")
 		}
+		heap.Push(&pqMsg.pq, pqitem)
 
 		if len(pqMsg.pq) > int(maxNum.Uint64()) {
 			itemPop := heap.Pop(&pqMsg.pq).(*pqItem)
@@ -332,12 +332,12 @@ func (this *Round)saveBp(msg *BlockProposal) error{
 
 	step := int(msg.Credential.Step)
 
-	if pgcs, ok := this.csPg[step]; !ok{
+	if pqcs, ok := this.csPq[step]; !ok{
 		logger.Debug("Block Proposal message have not corresponding Credential 0, ignore. hash:", hash.String())
 		return errors.New("Block Proposal message have not corresponding Credential, 0")
 	} else {
 		msgPri := msg.Credential.sigHashBig()
-		if _, ok := pgcs.credentials[msgPri.String()]; ok {
+		if _, ok := pqcs.credentials[msgPri.String()]; ok {
 			pleader := &PotentialLeader{msg,make(map[uint]*VoteInfo)}
 			this.leaders[hash] = pleader
 			this.curLeaderNum++
@@ -412,12 +412,12 @@ func (this *Round)receiveMsgGc(msg *GradedConsensus) {
 		return
 	}
 	step := int(msg.Credential.Step)
-	if pgcs, ok := this.csPg[step]; !ok{
+	if pqcs, ok := this.csPq[step]; !ok{
 		logger.Debug("GradedConsensus message have not corresponding Credential 0, ignore. Credential hash:", msg.Credential.Signature.Hash().String())
 		return
 	} else {
 		msgPri := msg.Credential.sigHashBig()
-		if _, ok := pgcs.credentials[msgPri.String()]; !ok {
+		if _, ok := pqcs.credentials[msgPri.String()]; !ok {
 			logger.Debug("GradedConsensus message have not corresponding Credential 1, ignore. Credential hash:", msg.Credential.Signature.Hash().String())
 			return
 		}
@@ -531,12 +531,12 @@ func (this *Round)receiveMsgBba(msg *BinaryByzantineAgreement) {
 	}
 
 	step := int(msg.Credential.Step)
-	if pgcs, ok := this.csPg[step]; !ok{
+	if pqcs, ok := this.csPq[step]; !ok{
 		logger.Debug("BinaryByzantineAgreement message have not corresponding Credential 0, ignore. Credential hash:", msg.Credential.Signature.Hash().String())
 		return
 	} else {
 		msgPri := msg.Credential.sigHashBig()
-		if _, ok := pgcs.credentials[msgPri.String()]; !ok {
+		if _, ok := pqcs.credentials[msgPri.String()]; !ok {
 			logger.Debug("BinaryByzantineAgreement message have not corresponding Credential 1, ignore. Credential hash:", msg.Credential.Signature.Hash().String())
 			return
 		}
