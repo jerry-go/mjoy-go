@@ -509,6 +509,10 @@ func (this *stepObj567)timerHandle(){
 		total += currentTotalLen
 	}
 
+	if total == 0 {
+		logger.Error("!!!!no Message received.")
+		return
+	}
 	maxBStatus := this.allMxIndex[maxHash]
 	if maxBStatus == nil {
 		return
