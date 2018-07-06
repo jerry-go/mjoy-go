@@ -30,6 +30,7 @@ import (
 	"mjoy.io/common"
 	"runtime"
 	"crypto/ecdsa"
+	"mjoy.io/params"
 )
 
 
@@ -78,7 +79,8 @@ func (basic *Engine_basic) VerifyHeader(chain ChainReader, header *block.Header,
 	}
 
 	//verify time
-	if header.Time.IntVal.Cmp(&parent.Time.IntVal) <= 0 {
+	cmpResult := header.Time.IntVal.Cmp(&parent.Time.IntVal)
+	if cmpResult < 0 {
 		return ErrBlockTime
 	}
 
@@ -91,8 +93,16 @@ func (basic *Engine_basic) VerifyHeader(chain ChainReader, header *block.Header,
 
 	//verify signature
 	singner := block.NewBlockSigner(chain.Config().ChainId)
-	if _, err := singner.Sender(header); err!=nil{
+	sender, err := singner.Sender(header)
+	if err != nil{
 		return ErrSignature
+	}
+
+	if cmpResult == 0 {
+		//for apos, sender == params.Address means that empty block
+		if sender != params.Address {
+			return ErrBlockTime
+		}
 	}
 
 	return nil
@@ -111,14 +121,30 @@ func (basic *Engine_basic) verifyHeader(chain ChainReader, header, parent *block
 	}
 
 	//verify time
-	if header.Time.IntVal.Cmp(&parent.Time.IntVal) <= 0 {
+	cmpResult := header.Time.IntVal.Cmp(&parent.Time.IntVal)
+	if cmpResult < 0 {
 		return ErrBlockTime
+	}
+
+	//verify ConsensusData
+	if seal {
+		if err := basic.VerifySeal(chain, header); err != nil {
+			return err
+		}
 	}
 
 	//verify signature
 	singner := block.NewBlockSigner(chain.Config().ChainId)
-	if _, err := singner.Sender(header); err!=nil{
+	sender, err := singner.Sender(header)
+	if err != nil{
 		return ErrSignature
+	}
+
+	if cmpResult == 0 {
+		//for apos, sender == params.Address means that empty block
+		if sender != params.Address {
+			return ErrBlockTime
+		}
 	}
 
 	return nil

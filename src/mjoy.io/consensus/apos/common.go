@@ -101,7 +101,7 @@ func getQuantity(sigByte []byte, round uint64)  (types.Hash, error){
 	q.Signature.init()
 	err := q.Signature.get(sigByte)
 	if err != nil {
-		return types.Hash{}, nil
+		return types.Hash{}, err
 	}
 	q.Round = round
 	return q.Hash(), nil
