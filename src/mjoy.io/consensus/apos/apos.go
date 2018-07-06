@@ -105,6 +105,7 @@ type Round struct {
 	lock           sync.RWMutex
 
 	leaders        map[types.Hash]*PotentialLeader
+	emptyBlock     *block.Block
 	maxLeaderNum   int
 	curLeaderNum   int
 	curLeaderDiff  *big.Int
@@ -132,6 +133,10 @@ func (this *Round)init(round int , apos *Apos , roundOverCh chan interface{}){
 	this.credentials = make(map[int]*CredentialSign)
 	this.allStepObj = make(map[int]*stepRoutine)
 	this.leaders = make(map[types.Hash]*PotentialLeader)
+	emptyBlock := this.apos.commonTools.MakeEmptyBlock(makeEmptyBlockConsensusData(this.round))
+	this.emptyBlock = emptyBlock
+	pleader := &PotentialLeader{nil,make(map[uint]*VoteInfo)}
+	this.leaders[emptyBlock.Hash()] = pleader
 
 	this.quitCh = make(chan *block.Block , 1)
 
@@ -578,7 +583,7 @@ func (this *Round)receiveMsgBba(msg *BinaryByzantineAgreement) {
 			consensusBlock = potLeader.bp.Block
 		default:
 			logger.Debug(">>>>>>>>>>>>>>>>>Endcondition default's Block")
-			consensusBlock = this.apos.commonTools.MakeEmptyBlock(makeEmptyBlockConsensusData(this.round))
+			consensusBlock = this.emptyBlock
 		}
 
 		this.quitCh <- consensusBlock
