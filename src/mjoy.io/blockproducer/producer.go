@@ -613,7 +613,9 @@ func (self *producer) commitNewWork(data *block.ConsensusData) {
 	action := transaction.Action{&types.Address{}, balancetransfer.MakeActionParamsReword(header.BlockProducer)}
 	actions = append(actions, action)
 
-	tx := transaction.NewTransaction(num.Uint64()-1, actions)
+	sysNonce := self.mjoy.TxPool().State().GetNonce(params.Address)
+
+	tx := transaction.NewTransaction(sysNonce, actions)
 
 	txReword, err := transaction.SignTx(tx, self.current.signer, params.RewordPrikey)
 	if err != nil {
