@@ -205,10 +205,15 @@ func (this *Round)startVerify(wg *sync.WaitGroup) {
 		stepCtx.esig = this.apos.commonTools.Esig
 		stepCtx.sendInner = this.apos.outMsger.SendInner
 		stepCtx.propagateMsg = this.apos.outMsger.PropagateMsg
-
+		stepCtx.MakeEmptyBlock = this.apos.commonTools.MakeEmptyBlock
 		stepRt:=step
 		stepCtx.getStep = func()int{
 			return stepRt
+		}
+		
+		roundRt := int(this.round)
+		stepCtx.getRound = func()int{
+			return roundRt
 		}
 
 		stepCtx.stopStep = stepRoutineObj.stop
@@ -815,6 +820,7 @@ func (this *Apos) stepsFactory(ctx *stepCtx) (stepObj step) {
 	case 1:
 		ctx.makeEmptyBlockForTest = this.makeEmptyBlockForTest
 		ctx.getProducerNewBlock = this.commonTools.GetProducerNewBlock
+
 		stepObj = makeStepObj1()
 		stepObj.setCtx(ctx)
 

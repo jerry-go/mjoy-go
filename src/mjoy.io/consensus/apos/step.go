@@ -117,6 +117,7 @@ func (sr *stepRoutine) stop() {
 //stepCtx contains all functions the stepObj will use
 type stepCtx struct {
 	getStep   func() int	// get the number of step in the round
+	getRound func() int
 	stopStep  func()        // stop the step
 	stopRound func()		// stop all the step in the round, and end the round
 
@@ -128,6 +129,7 @@ type stepCtx struct {
 	getCredential func()*CredentialSign
 	setRound func(*Round)
 	makeEmptyBlockForTest func(cs *CredentialSign)*block.Block
+	MakeEmptyBlock func(data *block.ConsensusData)*block.Block
 	getEphemeralSig func(signed []byte) Signature
 	getProducerNewBlock func(data *block.ConsensusData)*block.Block
 	//getPrivKey
