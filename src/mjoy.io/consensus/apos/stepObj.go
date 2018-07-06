@@ -345,7 +345,7 @@ func (this *stepObj4)timerHandle(){
 
 	}
 	//todo:should be H(Be)
-	v := types.Hash{}
+	v := this.ctx.getEmptyBlockHash()
 
 	g := 0
 	fmt.Println("MaxLen:" , maxLen)
@@ -360,10 +360,6 @@ func (this *stepObj4)timerHandle(){
 		g = 1
 	}else{
 		logger.Debug(COLOR_PREFIX+COLOR_FRONT_PINK+COLOR_SUFFIX,"Step4  Do :Else,g=0",COLOR_SHORT_RESET)
-		emptyBlock := this.ctx.MakeEmptyBlock(makeEmptyBlockConsensusData(uint64(this.ctx.getRound())))
-
-		v = emptyBlock.Hash()
-
 		g = 0
 	}
 
@@ -684,7 +680,7 @@ func (this *stepObjm3)timerHandle(){
 
 	m3 := newBinaryByzantineAgreement()
 	//todo:should be H(Be)
-	m3.Hash = types.Hash{}
+	m3.Hash = this.ctx.getEmptyBlockHash()
 	m3.B = 1
 	m3.Credential = this.ctx.getCredential()
 

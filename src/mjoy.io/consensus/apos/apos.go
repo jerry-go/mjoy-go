@@ -124,6 +124,10 @@ func newRound(round int , apos *Apos , roundOverCh chan interface{})*Round{
 	return r
 }
 
+func (this *Round) getEmptyBlockHash() types.Hash {
+	return this.emptyBlock.Hash()
+}
+
 func (this *Round)init(round int , apos *Apos , roundOverCh chan interface{}){
 	this.round = uint64(round)
 	this.apos = apos
@@ -210,7 +214,7 @@ func (this *Round)startVerify(wg *sync.WaitGroup) {
 		stepCtx.esig = this.apos.commonTools.Esig
 		stepCtx.sendInner = this.apos.outMsger.SendInner
 		stepCtx.propagateMsg = this.apos.outMsger.PropagateMsg
-		stepCtx.MakeEmptyBlock = this.apos.commonTools.MakeEmptyBlock
+		stepCtx.getEmptyBlockHash = this.getEmptyBlockHash
 		stepRt:=step
 		stepCtx.getStep = func()int{
 			return stepRt

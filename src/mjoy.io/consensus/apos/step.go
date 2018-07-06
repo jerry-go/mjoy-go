@@ -24,6 +24,7 @@ import (
 	"time"
 	"sync"
 	"mjoy.io/core/blockchain/block"
+	"mjoy.io/common/types"
 )
 
 type step interface {
@@ -129,7 +130,7 @@ type stepCtx struct {
 	getCredential func()*CredentialSign
 	setRound func(*Round)
 	makeEmptyBlockForTest func(cs *CredentialSign)*block.Block
-	MakeEmptyBlock func(data *block.ConsensusData)*block.Block
+	getEmptyBlockHash func() types.Hash
 	getEphemeralSig func(signed []byte) Signature
 	getProducerNewBlock func(data *block.ConsensusData)*block.Block
 	//getPrivKey
