@@ -13,6 +13,7 @@ import (
 	"reflect"
 	"errors"
 	"mjoy.io/core/blockchain/block"
+	"time"
 )
 
 var (
@@ -424,12 +425,48 @@ func (this *outCommonTools)GetNextRound()int{
 
 
 func (this *outCommonTools)GetProducerNewBlock(data *block.ConsensusData)*block.Block{
-	return nil
+	header := &block.Header{Number:types.NewBigInt(*big.NewInt(int64(this.GetNextRound()))),Time:types.NewBigInt(*big.NewInt(time.Now().Unix())),
+		ParentHash:this.GetNowBlockHash()}
+	//chainId := big.NewInt(100)
+	//signer := block.NewBlockSigner(chainId)
+	srcBytes := []byte{11,22,33,44,55}
+
+
+	h := crypto.Keccak256(srcBytes)
+	header.ConsensusData.Id = ConsensusDataId
+	header.ConsensusData.Para = h
+
+
+
+	header.R = &types.BigInt{*big.NewInt(1)}
+	header.S = &types.BigInt{*big.NewInt(1)}
+	header.V = &types.BigInt{*big.NewInt(1)}
+
+	b := block.NewBlock(header , nil , nil)
+	return b
 }
 
 
 func (this *outCommonTools)MakeEmptyBlock(data *block.ConsensusData)*block.Block{
-	return nil
+	header := &block.Header{Number:types.NewBigInt(*big.NewInt(int64(this.GetNextRound()))),Time:types.NewBigInt(*big.NewInt(11)),
+		ParentHash:this.GetNowBlockHash()}
+	//chainId := big.NewInt(100)
+	//signer := block.NewBlockSigner(chainId)
+	srcBytes := []byte{11,22,33,44,78}
+
+
+	h := crypto.Keccak256(srcBytes)
+	header.ConsensusData.Id = ConsensusDataId
+	header.ConsensusData.Para = h
+
+
+
+	header.R = &types.BigInt{*big.NewInt(1)}
+	header.S = &types.BigInt{*big.NewInt(1)}
+	header.V = &types.BigInt{*big.NewInt(1)}
+
+	b := block.NewBlock(header , nil , nil)
+	return b
 }
 
 func (this *outCommonTools)GetNowBlockHash()types.Hash{

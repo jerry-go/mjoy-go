@@ -27,6 +27,8 @@ func TestBba_EndCondition0(t *testing.T){
 	an := newAllNodeManager()
 	verifierCnt := an.initTestCommonNew(0)
 	logger.Debug(COLOR_PREFIX+COLOR_FRONT_BLUE+COLOR_SUFFIX , "Verifier Cnt:" , verifierCnt , COLOR_SHORT_RESET)
+	Config().maxPotLeaders = big.NewInt(3)
+	Config().maxPotVerifiers =  big.NewInt(4)
 
 	priKey := generatePrivateKey()
 	cs := &CredentialSign{}
@@ -107,6 +109,76 @@ func TestBba_EndCondition0(t *testing.T){
 
 	select {
 		case <-an.actualNode.StopCh():
+	}
+}
+
+func TestBba_EndConditionM3(t *testing.T){
+	Config().blockDelay = 2
+	Config().verifyDelay = 1
+	Config().maxBBASteps = 12
+	Config().prLeader = 10000000000
+	Config().prVerifier = 10000000000
+	Config().maxPotLeaders = big.NewInt(3)
+	Config().maxPotVerifiers =  big.NewInt(4)
+	an := newAllNodeManager()
+	verifierCnt := an.initTestCommonNew(0)
+	logger.Debug(COLOR_PREFIX+COLOR_FRONT_BLUE+COLOR_SUFFIX , "Verifier Cnt:" , verifierCnt , COLOR_SHORT_RESET)
+	Config().maxPotLeaders = big.NewInt(3)
+	Config().maxPotVerifiers =  big.NewInt(2)
+
+
+
+	msg_css := []*msgCredentialSig{}
+	msg_bbas := []*msgBinaryByzantineAgreement{}
+
+	for i := 1 ;i <= 2; i++ {
+		//time.Sleep(1 * time.Second)
+		priKey := generatePrivateKey()
+		cs := &CredentialSign{}
+		cs.Round = 100
+		cs.Step = 12 + 3
+		cs.Signature.init()
+		if _,_,_, err := cs.sign(priKey); err != nil {
+			fmt.Println("333",err)
+			return
+		}
+		msgcs := NewMsgCredential(cs)
+		msg_css = append(msg_css, msgcs)
+		bba := newBinaryByzantineAgreement()
+
+		bba.Credential = cs
+		bba.B = 1
+		hash := an.actualNode.roundCtx.getEmptyBlockHash()
+		bba.Hash = hash
+		//b
+		bba.EsigB.round = bba.Credential.Round
+		bba.EsigB.step = bba.Credential.Step
+		bba.EsigB.val = big.NewInt(int64(bba.B)).Bytes()
+		bba.EsigB.Signature.init()
+		bba.EsigB.sign(priKey)
+
+		//hash
+		bba.EsigV.round = bba.Credential.Round
+		bba.EsigV.step = bba.Credential.Step
+		bba.EsigV.val = hash.Bytes()
+		bba.EsigV.Signature.init()
+		bba.EsigV.sign(priKey)
+
+		msgBba := NewMsgBinaryByzantineAgreement(bba)
+		msg_bbas = append(msg_bbas, msgBba)
+	}
+
+	for _, mcs := range msg_css {
+		mcs.Send()
+	}
+
+	for _, mbba := range msg_bbas {
+		time.Sleep(1*time.Second)
+		mbba.Send()
+	}
+
+	select {
+	case <-an.actualNode.StopCh():
 	}
 }
 
