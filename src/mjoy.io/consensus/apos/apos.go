@@ -398,10 +398,10 @@ func (this *Round)filterMsgGc(msg *GradedConsensus) error {
 
 		if gc, ok := peerMsgGcs.msgGcs[int(step)]; ok {
 			if gc.Hash == msg.Hash {
-				return errors.New("duplicate message m23")
+				return errors.New("duplicate message GradedConsensus")
 			} else {
 				peerMsgGcs.honesty = 1
-				return errors.New("receive different vote message m23, it must a malicious peer")
+				return errors.New("receive different vote GradedConsensus message ,it must a malicious peer")
 			}
 		} else {
 			peerMsgGcs.msgGcs[int(step)] = msg
@@ -438,7 +438,7 @@ func (this *Round)receiveMsgGc(msg *GradedConsensus) {
 	}
 
 	if err := this.filterMsgGc(msg); err != nil {
-		logger.Info("filter m23 fail", err)
+		logger.Info("filter GradedConsensus fail", err)
 		return
 	}
 
