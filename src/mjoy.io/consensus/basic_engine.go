@@ -31,6 +31,7 @@ import (
 	"runtime"
 	"crypto/ecdsa"
 	"mjoy.io/params"
+	"mjoy.io/consensus/apos"
 )
 
 
@@ -44,6 +45,9 @@ type Engine_basic struct {
 var (
 	ErrBlockTime     = errors.New("timestamp less than or equal parent's timestamp")
 	ErrSignature     = errors.New("signature is not right")
+	ErrAposID        = errors.New("consensus Id is not apos")
+	ErrAposData      = errors.New("apos consensus fail")
+	ErrAposSign      = errors.New("apos consensus signature is not equal to header")
 )
 
 func NewBasicEngine(prv *ecdsa.PrivateKey)  (*Engine_basic){
@@ -85,6 +89,15 @@ func (basic *Engine_basic) VerifyHeader(chain ChainReader, header *block.Header,
 	}
 
 	//verify ConsensusData
+	if header.ConsensusData.Id != apos.ConsensusDataId {
+		return ErrAposID
+	}
+	//apos
+	senderApos, err := apos.SenderFromBlock(header)
+	if err != nil{
+		return ErrAposData
+	}
+
 	if seal {
 		if err := basic.VerifySeal(chain, header); err != nil {
 			return err
@@ -96,6 +109,10 @@ func (basic *Engine_basic) VerifyHeader(chain ChainReader, header *block.Header,
 	sender, err := singner.Sender(header)
 	if err != nil{
 		return ErrSignature
+	}
+
+	if sender != senderApos {
+		return ErrAposSign
 	}
 
 	if cmpResult == 0 {
@@ -127,6 +144,14 @@ func (basic *Engine_basic) verifyHeader(chain ChainReader, header, parent *block
 	}
 
 	//verify ConsensusData
+	if header.ConsensusData.Id != apos.ConsensusDataId {
+		return ErrAposID
+	}
+	//apos
+	senderApos, err := apos.SenderFromBlock(header)
+	if err != nil{
+		return ErrAposData
+	}
 	if seal {
 		if err := basic.VerifySeal(chain, header); err != nil {
 			return err
@@ -138,6 +163,10 @@ func (basic *Engine_basic) verifyHeader(chain ChainReader, header, parent *block
 	sender, err := singner.Sender(header)
 	if err != nil{
 		return ErrSignature
+	}
+
+	if sender != senderApos {
+		return ErrAposSign
 	}
 
 	if cmpResult == 0 {
