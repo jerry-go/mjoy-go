@@ -773,7 +773,7 @@ func (pm *ProtocolManager) BroadcastBp(hash types.Hash, bp *apos.BlockProposal) 
 	for _, peer := range peers {
 		peer.SendBlockProposal(bp)
 	}
-	logger.Tracef("Broadcast credential. hash %x, recipients %v", hash, len(peers))
+	logger.Tracef("Broadcast BlockProposal. hash %x, recipients %v", hash, len(peers))
 }
 
 func (pm *ProtocolManager) BroadcastGc(hash types.Hash, gc *apos.GradedConsensus) {
@@ -783,7 +783,7 @@ func (pm *ProtocolManager) BroadcastGc(hash types.Hash, gc *apos.GradedConsensus
 	for _, peer := range peers {
 		peer.SendGradedConsensus(gc)
 	}
-	logger.Tracef("Broadcast credential. hash %x, recipients %v", hash, len(peers))
+	logger.Tracef("Broadcast GradedConsensus. hash %x, recipients %v", hash, len(peers))
 }
 
 func (pm *ProtocolManager) BroadcastBba(hash types.Hash, bba *apos.BinaryByzantineAgreement) {
@@ -793,7 +793,7 @@ func (pm *ProtocolManager) BroadcastBba(hash types.Hash, bba *apos.BinaryByzanti
 	for _, peer := range peers {
 		peer.SendBinaryByzantineAgreement(bba)
 	}
-	logger.Tracef("Broadcast credential. hash %x, recipients %v", hash, len(peers))
+	logger.Tracef("Broadcast BinaryByzantineAgreement. hash %x, recipients %v", hash, len(peers))
 }
 
 // Produced broadcast loop
