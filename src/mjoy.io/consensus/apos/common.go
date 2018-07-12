@@ -26,7 +26,9 @@ import (
 	"mjoy.io/core/blockchain/block"
 	"mjoy.io/params"
 )
+
 var TestPotVerifier = 0
+
 // Determine a potential verifier(leader) by hash
 func isPotVerifier(hash []byte, leader bool) bool {
 	if TestPotVerifier != 0 {
@@ -53,7 +55,7 @@ func isHonest(vote, all int) bool {
 
 func isAbsHonest(vote int, leader bool) bool {
 	a := Config().maxPotVerifiers
-	logger.Debug("isAbsHonest maxPotVerifiers", a ,"vote", vote)
+	logger.Debug("isAbsHonest maxPotVerifiers", a, "vote", vote)
 	if leader {
 		a = Config().maxPotLeaders
 	}
@@ -62,11 +64,10 @@ func isAbsHonest(vote int, leader bool) bool {
 	return v.Div(v.Mul(v, honestPercision), a).Cmp(pH) >= 0
 }
 
-
 // priority queue Item
 type pqItem struct {
-	value     interface{}
-	priority  *big.Int
+	value    interface{}
+	priority *big.Int
 }
 
 //priority Queue
@@ -96,7 +97,7 @@ func (pq *priorityQueue) Pop() interface{} {
 }
 
 //H(SIGℓr (Qr−1), r)
-func getQuantity(sigByte []byte, round uint64)  (types.Hash, error){
+func getQuantity(sigByte []byte, round uint64) (types.Hash, error) {
 	q := Quantity{}
 	q.Signature.init()
 	err := q.Signature.get(sigByte)
@@ -107,7 +108,7 @@ func getQuantity(sigByte []byte, round uint64)  (types.Hash, error){
 	return q.Hash(), nil
 }
 
-func makeEmptyBlockConsensusData(round uint64) *block.ConsensusData{
+func makeEmptyBlockConsensusData(round uint64) *block.ConsensusData {
 	bcd := &block.ConsensusData{}
 	bcd.Id = ConsensusDataId
 
@@ -121,7 +122,7 @@ func makeEmptyBlockConsensusData(round uint64) *block.ConsensusData{
 	return bcd
 }
 
-func makeBlockConsensusData(bp *BlockProposal) *block.ConsensusData{
+func makeBlockConsensusData(bp *BlockProposal) *block.ConsensusData {
 	bcd := &block.ConsensusData{}
 	bcd.Id = ConsensusDataId
 	bcd.Para = bp.Credential.Signature.toBytes()
@@ -139,5 +140,3 @@ func SenderFromBlock(header *block.Header) (types.Address, error) {
 	cs.Step = 1
 	return cs.sender()
 }
-
-

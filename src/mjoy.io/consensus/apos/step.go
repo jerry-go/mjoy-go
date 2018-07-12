@@ -21,18 +21,18 @@
 package apos
 
 import (
-	"time"
-	"sync"
-	"mjoy.io/core/blockchain/block"
 	"mjoy.io/common/types"
+	"mjoy.io/core/blockchain/block"
+	"sync"
+	"time"
 )
 
 type step interface {
 	setCtx(ctx *stepCtx)         // set the context of step
 	getTTL() time.Duration       // get the ttl of step
-	timerHandle()               //timerout handle when time's up
-	dataHandle(data interface{})    //data handle when data in
-	stopHandle()                //deal the last work
+	timerHandle()                //timerout handle when time's up
+	dataHandle(data interface{}) //data handle when data in
+	stopHandle()                 //deal the last work
 }
 
 // the routine of step
@@ -41,7 +41,7 @@ type stepRoutine struct {
 	stopCh  chan interface{}
 	timer   *time.Timer
 	s       step
-	wg     *sync.WaitGroup
+	wg      *sync.WaitGroup
 }
 
 func newStepRoutine() *stepRoutine {
@@ -54,7 +54,7 @@ func newStepRoutine() *stepRoutine {
 	}
 }
 
-func (sr *stepRoutine)setStep(s step){
+func (sr *stepRoutine) setStep(s step) {
 	sr.s = s
 }
 
@@ -63,14 +63,14 @@ func (sr *stepRoutine) reset() {
 	sr.stopCh = make(chan interface{})
 	sr.timer = nil
 	sr.s = nil
-	sr.wg =  &sync.WaitGroup{}
+	sr.wg = &sync.WaitGroup{}
 }
 
 //func (sr *stepRoutine)sendMsg(dataPack,*Round) error{
 //
 //}
-func (sr *stepRoutine)sendMsg(dp dataPack) error {
-	sr.inputCh<-dp
+func (sr *stepRoutine) sendMsg(dp dataPack) error {
+	sr.inputCh <- dp
 	return nil
 }
 
@@ -117,21 +117,21 @@ func (sr *stepRoutine) stop() {
 
 //stepCtx contains all functions the stepObj will use
 type stepCtx struct {
-	getStep   func() int	// get the number of step in the round
-	getRound func() int
-	stopStep  func()        // stop the step
-	stopRound func()		// stop all the step in the round, and end the round
+	getStep   func() int // get the number of step in the round
+	getRound  func() int
+	stopStep  func() // stop the step
+	stopRound func() // stop all the step in the round, and end the round
 
 	//getCredential func() signature
 	//getEphemeralSig func(signed []byte) signature
-	esig func(pEphemeralSign *EphemeralSign)error
-	sendInner func(pack dataPack)error
-	propagateMsg func(dataPack)error
-	getCredential func()*CredentialSign
-	setRound func(*Round)
-	makeEmptyBlockForTest func(cs *CredentialSign)*block.Block
-	getEmptyBlockHash func() types.Hash
-	getEphemeralSig func(signed []byte) Signature
-	getProducerNewBlock func(data *block.ConsensusData)*block.Block
+	esig                  func(pEphemeralSign *EphemeralSign) error
+	sendInner             func(pack dataPack) error
+	propagateMsg          func(dataPack) error
+	getCredential         func() *CredentialSign
+	setRound              func(*Round)
+	makeEmptyBlockForTest func(cs *CredentialSign) *block.Block
+	getEmptyBlockHash     func() types.Hash
+	getEphemeralSig       func(signed []byte) Signature
+	getProducerNewBlock   func(data *block.ConsensusData) *block.Block
 	//getPrivKey
 }

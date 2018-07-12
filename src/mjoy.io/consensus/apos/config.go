@@ -21,47 +21,47 @@
 package apos
 
 import (
-	"sync"
-	"math/big"
 	"fmt"
+	"math/big"
 	"mjoy.io/common"
 	"mjoy.io/params"
+	"sync"
 )
 
 var (
-	decimal = big.NewInt(10)
+	decimal         = big.NewInt(10)
 	honestPercision = big.NewInt(100)
-	maxUint256 = new(big.Int).Exp(big.NewInt(2), big.NewInt(256), nil)
+	maxUint256      = new(big.Int).Exp(big.NewInt(2), big.NewInt(256), nil)
 )
 
 //go:generate gencodec -type config -field-override configMarshaling -out gen_config.go
 
 //some system param(apos system param) for step goroutine.
 type config struct {
-	lookback                int         `json:"lookback"`             // lookback val, r - k
-	prPrecision             uint64      `json:"precision"`            // the precision
-	prLeader                uint64      `json:"probability-leader"`   // the probability of Leaders
-	prVerifier              uint64      `json:"probability-verifier"` // the probability of Verifiers
-	maxBBASteps             int         `json:"max-steps"`            // the max number of BBA steps
-	maxNodesPerRound        int         `json:"max-nodes-per-round"`  // the max number of nodes per round
-	prH                     uint64      `json:"probability-honest"`   // the probability of honest
-	blockDelay              int         `json:"block-delay"`          // time A, sec
-	verifyDelay             int         `json:"verify-delay"`         // time λ, sec
+	lookback         int    `json:"lookback"`             // lookback val, r - k
+	prPrecision      uint64 `json:"precision"`            // the precision
+	prLeader         uint64 `json:"probability-leader"`   // the probability of Leaders
+	prVerifier       uint64 `json:"probability-verifier"` // the probability of Verifiers
+	maxBBASteps      int    `json:"max-steps"`            // the max number of BBA steps
+	maxNodesPerRound int    `json:"max-nodes-per-round"`  // the max number of nodes per round
+	prH              uint64 `json:"probability-honest"`   // the probability of honest
+	blockDelay       int    `json:"block-delay"`          // time A, sec
+	verifyDelay      int    `json:"verify-delay"`         // time λ, sec
 
-	prP                     *big.Int    `json:"-"`                    // 10 ^ prPrecision
-	maxPotLeaders           *big.Int    `json:"-"`                    // the max number of potential leaders
-	maxPotVerifiers         *big.Int    `json:"-"`                    // the max number of potential verifiers
+	prP             *big.Int `json:"-"` // 10 ^ prPrecision
+	maxPotLeaders   *big.Int `json:"-"` // the max number of potential leaders
+	maxPotVerifiers *big.Int `json:"-"` // the max number of potential verifiers
 
 	// chain info
-	chainId                 *big.Int    `json:"-"`
-	chainIdMul              *big.Int    `json:"-"`
+	chainId    *big.Int `json:"-"`
+	chainIdMul *big.Int `json:"-"`
 }
 
 func (c *config) setDefault() {
 	c.lookback = 100
 	c.prPrecision = 10
-	c.prLeader = 1000000000		// 0.1
-	c.prVerifier = 5000000000 	// 0.5
+	c.prLeader = 1000000000   // 0.1
+	c.prVerifier = 5000000000 // 0.5
 	c.maxBBASteps = 180
 	c.maxNodesPerRound = 10
 	c.maxPotLeaders = big.NewInt(3)
@@ -75,14 +75,14 @@ func (c *config) setDefault() {
 
 // about msgcore singleton
 var (
-	instance	*config
-	once		sync.Once
+	instance *config
+	once     sync.Once
 )
+
 // get the msgcore singleton
 func Config() *config {
 	once.Do(func() {
-		instance = &config{
-		}
+		instance = &config{}
 		instance.setDefault()
 		instance.Verify()
 		//instance.verifier()
@@ -92,7 +92,7 @@ func Config() *config {
 	return instance
 }
 
-func (c *config)GetChainId()*big.Int{
+func (c *config) GetChainId() *big.Int {
 	return c.chainId
 }
 

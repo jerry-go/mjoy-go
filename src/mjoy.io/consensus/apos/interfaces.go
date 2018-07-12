@@ -27,15 +27,11 @@ for inner interfaces
 */
 
 type dataSetp interface {
-
 }
+
 //goroutine interfaces for apos main structure
 type stepInterface interface {
-	sendMsg(dataPack,*Round) error
+	sendMsg(dataPack, *Round) error
 	stop()
 	run(wg *sync.WaitGroup)
 }
-
-
-
-

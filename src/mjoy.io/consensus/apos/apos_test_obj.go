@@ -1,108 +1,105 @@
 package apos
 
 import (
-	"math/big"
-	"mjoy.io/common/types"
 	"bytes"
 	"crypto/ecdsa"
 	"crypto/rand"
-	"mjoy.io/utils/crypto"
-	"sync"
-	"fmt"
-	"mjoy.io/common"
-	"reflect"
 	"errors"
+	"fmt"
+	"math/big"
+	"mjoy.io/common"
+	"mjoy.io/common/types"
 	"mjoy.io/core/blockchain/block"
+	"mjoy.io/utils/crypto"
+	"reflect"
+	"sync"
 	"time"
 )
 
 var (
-	Flag_StepTest bool = false  //stop SendInner msg transfer
+	Flag_StepTest bool = false //stop SendInner msg transfer
 )
 
 type outMsgManager struct {
-	msgRcvChan chan dataPack    //rcv the msg from p2p,and broadcast to the nodes
-	msgSndChan chan dataPack    //all node send msg
+	msgRcvChan chan dataPack //rcv the msg from p2p,and broadcast to the nodes
+	msgSndChan chan dataPack //all node send msg
 }
 
-func newMsgManager()*outMsgManager{
+func newMsgManager() *outMsgManager {
 	m := new(outMsgManager)
-	m.msgRcvChan = make(chan dataPack , 2000)//for node receiving msg
-	m.msgSndChan = make(chan dataPack , 2000)//for node sending msg by functions
+	m.msgRcvChan = make(chan dataPack, 2000) //for node receiving msg
+	m.msgSndChan = make(chan dataPack, 2000) //for node sending msg by functions
 	return m
 }
 
-func (this *outMsgManager)BroadCast(msg []byte)error{
+func (this *outMsgManager) BroadCast(msg []byte) error {
 	return nil
 }
 
-func (this *outMsgManager)GetMsg()<-chan dataPack{
+func (this *outMsgManager) GetMsg() <-chan dataPack {
 	return this.msgRcvChan
 }
 
-func (this *outMsgManager)GetDataMsg()<-chan dataPack{
+func (this *outMsgManager) GetDataMsg() <-chan dataPack {
 	return this.msgRcvChan
 }
 
-func (this *outMsgManager)SendCredential(c *CredentialSign)error{
+func (this *outMsgManager) SendCredential(c *CredentialSign) error {
 	return nil
 }
 
-func (this *outMsgManager)PropagateCredential(c *CredentialSign)error{
+func (this *outMsgManager) PropagateCredential(c *CredentialSign) error {
 	return nil
 }
 
-func (this *outMsgManager)SendInner(data dataPack)error{
-	this.msgSndChan<-data
-	if Flag_StepTest{
+func (this *outMsgManager) SendInner(data dataPack) error {
+	this.msgSndChan <- data
+	if Flag_StepTest {
 
-	}else{
-		this.msgRcvChan<-data
+	} else {
+		this.msgRcvChan <- data
 	}
 	return nil
 }
 
-func (this *outMsgManager)PropagateMsg(data dataPack)error{
+func (this *outMsgManager) PropagateMsg(data dataPack) error {
 	return nil
 }
 
-
 //virtual Node Manager
 type allNodeManager struct {
-	lock sync.RWMutex
-	vituals []*virtualNode
-	msger OutMsger
-	allVNodeChan chan dataPack  //all virtual node's data send to allVNodeChan
+	lock         sync.RWMutex
+	vituals      []*virtualNode
+	msger        OutMsger
+	allVNodeChan chan dataPack //all virtual node's data send to allVNodeChan
 	//the true apos
 	actualNode *Apos
 }
 
-
-func newAllNodeManager()*allNodeManager{
+func newAllNodeManager() *allNodeManager {
 	v := new(allNodeManager)
 	return v
 }
 
-func (this *allNodeManager)init(maliciousNodeCnt int){
-	this.allVNodeChan = make(chan dataPack , 1000)
+func (this *allNodeManager) init(maliciousNodeCnt int) {
+	this.allVNodeChan = make(chan dataPack, 1000)
 	//only one msger,for virtual  nodes and actual node
 	this.msger = MsgTransfer()
-	this.actualNode = NewApos(this.msger , newOutCommonTools())
+	this.actualNode = NewApos(this.msger, newOutCommonTools())
 	this.actualNode.SetOutMsger(this.msger)
 	TestPotVerifier = 1
 	//all nodes
-	allNodesCnt := Config().maxPotVerifiers.Uint64() -1
-
+	allNodesCnt := Config().maxPotVerifiers.Uint64() - 1
 
 	//100 virtual node
-	for i := 1 ;i <= int(allNodesCnt) ; i++ {
-		vNode := newVirtualNode(i , this.allVNodeChan)
+	for i := 1; i <= int(allNodesCnt); i++ {
+		vNode := newVirtualNode(i, this.allVNodeChan)
 
-		if maliciousNodeCnt > 0{
+		if maliciousNodeCnt > 0 {
 			vNode.setIsHonest(false)
 			maliciousNodeCnt--
 		}
-		this.vituals = append(this.vituals , vNode)
+		this.vituals = append(this.vituals, vNode)
 		go vNode.run()
 	}
 	go this.actualNode.Run()
@@ -110,67 +107,62 @@ func (this *allNodeManager)init(maliciousNodeCnt int){
 	fmt.Println("allNodeManager Init ok...")
 }
 
-func (this *allNodeManager)initTestCommon(testPotVerifier int) int{
-	this.allVNodeChan = make(chan dataPack , 100)
+func (this *allNodeManager) initTestCommon(testPotVerifier int) int {
+	this.allVNodeChan = make(chan dataPack, 100)
 	//only one msger,for virtual  nodes and actual node
 	this.msger = MsgTransfer()
-	this.actualNode = NewApos(this.msger , newOutCommonTools())
+	this.actualNode = NewApos(this.msger, newOutCommonTools())
 	//this.actualNode.validate.fake = true
 	this.actualNode.SetOutMsger(this.msger)
 	TestPotVerifier = testPotVerifier
 
-
 	go this.actualNode.Run()
 	go this.runTestStep(0)
 	fmt.Println("allNodeManager Init ok...")
-	allNodesCnt := Config().maxPotVerifiers.Uint64() -1
-	if Flag_StepTest{
+	allNodesCnt := Config().maxPotVerifiers.Uint64() - 1
+	if Flag_StepTest {
 		//why here do that,because no data from n step to n+1 step,
 		allNodesCnt += 1
 	}
 	return int(allNodesCnt)
 }
 
-func (this *allNodeManager)initTestCommonNew(testPotVerifier int) int{
+func (this *allNodeManager) initTestCommonNew(testPotVerifier int) int {
 	this.msger = MsgTransfer()
-	this.actualNode = NewApos(this.msger , newOutCommonTools())
+	this.actualNode = NewApos(this.msger, newOutCommonTools())
 	//this.actualNode.SetOutMsger(this.msger)
 	TestPotVerifier = testPotVerifier
-
 
 	go this.actualNode.Run()
 
 	fmt.Println("allNodeManager Init ok...")
-	allNodesCnt := Config().maxPotVerifiers.Uint64() -1
+	allNodesCnt := Config().maxPotVerifiers.Uint64() - 1
 
 	return int(allNodesCnt)
 }
 
-
-
-func (this *allNodeManager)SendDataPackToActualNode(dp dataPack){
+func (this *allNodeManager) SendDataPackToActualNode(dp dataPack) {
 	this.allVNodeChan <- dp
 }
 
-func (this *allNodeManager)run(){
-	for{
+func (this *allNodeManager) run() {
+	for {
 		select {
 		//deal all data from virtual] node,just send the virtualData to the chan(will send to actual node)
-		case virtualData:=<-this.allVNodeChan:
-			fmt.Println("Run:allVNodeChan Type:" , reflect.TypeOf(virtualData))
+		case virtualData := <-this.allVNodeChan:
+			fmt.Println("Run:allVNodeChan Type:", reflect.TypeOf(virtualData))
 			this.msger.Send2Apos(virtualData)
 			//send the data from all node to actual node
 
-
 		case actualData := <-this.msger.GetSubDataMsg():
-			fmt.Println("Run:getSubDataMSG TYPE:" , reflect.TypeOf(actualData))
+			fmt.Println("Run:getSubDataMSG TYPE:", reflect.TypeOf(actualData))
 			//continue
-			for _,vNode := range this.vituals{
+			for _, vNode := range this.vituals {
 				vNode.inChan <- actualData
 			}
 		case <-this.actualNode.StopCh():
 			//stop all virtualNode
-			for _,n := range this.vituals{
+			for _, n := range this.vituals {
 				n.stop()
 			}
 			//the actualNode has a result ,exit the test
@@ -180,34 +172,31 @@ func (this *allNodeManager)run(){
 	}
 }
 
-
-func (this *allNodeManager)initTestSteps(checkStep int64)int{
-	this.allVNodeChan = make(chan dataPack , 1000)
+func (this *allNodeManager) initTestSteps(checkStep int64) int {
+	this.allVNodeChan = make(chan dataPack, 1000)
 	//only one msger,for virtual  nodes and actual node
 	this.msger = MsgTransfer()
-	this.actualNode = NewApos(this.msger , newOutCommonTools())
+	this.actualNode = NewApos(this.msger, newOutCommonTools())
 
 	this.actualNode.SetOutMsger(this.msger)
 	TestPotVerifier = 1
 
-
 	go this.actualNode.Run()
 	go this.runTestStep(checkStep)
 	fmt.Println("allNodeManager Init ok...")
-	allNodesCnt := Config().maxPotVerifiers.Uint64() -1
-	if Flag_StepTest{
+	allNodesCnt := Config().maxPotVerifiers.Uint64() - 1
+	if Flag_StepTest {
 		//why here do that,because no data from n step to n+1 step,
 		allNodesCnt += 1
 	}
 	return int(allNodesCnt)
 }
 
-
-func (this *allNodeManager)runTestStep(checkStep int64){
+func (this *allNodeManager) runTestStep(checkStep int64) {
 	for {
 		select {
 		//deal all data from virtual] node,just send the virtualData to the chan(will send to actual node)
-		case virtualData:=<-this.allVNodeChan:
+		case virtualData := <-this.allVNodeChan:
 			//send the data from all node to actual node
 			this.msger.Send2Apos(virtualData)
 			//this.msger.msgRcvChan <- virtualData
@@ -220,30 +209,30 @@ func (this *allNodeManager)runTestStep(checkStep int64){
 			case *BlockProposal:
 
 			case *GradedConsensus:
-				if v.Credential.Step == uint64(checkStep){
+				if v.Credential.Step == uint64(checkStep) {
 
-					logger.Debug(COLOR_PREFIX+COLOR_FRONT_BLUE+COLOR_SUFFIX,"Actual Step:",v.Credential.Step,"  ,Return:",v.Hash,COLOR_SHORT_RESET)
+					logger.Debug(COLOR_PREFIX+COLOR_FRONT_BLUE+COLOR_SUFFIX, "Actual Step:", v.Credential.Step, "  ,Return:", v.Hash, COLOR_SHORT_RESET)
 					return
 				}
 
 			case *BinaryByzantineAgreement:
-				if v.Credential.Step == uint64(checkStep){
-					logger.Debug(COLOR_PREFIX+COLOR_FRONT_BLUE+COLOR_SUFFIX,"Actual Step:",v.Credential.Step,
-						"\r\nReturn: Hash:",v.Hash,"\r\nBStatus:",v.B,COLOR_SHORT_RESET)
+				if v.Credential.Step == uint64(checkStep) {
+					logger.Debug(COLOR_PREFIX+COLOR_FRONT_BLUE+COLOR_SUFFIX, "Actual Step:", v.Credential.Step,
+						"\r\nReturn: Hash:", v.Hash, "\r\nBStatus:", v.B, COLOR_SHORT_RESET)
 					return
 				}
 
 			default:
-				logger.Warn("invalid message type ",reflect.TypeOf(v))
+				logger.Warn("invalid message type ", reflect.TypeOf(v))
 			}
 
 			//continue
-			for _,vNode := range this.vituals{
+			for _, vNode := range this.vituals {
 				vNode.inChan <- actualData
 			}
 		case <-this.actualNode.StopCh():
 			//stop all virtualNode
-			for _,n := range this.vituals{
+			for _, n := range this.vituals {
 				n.stop()
 			}
 			//the actualNode has a result ,exit the test
@@ -264,7 +253,7 @@ type CommonTools interface {
 	GetNextRound()int
 }
 */
-func generatePrivateKey()*ecdsa.PrivateKey{
+func generatePrivateKey() *ecdsa.PrivateKey {
 	randBytes := make([]byte, 64)
 	_, err := rand.Read(randBytes)
 	if err != nil {
@@ -281,14 +270,14 @@ func generatePrivateKey()*ecdsa.PrivateKey{
 
 //each Node has a outCommonTools to sign or verify
 type outCommonTools struct {
-	pri *ecdsa.PrivateKey   //stable key
+	pri        *ecdsa.PrivateKey //stable key
 	tmpPriKeys map[int]*ecdsa.PrivateKey
-	signer Signer
+	signer     Signer
 
 	lock sync.RWMutex
 }
 
-func newOutCommonTools()*outCommonTools{
+func newOutCommonTools() *outCommonTools {
 	o := new(outCommonTools)
 	//privateKey
 	o.pri = generatePrivateKey()
@@ -300,15 +289,14 @@ func newOutCommonTools()*outCommonTools{
 }
 
 //if the nod is leader or verfier,call the method to create a key
-func (this *outCommonTools)CreateTmpPriKey(step int){
+func (this *outCommonTools) CreateTmpPriKey(step int) {
 	this.lock.Lock()
 	defer this.lock.Unlock()
 	if this.tmpPriKeys == nil {
 		this.tmpPriKeys = make(map[int]*ecdsa.PrivateKey)
 	}
 
-
-	if _,ok:=this.tmpPriKeys[step];ok{
+	if _, ok := this.tmpPriKeys[step]; ok {
 		return
 	}
 	tmpKey := generatePrivateKey()
@@ -317,169 +305,156 @@ func (this *outCommonTools)CreateTmpPriKey(step int){
 	return
 }
 
-func (this *outCommonTools)Sig(pCs *CredentialSign)error{
-	_,_,_,err:=pCs.sign(this.pri)
+func (this *outCommonTools) Sig(pCs *CredentialSign) error {
+	_, _, _, err := pCs.sign(this.pri)
 	return err
 }
 
-func (this *outCommonTools)Esig(pEphemeralSign *EphemeralSign)error{
+func (this *outCommonTools) Esig(pEphemeralSign *EphemeralSign) error {
 	this.lock.RLock()
 	defer this.lock.RUnlock()
 
 	step := int(pEphemeralSign.step)
-	if pri,ok:= this.tmpPriKeys[step];ok{
+	if pri, ok := this.tmpPriKeys[step]; ok {
 		//sign
 		pEphemeralSign.Signature.init()
-		_,_,_,err := pEphemeralSign.sign(pri)
+		_, _, _, err := pEphemeralSign.sign(pri)
 
 		return err
 	}
-	return errors.New(fmt.Sprintf("Not Find TmpPriKey About:%d" , step))
+	return errors.New(fmt.Sprintf("Not Find TmpPriKey About:%d", step))
 }
 
-func (this *outCommonTools)DelTmpKey(step int){
+func (this *outCommonTools) DelTmpKey(step int) {
 	this.lock.Lock()
 	defer this.lock.Unlock()
 
-	if _,ok := this.tmpPriKeys[step];ok{
-		delete(this.tmpPriKeys , step)
+	if _, ok := this.tmpPriKeys[step]; ok {
+		delete(this.tmpPriKeys, step)
 	}
 }
 
-func (this *outCommonTools)ClearTmpKeys(){
+func (this *outCommonTools) ClearTmpKeys() {
 	this.lock.Lock()
 	defer this.lock.Unlock()
 
 	this.tmpPriKeys = nil
 }
 
-func (this *outCommonTools)SigHash(hash types.Hash)[]byte{
+func (this *outCommonTools) SigHash(hash types.Hash) []byte {
 
-	sig , err := crypto.Sign(hash[:] , this.pri)
+	sig, err := crypto.Sign(hash[:], this.pri)
 	if err != nil {
-		logger.Errorf("outCommontTools SigErr:" , err.Error())
+		logger.Errorf("outCommontTools SigErr:", err.Error())
 		return nil
 	}
 	return sig
 
 }
 
-
-func (this *outCommonTools)SigVerify(h types.Hash , sig *SignatureVal)error{
+func (this *outCommonTools) SigVerify(h types.Hash, sig *SignatureVal) error {
 	return nil
 }
 
-func (this *outCommonTools)Sender(h types.Hash , sig *SignatureVal)(types.Address , error){
+func (this *outCommonTools) Sender(h types.Hash, sig *SignatureVal) (types.Address, error) {
 	V := &big.Int{}
 	V = V.Sub(&sig.V.IntVal, big.NewInt(2))
 	V.Sub(V, common.Big35)
-	address , err := recoverPlain(h , &sig.R.IntVal , &sig.S.IntVal , V,true)
-	return address , err
+	address, err := recoverPlain(h, &sig.R.IntVal, &sig.S.IntVal, V, true)
+	return address, err
 }
 
-
-func (this *outCommonTools)ESIG(hash types.Hash)(R,S,V *big.Int){
-	sig , err := crypto.Sign(hash[:] , this.pri)
-	if err != nil{
-		logger.Errorf("outCommonTools ESIG:" , err.Error())
-		return nil,nil,nil
+func (this *outCommonTools) ESIG(hash types.Hash) (R, S, V *big.Int) {
+	sig, err := crypto.Sign(hash[:], this.pri)
+	if err != nil {
+		logger.Errorf("outCommonTools ESIG:", err.Error())
+		return nil, nil, nil
 	}
 
-	R,S,V,err = this.signer.SignatureValues(sig)
-	if err != nil{
+	R, S, V, err = this.signer.SignatureValues(sig)
+	if err != nil {
 		logger.Error(err.Error())
-		R,S,V = nil,nil,nil
+		R, S, V = nil, nil, nil
 	}
 	return
 }
 
-
-
-func (this *outCommonTools)ESigVerify(h types.Hash , sig []byte)error{
+func (this *outCommonTools) ESigVerify(h types.Hash, sig []byte) error {
 	return nil
 }
 
-func (this *outCommonTools)ESender(h types.Hash , sig []byte)(types.Address , error){
-	return types.Address{} , nil
+func (this *outCommonTools) ESender(h types.Hash, sig []byte) (types.Address, error) {
+	return types.Address{}, nil
 }
 
-
-func (this *outCommonTools) GetLastQrSignature() []byte{
+func (this *outCommonTools) GetLastQrSignature() []byte {
 	qrKStr := "qrk=1"
 	return []byte(qrKStr)
 
 }
 
-func (this *outCommonTools) GetQrSignature(round uint64) []byte{
+func (this *outCommonTools) GetQrSignature(round uint64) []byte {
 	qrKStr := "qrk=1"
 	return []byte(qrKStr)
 }
 
-func (this *outCommonTools)GetNowBlockNum()int{
+func (this *outCommonTools) GetNowBlockNum() int {
 	return 100
 }
 
-func (this *outCommonTools)GetNextRound()int{
+func (this *outCommonTools) GetNextRound() int {
 	return 100
 }
 
-
-func (this *outCommonTools)GetProducerNewBlock(data *block.ConsensusData)*block.Block{
-	header := &block.Header{Number:types.NewBigInt(*big.NewInt(int64(this.GetNextRound()))),Time:types.NewBigInt(*big.NewInt(time.Now().Unix())),
-		ParentHash:this.GetNowBlockHash()}
+func (this *outCommonTools) GetProducerNewBlock(data *block.ConsensusData) *block.Block {
+	header := &block.Header{Number: types.NewBigInt(*big.NewInt(int64(this.GetNextRound()))), Time: types.NewBigInt(*big.NewInt(time.Now().Unix())),
+		ParentHash: this.GetNowBlockHash()}
 	//chainId := big.NewInt(100)
 	//signer := block.NewBlockSigner(chainId)
-	srcBytes := []byte{11,22,33,44,55}
-
+	srcBytes := []byte{11, 22, 33, 44, 55}
 
 	h := crypto.Keccak256(srcBytes)
 	header.ConsensusData.Id = ConsensusDataId
 	header.ConsensusData.Para = h
 
-
-
 	header.R = &types.BigInt{*big.NewInt(1)}
 	header.S = &types.BigInt{*big.NewInt(1)}
 	header.V = &types.BigInt{*big.NewInt(1)}
 
-	b := block.NewBlock(header , nil , nil)
+	b := block.NewBlock(header, nil, nil)
 	return b
 }
 
-
-func (this *outCommonTools)MakeEmptyBlock(data *block.ConsensusData)*block.Block{
-	header := &block.Header{Number:types.NewBigInt(*big.NewInt(int64(this.GetNextRound()))),Time:types.NewBigInt(*big.NewInt(11)),
-		ParentHash:this.GetNowBlockHash()}
+func (this *outCommonTools) MakeEmptyBlock(data *block.ConsensusData) *block.Block {
+	header := &block.Header{Number: types.NewBigInt(*big.NewInt(int64(this.GetNextRound()))), Time: types.NewBigInt(*big.NewInt(11)),
+		ParentHash: this.GetNowBlockHash()}
 	//chainId := big.NewInt(100)
 	//signer := block.NewBlockSigner(chainId)
-	srcBytes := []byte{11,22,33,44,78}
-
+	srcBytes := []byte{11, 22, 33, 44, 78}
 
 	h := crypto.Keccak256(srcBytes)
 	header.ConsensusData.Id = ConsensusDataId
 	header.ConsensusData.Para = h
 
-
-
 	header.R = &types.BigInt{*big.NewInt(1)}
 	header.S = &types.BigInt{*big.NewInt(1)}
 	header.V = &types.BigInt{*big.NewInt(1)}
 
-	b := block.NewBlock(header , nil , nil)
+	b := block.NewBlock(header, nil, nil)
 	return b
 }
 
-func (this *outCommonTools)GetNowBlockHash()types.Hash{
+func (this *outCommonTools) GetNowBlockHash() types.Hash {
 	return types.Hash{}
 }
 
-func (this *outCommonTools)InsertOneBlock(b *block.Block)(int , error){
-	return 0 , nil
+func (this *outCommonTools) InsertOneBlock(b *block.Block) (int, error) {
+	return 0, nil
 }
-func (this *outCommonTools)InsertChain(chain block.Blocks) (int, error){
-	return 0 , nil
+func (this *outCommonTools) InsertChain(chain block.Blocks) (int, error) {
+	return 0, nil
 }
 
-func (this *outCommonTools)SetPriKey(priKey *ecdsa.PrivateKey){
+func (this *outCommonTools) SetPriKey(priKey *ecdsa.PrivateKey) {
 
 }

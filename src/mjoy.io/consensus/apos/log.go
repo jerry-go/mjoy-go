@@ -21,17 +21,15 @@
 package apos
 
 import (
-"fmt"
-"os"
-"mjoy.io/log"
+	"fmt"
+	"mjoy.io/log"
+	"os"
 )
 
 var (
 	logTag = "consensus.apos"
 	logger log.Logger
 )
-
-
 
 func init() {
 	logger = log.GetLogger(logTag)

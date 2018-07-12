@@ -21,8 +21,8 @@
 package message
 
 import (
-	"sync"
 	"mjoy.io/utils/event"
+	"sync"
 )
 
 // the channel of consensus' message
@@ -34,8 +34,8 @@ type messageChannel struct {
 // each message must implement this interface
 // external interface
 type Message interface {
-	Send() error	// send message
-	Close()			// close message processing
+	Send() error // send message
+	Close()      // close message processing
 }
 
 // each message must implement this interface
@@ -116,19 +116,19 @@ func getHandleable(msg interface{}) Handleable {
 
 // TODO:
 type msgcore struct {
-	scope         event.SubscriptionScope
+	scope event.SubscriptionScope
 }
 
 // about msgcore singleton
 var (
-	instance	*msgcore
-	once		sync.Once
+	instance *msgcore
+	once     sync.Once
 )
+
 // get the msgcore singleton
 func Msgcore() *msgcore {
 	once.Do(func() {
-		instance = &msgcore{
-		}
+		instance = &msgcore{}
 	})
 	return instance
 }

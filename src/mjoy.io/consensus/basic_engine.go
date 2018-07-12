@@ -21,19 +21,18 @@
 package consensus
 
 import (
+	"crypto/ecdsa"
+	"errors"
+	"math/big"
+	"mjoy.io/common"
+	"mjoy.io/common/types"
+	"mjoy.io/consensus/apos"
 	"mjoy.io/core/blockchain/block"
 	"mjoy.io/core/state"
 	"mjoy.io/core/transaction"
-	"math/big"
-	"mjoy.io/common/types"
-	"errors"
-	"mjoy.io/common"
-	"runtime"
-	"crypto/ecdsa"
 	"mjoy.io/params"
-	"mjoy.io/consensus/apos"
+	"runtime"
 )
-
 
 type Engine_basic struct {
 	//todo: need interpreter information
@@ -43,20 +42,20 @@ type Engine_basic struct {
 }
 
 var (
-	ErrBlockTime     = errors.New("timestamp less than or equal parent's timestamp")
-	ErrSignature     = errors.New("signature is not right")
-	ErrAposID        = errors.New("consensus Id is not apos")
-	ErrAposData      = errors.New("apos consensus fail")
-	ErrAposSign      = errors.New("apos consensus signature is not equal to header")
+	ErrBlockTime = errors.New("timestamp less than or equal parent's timestamp")
+	ErrSignature = errors.New("signature is not right")
+	ErrAposID    = errors.New("consensus Id is not apos")
+	ErrAposData  = errors.New("apos consensus fail")
+	ErrAposSign  = errors.New("apos consensus signature is not equal to header")
 )
 
-func NewBasicEngine(prv *ecdsa.PrivateKey)  (*Engine_basic){
+func NewBasicEngine(prv *ecdsa.PrivateKey) *Engine_basic {
 	return &Engine_basic{
 		prv,
 	}
 }
 
-func (basic *Engine_basic)SetKey(prv *ecdsa.PrivateKey)  {
+func (basic *Engine_basic) SetKey(prv *ecdsa.PrivateKey) {
 	basic.prv = prv
 }
 
@@ -94,7 +93,7 @@ func (basic *Engine_basic) VerifyHeader(chain ChainReader, header *block.Header,
 	}
 	//apos
 	senderApos, err := apos.SenderFromBlock(header)
-	if err != nil{
+	if err != nil {
 		return ErrAposData
 	}
 
@@ -107,7 +106,7 @@ func (basic *Engine_basic) VerifyHeader(chain ChainReader, header *block.Header,
 	//verify signature
 	singner := block.NewBlockSigner(chain.Config().ChainId)
 	sender, err := singner.Sender(header)
-	if err != nil{
+	if err != nil {
 		return ErrSignature
 	}
 
@@ -149,7 +148,7 @@ func (basic *Engine_basic) verifyHeader(chain ChainReader, header, parent *block
 	}
 	//apos
 	senderApos, err := apos.SenderFromBlock(header)
-	if err != nil{
+	if err != nil {
 		return ErrAposData
 	}
 	if seal {
@@ -161,7 +160,7 @@ func (basic *Engine_basic) verifyHeader(chain ChainReader, header, parent *block
 	//verify signature
 	singner := block.NewBlockSigner(chain.Config().ChainId)
 	sender, err := singner.Sender(header)
-	if err != nil{
+	if err != nil {
 		return ErrSignature
 	}
 
@@ -192,7 +191,7 @@ func (basic *Engine_basic) verifyHeaderWorker(chain ChainReader, headers []*bloc
 	if chain.GetHeader(headers[index].Hash(), headers[index].Number.IntVal.Uint64()) != nil {
 		return nil // known block
 	}
-	return basic.verifyHeader(chain, headers[index], parent,seals[index])
+	return basic.verifyHeader(chain, headers[index], parent, seals[index])
 }
 
 // VerifyHeaders is similar to VerifyHeader, but verifies a batch of headers
@@ -249,7 +248,6 @@ func (basic *Engine_basic) VerifyHeaders(chain ChainReader, headers []*block.Hea
 	return abort, errorsOut
 }
 
-
 //todo this need interpreter process ConsensusData
 func (basic *Engine_basic) VerifySeal(chain ChainReader, header *block.Header) error {
 	return nil
@@ -258,7 +256,6 @@ func (basic *Engine_basic) VerifySeal(chain ChainReader, header *block.Header) e
 func (basic *Engine_basic) Prepare(chain ChainReader, header *block.Header) error {
 	return nil
 }
-
 
 //todo this need interpreter process
 //interpreter need change state
@@ -286,7 +283,7 @@ func (basic *Engine_basic) Finalize(chain ChainReader, header *block.Header, sta
 }
 
 //todo fill header ConsensusData
-func (basic *Engine_basic) Seal(chain ChainReader, block *block.Block, stop <-chan struct{}) (*block.Block, error){
+func (basic *Engine_basic) Seal(chain ChainReader, block *block.Block, stop <-chan struct{}) (*block.Block, error) {
 	header := block.Header()
 	return block.WithSeal(header), nil
 }

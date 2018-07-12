@@ -21,21 +21,21 @@
 package apos
 
 import (
-	"sync"
-	"mjoy.io/utils/crypto"
-	"mjoy.io/common/types"
-	"math/big"
-	"reflect"
-	"errors"
-	"mjoy.io/core/blockchain/block"
-	"time"
 	"container/heap"
-	"fmt"
 	"crypto/ecdsa"
+	"errors"
+	"fmt"
+	"math/big"
+	"mjoy.io/common/types"
+	"mjoy.io/core/blockchain/block"
+	"mjoy.io/utils/crypto"
+	"reflect"
+	"sync"
+	"time"
 )
 
 const (
-	IDLE  = iota
+	IDLE = iota
 	ENDCONDITION0
 	ENDCONDITION1
 	ENDMAX
@@ -49,16 +49,16 @@ and Output Apos-SystemParam to the sub-goroutine
 */
 
 type VoteInfo struct {
-	sum           int
+	sum int
 }
 
 // Potential Leader used for judge End condition 0 and 1
 type PotentialLeader struct {
-	bp            *BlockProposal
-	stepMsg       map[uint]*VoteInfo
+	bp      *BlockProposal
+	stepMsg map[uint]*VoteInfo
 }
 
-func (this *PotentialLeader)AddVoteNumber(step uint, b uint) int {
+func (this *PotentialLeader) AddVoteNumber(step uint, b uint) int {
 	if _, ok := this.stepMsg[step]; !ok {
 		vi := &VoteInfo{1}
 		this.stepMsg[step] = vi
@@ -69,58 +69,57 @@ func (this *PotentialLeader)AddVoteNumber(step uint, b uint) int {
 }
 
 type peerBba struct {
-	bba         *BinaryByzantineAgreement
+	bba *BinaryByzantineAgreement
 	//B 1: msg.b == 0; 2: msg.b == 1; 3 means that receive two messages with different B
-	B           uint
+	B uint
 }
 
-
 type peerMsgs struct {
-	msgBbas        map[int]*peerBba
-	msgGcs         map[int]*GradedConsensus
-	msgCs          map[int]*CredentialSign
+	msgBbas map[int]*peerBba
+	msgGcs  map[int]*GradedConsensus
+	msgCs   map[int]*CredentialSign
 
 	//0 :default honesty peer. 1: malicious peer
-	honesty        uint
+	honesty uint
 }
 
 type pqCredential struct {
-	pq             priorityQueue
-	credentials    map[string]*CredentialSign
+	pq          priorityQueue
+	credentials map[string]*CredentialSign
 }
 
 //round context
 type Round struct {
-	round          uint64
+	round uint64
 	//condition 0 and condition 1 end number tH = 2n/3 + 1
-	targetNum      int
+	targetNum int
 
-	apos           *Apos
+	apos *Apos
 
-	credentials    map[int]*CredentialSign
+	credentials map[int]*CredentialSign
 
-	allStepObj     map[int]*stepRoutine
+	allStepObj map[int]*stepRoutine
 
-	smallestLBr    *BlockProposal
-	lock           sync.RWMutex
+	smallestLBr *BlockProposal
+	lock        sync.RWMutex
 
-	leaders        map[types.Hash]*PotentialLeader
-	emptyBlock     *block.Block
-	maxLeaderNum   int
-	curLeaderNum   int
-	curLeaderDiff  *big.Int
-	curLeader      types.Hash
+	leaders       map[types.Hash]*PotentialLeader
+	emptyBlock    *block.Block
+	maxLeaderNum  int
+	curLeaderNum  int
+	curLeaderDiff *big.Int
+	curLeader     types.Hash
 
-	msgs           map[types.Address]*peerMsgs
-	csPq          map[int]*pqCredential
+	msgs map[types.Address]*peerMsgs
+	csPq map[int]*pqCredential
 
-	quitCh         chan *block.Block
-	roundOverCh    chan interface{}
+	quitCh      chan *block.Block
+	roundOverCh chan interface{}
 }
 
-func newRound(round int , apos *Apos , roundOverCh chan interface{})*Round{
+func newRound(round int, apos *Apos, roundOverCh chan interface{}) *Round {
 	r := new(Round)
-	r.init(round,apos,roundOverCh)
+	r.init(round, apos, roundOverCh)
 	return r
 }
 
@@ -128,7 +127,7 @@ func (this *Round) getEmptyBlockHash() types.Hash {
 	return this.emptyBlock.Hash()
 }
 
-func (this *Round)init(round int , apos *Apos , roundOverCh chan interface{}){
+func (this *Round) init(round int, apos *Apos, roundOverCh chan interface{}) {
 	this.round = uint64(round)
 	this.apos = apos
 	this.roundOverCh = roundOverCh
@@ -139,56 +138,56 @@ func (this *Round)init(round int , apos *Apos , roundOverCh chan interface{}){
 	this.leaders = make(map[types.Hash]*PotentialLeader)
 	emptyBlock := this.apos.commonTools.MakeEmptyBlock(makeEmptyBlockConsensusData(this.round))
 	this.emptyBlock = emptyBlock
-	pleader := &PotentialLeader{nil,make(map[uint]*VoteInfo)}
+	pleader := &PotentialLeader{nil, make(map[uint]*VoteInfo)}
 	this.leaders[emptyBlock.Hash()] = pleader
 
-	this.quitCh = make(chan *block.Block , 1)
+	this.quitCh = make(chan *block.Block, 1)
 
 	this.msgs = make(map[types.Address]*peerMsgs)
 	this.csPq = make(map[int]*pqCredential)
 }
 
-func (this *Round)setSmallestBrM1(bp *BlockProposal){
+func (this *Round) setSmallestBrM1(bp *BlockProposal) {
 	this.lock.Lock()
 	defer this.lock.Unlock()
 
 	this.smallestLBr = bp
 }
 
-func (this *Round)addStepRoutine(step int , stepObj *stepRoutine){
+func (this *Round) addStepRoutine(step int, stepObj *stepRoutine) {
 	if _, ok := this.allStepObj[step]; !ok {
 		this.allStepObj[step] = stepObj
 	}
 }
 
-func (this *Round)stopAllStepRoutine(){
+func (this *Round) stopAllStepRoutine() {
 	for _, routine := range this.allStepObj {
 		routine.stop()
 	}
 }
 
 //inform stepObj to stop running
-func (this *Round)broadCastStop(){
-	for _,v := range this.allStepObj {
+func (this *Round) broadCastStop() {
+	for _, v := range this.allStepObj {
 		v.stop()
 	}
 }
 
 // Generate valid Credentials in current round
-func (this *Round)generateCredentials() {
-	for i := 1; i <= Config().maxBBASteps + 3; i++{
+func (this *Round) generateCredentials() {
+	for i := 1; i <= Config().maxBBASteps+3; i++ {
 		credential := this.apos.makeCredential(i)
 		isVerfier := this.apos.judgeVerifier(credential, i)
 		//logger.Info("GenerateCredential step:",i,"  isVerifier:",isVerfier)
 		if isVerfier {
-			logger.Info("GenerateCredential step:",i,"  isVerifier:",isVerfier)
+			logger.Info("GenerateCredential step:", i, "  isVerifier:", isVerfier)
 			this.credentials[i] = credential
 			this.apos.commonTools.CreateTmpPriKey(i)
 		}
 	}
 }
 
-func (this *Round)broadcastCredentials() {
+func (this *Round) broadcastCredentials() {
 	for i, credential := range this.credentials {
 		_ = i
 		logger.Info("SendCredential round", this.round, "step", i)
@@ -196,8 +195,7 @@ func (this *Round)broadcastCredentials() {
 	}
 }
 
-
-func (this *Round)startVerify(wg *sync.WaitGroup) {
+func (this *Round) startVerify(wg *sync.WaitGroup) {
 	// create routine obj
 	for step, credential := range this.credentials {
 		stepRoutineObj := newStepRoutine()
@@ -207,7 +205,7 @@ func (this *Round)startVerify(wg *sync.WaitGroup) {
 		stepCtx := &stepCtx{}
 
 		pC := credential
-		stepCtx.getCredential = func()*CredentialSign{
+		stepCtx.getCredential = func() *CredentialSign {
 			return pC
 		}
 
@@ -215,13 +213,13 @@ func (this *Round)startVerify(wg *sync.WaitGroup) {
 		stepCtx.sendInner = this.apos.outMsger.SendInner
 		stepCtx.propagateMsg = this.apos.outMsger.PropagateMsg
 		stepCtx.getEmptyBlockHash = this.getEmptyBlockHash
-		stepRt:=step
-		stepCtx.getStep = func()int{
+		stepRt := step
+		stepCtx.getStep = func() int {
 			return stepRt
 		}
-		
+
 		roundRt := int(this.round)
-		stepCtx.getRound = func()int{
+		stepCtx.getRound = func() int {
 			return roundRt
 		}
 
@@ -239,7 +237,7 @@ func (this *Round)startVerify(wg *sync.WaitGroup) {
 	}
 }
 
-func (this *Round)filterMsgCs(msg *CredentialSign) error {
+func (this *Round) filterMsgCs(msg *CredentialSign) error {
 	address, err := msg.sender()
 	if err != nil {
 		return err
@@ -260,8 +258,8 @@ func (this *Round)filterMsgCs(msg *CredentialSign) error {
 	} else {
 		ps := &peerMsgs{
 			msgBbas: make(map[int]*peerBba),
-			msgGcs: make(map[int]*GradedConsensus),
-			msgCs: make(map[int]*CredentialSign),
+			msgGcs:  make(map[int]*GradedConsensus),
+			msgCs:   make(map[int]*CredentialSign),
 			honesty: 0,
 		}
 		ps.msgCs[int(step)] = msg
@@ -278,7 +276,7 @@ func (this *Round) verifyCredentialRight(msg *CredentialSign) error {
 	}
 	msgPri := msg.sigHashBig()
 
-	logger.Debug("verifyRight. message hash :", msg.Signature.Hash().String(), "round:", msg.Round, "step",  msg.Step)
+	logger.Debug("verifyRight. message hash :", msg.Signature.Hash().String(), "round:", msg.Round, "step", msg.Step)
 
 	if pqMsg, ok := this.csPq[step]; !ok {
 		pqcs := &pqCredential{make(priorityQueue, 0), make(map[string]*CredentialSign)}
@@ -299,7 +297,7 @@ func (this *Round) verifyCredentialRight(msg *CredentialSign) error {
 
 		if len(pqMsg.pq) > int(maxNum.Uint64()) {
 			itemPop := heap.Pop(&pqMsg.pq).(*pqItem)
-			if(itemPop == pqitem) {
+			if itemPop == pqitem {
 				logger.Debug("message is not have leader right, ignore. hash:", msg.Signature.Hash().String())
 				return errors.New("message have no right")
 			} else {
@@ -316,7 +314,7 @@ func (this *Round) verifyCredentialRight(msg *CredentialSign) error {
 }
 
 // process the Credential message
-func (this *Round)receiveMsgCs(msg *CredentialSign) {
+func (this *Round) receiveMsgCs(msg *CredentialSign) {
 	logger.Info("Receive message CredentialSign")
 	if msg.Round != this.round {
 		logger.Warn("verify fail, Credential msg is not in current round", msg.Round, this.round)
@@ -336,7 +334,7 @@ func (this *Round)receiveMsgCs(msg *CredentialSign) {
 	this.apos.outMsger.PropagateCredential(msg)
 }
 
-func (this *Round)saveBp(msg *BlockProposal) error{
+func (this *Round) saveBp(msg *BlockProposal) error {
 
 	hash := msg.Block.Hash()
 	if _, ok := this.leaders[hash]; ok {
@@ -346,16 +344,16 @@ func (this *Round)saveBp(msg *BlockProposal) error{
 
 	step := int(msg.Credential.Step)
 
-	if pqcs, ok := this.csPq[step]; !ok{
+	if pqcs, ok := this.csPq[step]; !ok {
 		logger.Debug("Block Proposal message have not corresponding Credential 0, ignore. hash:", hash.String())
 		return errors.New("Block Proposal message have not corresponding Credential, 0")
 	} else {
 		msgPri := msg.Credential.sigHashBig()
 		if _, ok := pqcs.credentials[msgPri.String()]; ok {
-			pleader := &PotentialLeader{msg,make(map[uint]*VoteInfo)}
+			pleader := &PotentialLeader{msg, make(map[uint]*VoteInfo)}
 			this.leaders[hash] = pleader
 			this.curLeaderNum++
-			logger.Debug("saveBp.add hash in map: CreHash:", msg.Credential.Signature.Hash().String(),"  BlockHash:", hash.String())
+			logger.Debug("saveBp.add hash in map: CreHash:", msg.Credential.Signature.Hash().String(), "  BlockHash:", hash.String())
 			return nil
 		} else {
 			logger.Debug("Block Proposal message have not corresponding Credential 1, ignore. hash:", hash.String())
@@ -364,7 +362,7 @@ func (this *Round)saveBp(msg *BlockProposal) error{
 	}
 }
 
-func (this *Round)receiveMsgBp(msg *BlockProposal) {
+func (this *Round) receiveMsgBp(msg *BlockProposal) {
 	//verify msg
 	if msg.Credential.Round != this.round {
 		logger.Warn("verify fail, BlockProposal msg is not in current round", msg.Credential.Round, this.round)
@@ -383,8 +381,7 @@ func (this *Round)receiveMsgBp(msg *BlockProposal) {
 
 }
 
-
-func (this *Round)filterMsgGc(msg *GradedConsensus) error {
+func (this *Round) filterMsgGc(msg *GradedConsensus) error {
 	address, err := msg.Credential.sender()
 	if err != nil {
 		return err
@@ -409,8 +406,8 @@ func (this *Round)filterMsgGc(msg *GradedConsensus) error {
 	} else {
 		ps := &peerMsgs{
 			msgBbas: make(map[int]*peerBba),
-			msgGcs: make(map[int]*GradedConsensus),
-			msgCs: make(map[int]*CredentialSign),
+			msgGcs:  make(map[int]*GradedConsensus),
+			msgCs:   make(map[int]*CredentialSign),
 			honesty: 0,
 		}
 		ps.msgGcs[int(step)] = msg
@@ -419,14 +416,14 @@ func (this *Round)filterMsgGc(msg *GradedConsensus) error {
 	return nil
 }
 
-func (this *Round)receiveMsgGc(msg *GradedConsensus) {
+func (this *Round) receiveMsgGc(msg *GradedConsensus) {
 	//verify msg
 	if msg.Credential.Round != this.round {
 		logger.Warn("verify fail, GradedConsensus msg is not in current round", msg.Credential.Round, this.round)
 		return
 	}
 	step := int(msg.Credential.Step)
-	if pqcs, ok := this.csPq[step]; !ok{
+	if pqcs, ok := this.csPq[step]; !ok {
 		logger.Debug("GradedConsensus message have not corresponding Credential 0, ignore. Credential hash:", msg.Credential.Signature.Hash().String())
 		return
 	} else {
@@ -443,7 +440,7 @@ func (this *Round)receiveMsgGc(msg *GradedConsensus) {
 	}
 
 	//send this msg to step3 or step4 goroutine
-	if stepObj, ok := this.allStepObj[step + 1]; ok {
+	if stepObj, ok := this.allStepObj[step+1]; ok {
 		go stepObj.sendMsg(msg)
 	}
 
@@ -452,8 +449,7 @@ func (this *Round)receiveMsgGc(msg *GradedConsensus) {
 	logger.Info("Propagate Graded Consensus message via p2p")
 }
 
-
-func (this *Round)filterMsgBba(msg *BinaryByzantineAgreement) error {
+func (this *Round) filterMsgBba(msg *BinaryByzantineAgreement) error {
 	address, err := msg.Credential.sender()
 	if err != nil {
 		return err
@@ -466,9 +462,9 @@ func (this *Round)filterMsgBba(msg *BinaryByzantineAgreement) error {
 		}
 
 		if peerbba, ok := peerMsgBbas.msgBbas[int(step)]; ok {
-			if peerbba.bba.Hash == msg.Hash && (peerbba.B == 3 || peerbba.B == msg.B + 1){
+			if peerbba.bba.Hash == msg.Hash && (peerbba.B == 3 || peerbba.B == msg.B+1) {
 				return errors.New("duplicate bba message")
-			} else if (peerbba.bba.Hash == msg.Hash) {
+			} else if peerbba.bba.Hash == msg.Hash {
 				// for bba message, player j can send different B value
 				peerbba.B = 3
 				logger.Info("receive different vote bba message!", msg.B)
@@ -484,8 +480,8 @@ func (this *Round)filterMsgBba(msg *BinaryByzantineAgreement) error {
 	} else {
 		ps := &peerMsgs{
 			msgBbas: make(map[int]*peerBba),
-			msgGcs: make(map[int]*GradedConsensus),
-			msgCs: make(map[int]*CredentialSign),
+			msgGcs:  make(map[int]*GradedConsensus),
+			msgCs:   make(map[int]*CredentialSign),
 			honesty: 0,
 		}
 		msgPeer := &peerBba{msg, msg.B + 1}
@@ -495,12 +491,12 @@ func (this *Round)filterMsgBba(msg *BinaryByzantineAgreement) error {
 	return nil
 }
 
-func (this *Round)endCondition(voteNum int, b uint) int {
+func (this *Round) endCondition(voteNum int, b uint) int {
 
 	//if voteNum >= this.targetNum {
 	if isAbsHonest(voteNum, false) {
 		logger.Info("end condition ", b, "vote number", voteNum)
-		if 0 == b{
+		if 0 == b {
 			return ENDCONDITION0
 		} else if 1 == b {
 			return ENDCONDITION1
@@ -512,21 +508,21 @@ func (this *Round)endCondition(voteNum int, b uint) int {
 	}
 }
 
-func (this *Round)saveMsgBba(msg *BinaryByzantineAgreement) int {
+func (this *Round) saveMsgBba(msg *BinaryByzantineAgreement) int {
 	hash := msg.Hash
 	if pleader, ok := this.leaders[hash]; ok {
 		step := msg.Credential.Step
 		b := msg.B
 		voteNum := 0
-		if ((step + 1 -2 ) % 3 == 0) && (0 == b) {
+		if ((step+1-2)%3 == 0) && (0 == b) {
 			voteNum = pleader.AddVoteNumber(uint(step), b)
 		}
 
-		if ((step + 1 -2 ) % 3 == 1) && (1 == b) {
+		if ((step+1-2)%3 == 1) && (1 == b) {
 			voteNum = pleader.AddVoteNumber(uint(step), b)
 		}
 
-		if int(step) == Config().maxBBASteps + 3 {
+		if int(step) == Config().maxBBASteps+3 {
 			b = 2
 			voteNum = pleader.AddVoteNumber(uint(step), b)
 		}
@@ -536,8 +532,7 @@ func (this *Round)saveMsgBba(msg *BinaryByzantineAgreement) int {
 	return IDLE
 }
 
-
-func (this *Round)receiveMsgBba(msg *BinaryByzantineAgreement) {
+func (this *Round) receiveMsgBba(msg *BinaryByzantineAgreement) {
 	//verify msg
 	if msg.Credential.Round != this.round {
 		logger.Warn("verify fail, bba msg is not in current round", msg.Credential.Round, this.round)
@@ -545,7 +540,7 @@ func (this *Round)receiveMsgBba(msg *BinaryByzantineAgreement) {
 	}
 
 	step := int(msg.Credential.Step)
-	if pqcs, ok := this.csPq[step]; !ok{
+	if pqcs, ok := this.csPq[step]; !ok {
 		logger.Debug("BinaryByzantineAgreement message have not corresponding Credential 0, ignore. Credential hash:", msg.Credential.Signature.Hash().String())
 		return
 	} else {
@@ -562,7 +557,7 @@ func (this *Round)receiveMsgBba(msg *BinaryByzantineAgreement) {
 	}
 
 	//send this msg to step other goroutine
-	if stepObj, ok := this.allStepObj[step + 1]; ok {
+	if stepObj, ok := this.allStepObj[step+1]; ok {
 		go stepObj.sendMsg(msg)
 	}
 	//Propagate message via p2p
@@ -577,7 +572,7 @@ func (this *Round)receiveMsgBba(msg *BinaryByzantineAgreement) {
 		this.broadCastStop()
 		//todo need import block to block chain
 
-		logger.Info("OK Consensus....ret:",ret)
+		logger.Info("OK Consensus....ret:", ret)
 		var consensusBlock *block.Block
 
 		switch ret {
@@ -595,8 +590,8 @@ func (this *Round)receiveMsgBba(msg *BinaryByzantineAgreement) {
 	}
 }
 
-func (this *Round)commonProcess() {
-	for{
+func (this *Round) commonProcess() {
+	for {
 		select {
 		// receive message
 		case outData := <-this.apos.outMsger.GetDataMsg():
@@ -610,14 +605,14 @@ func (this *Round)commonProcess() {
 			case *BinaryByzantineAgreement:
 				this.receiveMsgBba(v)
 			default:
-				logger.Warn("invalid message type ",reflect.TypeOf(v))
+				logger.Warn("invalid message type ", reflect.TypeOf(v))
 			}
-		case consensusBlock:=<-this.quitCh:
-			fmt.Println("CommonProcess end block:" , consensusBlock)
+		case consensusBlock := <-this.quitCh:
+			fmt.Println("CommonProcess end block:", consensusBlock)
 			bs := block.Blocks{}
-			bs = append(bs , consensusBlock)
-			_ , err := this.apos.commonTools.InsertChain(bs)
-			fmt.Println("InsertOneBlock    ErrStatus:" , err)
+			bs = append(bs, consensusBlock)
+			_, err := this.apos.commonTools.InsertChain(bs)
+			fmt.Println("InsertOneBlock    ErrStatus:", err)
 
 			logger.Info("round exit ")
 			return
@@ -625,8 +620,7 @@ func (this *Round)commonProcess() {
 	}
 }
 
-
-func (this *Round)run(){
+func (this *Round) run() {
 	wg := sync.WaitGroup{}
 	logger.Debug("run()......step1")
 	// make verifiers Credential
@@ -639,38 +633,36 @@ func (this *Round)run(){
 	logger.Debug("run()......step2")
 	this.commonProcess()
 	wg.Wait()
-	this.roundOverCh<-1 //inform the caller,the mission complete
+	this.roundOverCh <- 1 //inform the caller,the mission complete
 }
 
 type Apos struct {
 	systemParam interface{} //the difference of algoParam and systemParam is that algoParam show the Apos
 	//running status,but the systemParam show the Mjoy runing
-	mainStep int
+	mainStep    int
 	commonTools CommonTools
-	outMsger OutMsger
+	outMsger    OutMsger
 
 	//all goroutine send msg to Apos by this Chan
 	allMsgBridge chan dataPack
 
+	roundCtx *Round
 
-	roundCtx      *Round
-
-	roundOverCh   chan interface{}
-	aposStopCh    chan interface{}  //for test if apos just deal once
-	stop bool
-	lock sync.RWMutex
+	roundOverCh chan interface{}
+	aposStopCh  chan interface{} //for test if apos just deal once
+	stop        bool
+	lock        sync.RWMutex
 }
 
-
 //Create Apos
-func NewApos(msger OutMsger ,cmTools CommonTools)*Apos{
+func NewApos(msger OutMsger, cmTools CommonTools) *Apos {
 	a := new(Apos)
 	//a.outMsger = msger
 	a.commonTools = cmTools
 	gCommonTools = cmTools
-	a.allMsgBridge = make(chan dataPack , 10000)
-	a.roundOverCh = make(chan interface{} , 1)
-	a.aposStopCh = make(chan interface{} , 1)
+	a.allMsgBridge = make(chan dataPack, 10000)
+	a.roundOverCh = make(chan interface{}, 1)
+	a.aposStopCh = make(chan interface{}, 1)
 	a.outMsger = MsgTransfer()
 
 	a.reset()
@@ -678,19 +670,19 @@ func NewApos(msger OutMsger ,cmTools CommonTools)*Apos{
 	return a
 }
 
-func (this *Apos)SetPriKey(priKey *ecdsa.PrivateKey){
+func (this *Apos) SetPriKey(priKey *ecdsa.PrivateKey) {
 	this.commonTools.SetPriKey(priKey)
 }
 
-func (this *Apos)makeEmptyBlockForTest(cs *CredentialSign)*block.Block{
-	header := &block.Header{Number:types.NewBigInt(*big.NewInt(int64(this.commonTools.GetNextRound()))),Time:types.NewBigInt(*big.NewInt(time.Now().Unix())),
-							ParentHash:this.commonTools.GetNowBlockHash()}
+func (this *Apos) makeEmptyBlockForTest(cs *CredentialSign) *block.Block {
+	header := &block.Header{Number: types.NewBigInt(*big.NewInt(int64(this.commonTools.GetNextRound()))), Time: types.NewBigInt(*big.NewInt(time.Now().Unix())),
+		ParentHash: this.commonTools.GetNowBlockHash()}
 	//chainId := big.NewInt(100)
 	//signer := block.NewBlockSigner(chainId)
 	srcBytes := []byte{}
-	srcBytes = append(srcBytes , cs.R.IntVal.Bytes()...)
-	srcBytes = append(srcBytes , cs.S.IntVal.Bytes()...)
-	srcBytes = append(srcBytes , cs.V.IntVal.Bytes()...)
+	srcBytes = append(srcBytes, cs.R.IntVal.Bytes()...)
+	srcBytes = append(srcBytes, cs.S.IntVal.Bytes()...)
+	srcBytes = append(srcBytes, cs.V.IntVal.Bytes()...)
 
 	h := crypto.Keccak256(srcBytes)
 	header.ConsensusData.Id = ConsensusDataId
@@ -702,26 +694,25 @@ func (this *Apos)makeEmptyBlockForTest(cs *CredentialSign)*block.Block{
 		logger.Error("sig == nil")
 		return nil
 	}
-	R,S,V,err := signature.FillBySig(sig)
-	if err != nil{
-		logger.Error("makeEmptyBlockForTest Err:" , err.Error())
+	R, S, V, err := signature.FillBySig(sig)
+	if err != nil {
+		logger.Error("makeEmptyBlockForTest Err:", err.Error())
 		return nil
 	}
-
 
 	header.R = &types.BigInt{*R}
 	header.S = &types.BigInt{*S}
 	header.V = &types.BigInt{*V}
 
-	b := block.NewBlock(header , nil , nil)
+	b := block.NewBlock(header, nil, nil)
 	return b
 }
 
-func (this *Apos)SetOutMsger(outMsger OutMsger){
+func (this *Apos) SetOutMsger(outMsger OutMsger) {
 	this.outMsger = outMsger
 }
 
-func SetTestConfig(){
+func SetTestConfig() {
 	//set config
 	Config().maxPotVerifiers = big.NewInt(2)
 	Config().maxBBASteps = 12
@@ -730,32 +721,31 @@ func SetTestConfig(){
 }
 
 //this is the main loop of Apos
-func (this *Apos)Run(){
+func (this *Apos) Run() {
 	SetTestConfig()
 
 	//start round
 	//this.roundOverCh<-1
-	fmt.Println("Apos Run round:" , this.commonTools.GetNextRound())
-	this.roundCtx = newRound(this.commonTools.GetNextRound(),this,this.roundOverCh)
+	fmt.Println("Apos Run round:", this.commonTools.GetNextRound())
+	this.roundCtx = newRound(this.commonTools.GetNextRound(), this, this.roundOverCh)
 
 	go this.roundCtx.run()
 	logger.Info("Apos is running.....")
-	for{
+	for {
 		select {
 		case <-this.roundOverCh:
 			//logger.Info("round overs ", this.roundCtx.round)
 			//this.aposStopCh<-1
 			//return //if apos deal once ,stop it
 			logger.Debug("Apos New Round Running...............")
-			this.roundCtx = newRound(this.commonTools.GetNextRound(),this,this.roundOverCh)
+			this.roundCtx = newRound(this.commonTools.GetNextRound(), this, this.roundOverCh)
 			go this.roundCtx.run()
 		}
 	}
 }
 
-
 //reset the status of Apos
-func (this *Apos)reset(){
+func (this *Apos) reset() {
 	this.lock.Lock()
 	defer this.lock.Unlock()
 
@@ -763,9 +753,8 @@ func (this *Apos)reset(){
 	this.stop = false
 }
 
-
 //Create The Credential
-func (this *Apos)makeCredential(s int) *CredentialSign{
+func (this *Apos) makeCredential(s int) *CredentialSign {
 	r := this.commonTools.GetNextRound()
 	c := new(CredentialSign)
 	c.Signature.init()
@@ -773,7 +762,7 @@ func (this *Apos)makeCredential(s int) *CredentialSign{
 	c.Step = uint64(s)
 
 	err := this.commonTools.Sig(c)
-	if err != nil{
+	if err != nil {
 		logger.Error(err.Error())
 		return nil
 	}
@@ -781,11 +770,11 @@ func (this *Apos)makeCredential(s int) *CredentialSign{
 	return c
 }
 
-func (this *Apos)StopCh()chan interface{}{
+func (this *Apos) StopCh() chan interface{} {
 	return this.aposStopCh
 }
 
-func (this *Apos)judgeVerifier(cs *CredentialSign, setp int) bool{
+func (this *Apos) judgeVerifier(cs *CredentialSign, setp int) bool {
 
 	h := cs.Signature.Hash()
 	leader := false
@@ -850,7 +839,7 @@ func (this *Apos) stepsFactory(ctx *stepCtx) (stepObj step) {
 
 	default:
 		step := ctx.getStep()
-		if step >= 5 && step <= (Config().maxBBASteps + 2) {
+		if step >= 5 && step <= (Config().maxBBASteps+2) {
 
 			stepObj = makeStepObj567()
 			stepObj.setCtx(ctx)
@@ -864,17 +853,3 @@ func (this *Apos) stepsFactory(ctx *stepCtx) (stepObj step) {
 	}
 	return
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-

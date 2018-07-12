@@ -21,12 +21,12 @@
 package consensus
 
 import (
-	"mjoy.io/core/blockchain/block"
+	"errors"
 	"mjoy.io/common/types"
-	"mjoy.io/params"
+	"mjoy.io/core/blockchain/block"
 	"mjoy.io/core/state"
 	"mjoy.io/core/transaction"
-	"errors"
+	"mjoy.io/params"
 )
 
 // ChainReader defines a small collection of methods needed to access the local
@@ -90,7 +90,6 @@ type Engine interface {
 	// APIs returns the RPC APIs this consensus engine provides.
 	//APIs(chain ChainReader) []rpc.API
 }
-
 
 var (
 	// ErrUnknownAncestor is returned when validating a block requires an ancestor

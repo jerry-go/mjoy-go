@@ -26,7 +26,7 @@ import (
 )
 
 type Testmsg struct {
-	A int
+	A    int
 	stop bool
 	*MsgPriv
 }
@@ -34,8 +34,8 @@ type Testmsg struct {
 // new a message
 func NewTestmsg() *Testmsg {
 	tm := Testmsg{
-		A: 1,
-		stop: false,
+		A:       1,
+		stop:    false,
 		MsgPriv: NewMsgPriv(),
 	}
 	Msgcore().Handle(&tm)
@@ -84,4 +84,3 @@ func ExampleMsg() {
 	// handle stop
 	// End
 }
-
