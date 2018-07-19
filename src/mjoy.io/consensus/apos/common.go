@@ -140,3 +140,11 @@ func SenderFromBlock(header *block.Header) (types.Address, error) {
 	cs.Step = 1
 	return cs.sender()
 }
+
+func getThreshold(step int) uint {
+	if step == STEP_FINAL {
+		return Config().tFinalThreshold
+	} else {
+		return Config().tStepThreshold
+	}
+}

@@ -33,6 +33,12 @@ type stepVotes struct {
 	value       types.Hash
 }
 
+func newStepVotes() *stepVotes {
+	sv := new(stepVotes)
+	sv.counts = make(map[types.Hash]uint)
+	return sv
+}
+
 type countVote struct {
 	voteRecord  map[int]*stepVotes
 	msgCh       chan *ByzantineAgreementStar
@@ -61,7 +67,10 @@ func (cv *countVote) run() {
 		select {
 		// receive message
 		case voteMsg := <-cv.msgCh:
-			fmt.Println(voteMsg)
+			step, hash, complete := cv.processMsg(voteMsg)
+			if complete {
+				cv.countSuccess(step, hash)
+			}
 		//timeout message
 		case <-cv.timer.C:
 			cv.timeStep++
@@ -72,4 +81,57 @@ func (cv *countVote) run() {
 			return
 		}
 	}
+}
+
+func (cv *countVote) countSuccess(step int, hash types.Hash) {
+
+	switch step {
+	case STEP_REDUCTION_1:
+		delay := time.Second * time.Duration(Config().delayStep)
+		cv.timeStep++
+		cv.timer.Reset(delay)
+		//todo commitVote()
+
+	default:
+		logger.Warn("invalid message step ", step)
+	}
+}
+
+func (cv *countVote) addVotes(ba *ByzantineAgreementStar) (types.Hash, uint) {
+	hash := ba.Hash
+	step := int(ba.Credential.Step)
+	votes := ba.Credential.votes
+	if sv, ok:= cv.voteRecord[step]; !ok {
+		svNew := newStepVotes()
+		cv.voteRecord[step] = svNew
+		svNew.counts[hash] = votes
+		return hash, votes
+	} else {
+		if hashVote, ok := sv.counts[hash]; ok {
+			hashVote += votes
+			return hash, hashVote
+		} else {
+			sv.counts[hash] = votes
+			return hash, votes
+		}
+	}
+}
+
+func (cv *countVote) processMsg(ba *ByzantineAgreementStar) (int, types.Hash, bool) {
+	step := int(ba.Credential.Step)
+
+	hash, votes := cv.addVotes(ba)
+
+	sv := cv.voteRecord[step]
+
+	//check this step whether is finish
+	if sv.isFinish {
+		return step, types.Hash{}, false
+	}
+
+	if votes > getThreshold(step) {
+		sv.isFinish = true
+		return step, hash, true
+	}
+	return step, hash, false
 }
