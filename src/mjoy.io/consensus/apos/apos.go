@@ -590,6 +590,26 @@ func (this *Round) receiveMsgBba(msg *BinaryByzantineAgreement) {
 
 	}
 }
+func (this *Round) filterMsgBa(msg *ByzantineAgreementStar) error {
+	return nil
+}
+func (this *Round) receiveMsgBaStar(msg *ByzantineAgreementStar) {
+	//verify msg
+	if msg.Credential.Round != this.round {
+		logger.Warn("verify fail, ba msg is not in current round", msg.Credential.Round, this.round)
+		return
+	}
+
+	if err := this.filterMsgBa(msg); err != nil {
+		logger.Info("filter ba message fail:", err)
+		return
+	}
+
+	//todo send msg to ba
+
+	//Propagate message via p2p
+	this.apos.outMsger.PropagateMsg(msg)
+}
 
 func (this *Round) commonProcess() {
 	for {
@@ -605,6 +625,8 @@ func (this *Round) commonProcess() {
 				this.receiveMsgGc(v)
 			case *BinaryByzantineAgreement:
 				this.receiveMsgBba(v)
+			case *ByzantineAgreementStar:
+				this.receiveMsgBaStar(v)
 			default:
 				logger.Warn("invalid message type ", reflect.TypeOf(v))
 			}

@@ -372,7 +372,7 @@ func newByzantineAgreementStar() *ByzantineAgreementStar {
 
 func (ba *ByzantineAgreementStar) validate() error {
 	//verify step
-	if ba.Credential.Step < 1 || int(ba.Credential.Step) > Config().maxBBASteps{
+	if ba.Credential.Step < 1 || uint(ba.Credential.Step) > Config().maxStep{
 		return errors.New(fmt.Sprintf("Byzantine Agreement Star step is not right: %d", ba.Credential.Step))
 	}
 	//verify Credential
