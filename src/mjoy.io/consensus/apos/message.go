@@ -27,10 +27,17 @@ import (
 	"mjoy.io/common"
 	"mjoy.io/common/types"
 	"mjoy.io/consensus/message"
-	"mjoy.io/core/blockchain/block"
 	"mjoy.io/utils/event"
 	"reflect"
 	"sync"
+	"mjoy.io/core/blockchain/block"
+)
+
+const (
+	STEP_BP = iota + 0xffff
+	STEP_REDUCTION_1
+	STEP_REDUCTION_2
+	STEP_FINAL
 )
 
 //go:generate msgp
@@ -348,6 +355,82 @@ func (bba *msgBinaryByzantineAgreement) DataHandle(data interface{}) {
 
 func (bba *msgBinaryByzantineAgreement) StopHandle() {
 	logger.Debug("msgBinaryByzantineAgreement stop ...")
+}
+
+
+type ByzantineAgreementStar struct {
+	Hash       types.Hash      //voted block's hash.
+	Esig       *EphemeralSign  //the signature of somebody's ephemeral secret key
+	Credential *CredentialSign
+}
+
+func newByzantineAgreementStar() *ByzantineAgreementStar {
+	b := new(ByzantineAgreementStar)
+	b.Esig = new(EphemeralSign)
+	return b
+}
+
+func (ba *ByzantineAgreementStar) validate() error {
+	//verify step
+	if ba.Credential.Step < 1 || int(ba.Credential.Step) > Config().maxBBASteps{
+		return errors.New(fmt.Sprintf("Byzantine Agreement Star step is not right: %d", ba.Credential.Step))
+	}
+	//verify Credential
+	cretSender, err := ba.Credential.validate()
+	if err != nil {
+		return err
+	}
+
+	//verify ephemeral signature
+	ba.Esig.round = ba.Credential.Round
+	ba.Esig.step = ba.Credential.Step
+	ba.Esig.val = ba.Hash.Bytes()
+	sender, err := ba.Esig.sender()
+	if err != nil {
+		return errors.New(fmt.Sprintf("BA* verify ephemeral signature fail: %s", err))
+	}
+
+	if cretSender != sender {
+		logger.Debug("BA* Ephemeral hash signature address is not equal to Credential signature address", sender.Hex(), cretSender.Hex())
+		return errors.New("sender's address between Credential and Hash Ephemeral is not equal")
+	}
+
+	return nil
+}
+
+func (ba *ByzantineAgreementStar) BaHash() types.Hash {
+	hash, err := common.MsgpHash(ba)
+	if err != nil {
+		return types.Hash{}
+	}
+	return hash
+}
+
+type msgByzantineAgreementStar struct {
+	ba *ByzantineAgreementStar
+	*message.MsgPriv
+}
+
+func NewMsgByzantineAgreementStar(ba *ByzantineAgreementStar) *msgByzantineAgreementStar {
+	msgBba := &msgByzantineAgreementStar{
+		ba:     ba,
+		MsgPriv: message.NewMsgPriv(),
+	}
+	message.Msgcore().Handle(msgBba)
+	return msgBba
+}
+
+func (ba *msgByzantineAgreementStar) DataHandle(data interface{}) {
+	logger.Debug("msgByzantineAgreementStar data handle", ba.ba.Credential.Round, ba.ba.Credential.Step)
+	if err := ba.ba.validate(); err != nil {
+		logger.Info("message ByzantineAgreementStar validate error:", err)
+		return
+	}
+	MsgTransfer().Send2Apos(ba.ba)
+}
+
+func (bba *msgByzantineAgreementStar) StopHandle() {
+	logger.Debug("msgByzantineAgreementStar stop ...")
 }
 
 //message transfer between msg and Apos

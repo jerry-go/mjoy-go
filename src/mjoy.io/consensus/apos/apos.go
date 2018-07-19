@@ -439,6 +439,7 @@ func (this *Round) receiveMsgGc(msg *GradedConsensus) {
 		return
 	}
 
+	//countVote
 	//send this msg to step3 or step4 goroutine
 	if stepObj, ok := this.allStepObj[step+1]; ok {
 		go stepObj.sendMsg(msg)

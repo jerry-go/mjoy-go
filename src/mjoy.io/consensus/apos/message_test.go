@@ -935,3 +935,8 @@ func TestBba_validate_max(t *testing.T) {
 	msgBba.Send()
 	time.Sleep(2 * time.Second)
 }
+
+func TestBba_e(t *testing.T) {
+	a:= STEP_REDUCTION_1
+	fmt.Println(a)
+}

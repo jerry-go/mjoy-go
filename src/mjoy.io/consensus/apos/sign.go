@@ -202,8 +202,9 @@ func (s Signature) toBytes() (sig []byte) {
 // long-term key singer
 type CredentialSign struct {
 	Signature
-	Round uint64 // round
-	Step  uint64 // step
+	Round      uint64 // round
+	Step       uint64 // step
+	ParentHash types.Hash
 }
 
 type CredentialSigForHash struct {
