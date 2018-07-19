@@ -134,4 +134,11 @@ type stepCtx struct {
 	getEphemeralSig func(signed []byte) Signature
 	getProducerNewBlock func(data *block.ConsensusData)*block.Block
 	//getPrivKey
+
+	//gilad
+	commonCoin func(round , step , t int)int
+	resetTimer func()
+	writeRet func(data *VoteData)
+	getGiladEmptyHash func()types.Hash
+	sortition func(step int)int
 }

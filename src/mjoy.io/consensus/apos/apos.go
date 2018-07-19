@@ -22,16 +22,16 @@ package apos
 
 import (
 	"sync"
-	"mjoy.io/utils/crypto"
 	"mjoy.io/common/types"
 	"math/big"
-	"reflect"
 	"errors"
 	"mjoy.io/core/blockchain/block"
-	"time"
 	"container/heap"
+	"reflect"
 	"fmt"
 	"crypto/ecdsa"
+	"time"
+	"mjoy.io/utils/crypto"
 )
 
 const (
@@ -104,7 +104,7 @@ type Round struct {
 	smallestLBr    *BlockProposal
 	lock           sync.RWMutex
 
-	leaders        map[types.Hash]*PotentialLeader
+	leaders        map[types.Hash]*PotentialLeader  //map[block.hash]*PotentialLeader
 	emptyBlock     *block.Block
 	maxLeaderNum   int
 	curLeaderNum   int
@@ -112,7 +112,7 @@ type Round struct {
 	curLeader      types.Hash
 
 	msgs           map[types.Address]*peerMsgs
-	csPq          map[int]*pqCredential
+	csPq          map[int]*pqCredential         //the sorted heap with priority
 
 	quitCh         chan *block.Block
 	roundOverCh    chan interface{}
@@ -239,6 +239,9 @@ func (this *Round)startVerify(wg *sync.WaitGroup) {
 	}
 }
 
+/*
+check the round has duplicate message or not.If has duplicate message,ignore it.
+*/
 func (this *Round)filterMsgCs(msg *CredentialSign) error {
 	address, err := msg.sender()
 	if err != nil {
@@ -270,6 +273,10 @@ func (this *Round)filterMsgCs(msg *CredentialSign) error {
 	return nil
 }
 
+/*
+1.sort Credential
+2.pop when len(q) > maxNum
+*/
 func (this *Round) verifyCredentialRight(msg *CredentialSign) error {
 	step := int(msg.Step)
 	maxNum := Config().maxPotVerifiers
@@ -319,15 +326,17 @@ func (this *Round) verifyCredentialRight(msg *CredentialSign) error {
 func (this *Round)receiveMsgCs(msg *CredentialSign) {
 	logger.Info("Receive message CredentialSign")
 	if msg.Round != this.round {
-		logger.Warn("verify fail, Credential msg is not in current round", msg.Round, this.round)
+		logger.Warn("verify fail, Credential msg is not in current round,want:", msg.Round, "  but:",this.round)
 		return
 	}
 
+	//priority check
 	if err := this.verifyCredentialRight(msg); err != nil {
 		logger.Info("verify Credential Right fail:", err)
 		return
 	}
 
+	//duplicate message check
 	if err := this.filterMsgCs(msg); err != nil {
 		logger.Info("filter Credential fail", err)
 		return

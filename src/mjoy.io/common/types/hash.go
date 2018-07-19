@@ -62,6 +62,15 @@ func (*Hash) ExtensionType() int8 {
 	return hashType
 }
 
+func (h *Hash)Equal(in *Hash)bool{
+	for i := 0;i < HashLength;i++{
+		if h[i] != in[i]{
+			return false
+		}
+	}
+	return true
+}
+
 // We'll always use 32 bytes to encode the data
 func (*Hash) Len() int {
 	return HashLength
