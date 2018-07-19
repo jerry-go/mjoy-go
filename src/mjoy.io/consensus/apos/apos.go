@@ -126,7 +126,7 @@ type Round struct {
 
 	quitCh      chan *block.Block
 	roundOverCh chan interface{}
-
+	voteObj  *VoteObj
 
 
 	//version 1.1
@@ -161,6 +161,39 @@ func (this *Round) init(round int, apos *Apos, roundOverCh chan interface{}) {
 
 	this.msgs = make(map[types.Address]*peerMsgs)
 	this.csPq = make(map[int]*pqCredential)
+
+
+	//step ctx init
+	// step context
+	stepCtx := &stepCtx{}
+
+	//pC := credential
+	//stepCtx.getCredential = func() *CredentialSign {
+	//	return pC
+	//}
+
+	stepCtx.esig = this.apos.commonTools.Esig
+	stepCtx.sendInner = this.apos.outMsger.SendInner
+	stepCtx.propagateMsg = this.apos.outMsger.PropagateMsg
+	stepCtx.getEmptyBlockHash = this.getEmptyBlockHash
+	//stepRt := step
+	//stepCtx.getStep = func() int {
+	//	return stepRt
+	//}
+
+	roundRt := int(this.round)
+	stepCtx.getRound = func() int {
+		return roundRt
+	}
+
+	//stepCtx.stopStep = stepRoutineObj.stop
+	//stepCtx.stopRound = func() {
+	//	this.stopAllStepRoutine()
+	//	// TODO: ......
+	//}
+	this.voteObj = makeVoteObj(stepCtx)
+
+
 }
 
 func (this *Round) setSmallestBrM1(bp *BlockProposal) {
