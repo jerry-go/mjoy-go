@@ -60,9 +60,9 @@ type config struct {
 	R                uint     `json:"r"`                // seed refresh interval (# of rounds)
 	tProposer        uint     `json:"tProposer"`        // expected # of block proposers
 	tStep            uint     `json:"tStep"`            // expected # of committee members
-	tStepThreshold   uint     `json:"tStepThreshold"`   // threshold of τstep for BA⋆
+	tStepThreshold   uint     `json:"tStepThreshold"`   // threshold # of τstep for BA⋆
 	tFinal           uint     `json:"tFinal"`           // expected # of final committee members
-	tFinalThreshold  uint     `json:"tFinalThreshold"`  // threshold of τfinal for BA⋆
+	tFinalThreshold  uint     `json:"tFinalThreshold"`  // threshold # of τfinal for BA⋆
 	maxStep          uint     `json:"maxStep"`          // maximum number of steps in BinaryBA⋆
 	delayPriority    uint     `json:"delayPriority"`    // time to gossip sortition proofs
 	delayStep        uint     `json:"delayStep"`        // timeout for receiving a block
@@ -89,9 +89,9 @@ func (c *config) setDefault() {
 	c.R = 1000
 	c.tProposer = 26
 	c.tStep = 2000
-	c.tStepThreshold = c.tStep * 0.685
+	c.tStepThreshold = c.tStep * 685/1000
 	c.tFinal = 10000
-	c.tFinalThreshold = c.tFinal * 0.74
+	c.tFinalThreshold = c.tFinal * 74/100
 	c.maxStep = 150
 	c.delayPriority = 5
 	c.delayStep = 5
@@ -113,6 +113,7 @@ func Config() *config {
 		instance.Verify()
 		//instance.verifier()
 		instance.chain()
+		fmt.Println(instance)
 	})
 
 	return instance

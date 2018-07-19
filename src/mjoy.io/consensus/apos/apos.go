@@ -88,6 +88,13 @@ type pqCredential struct {
 	credentials map[string]*CredentialSign
 }
 
+type mainStepOutput struct {
+	bp        types.Hash
+	reduction types.Hash
+	bba       types.Hash
+	final     types.Hash
+}
+
 //round context
 type Round struct {
 	round uint64
@@ -115,6 +122,10 @@ type Round struct {
 
 	quitCh      chan *block.Block
 	roundOverCh chan interface{}
+
+
+	//version 1.1
+	mainStepRlt   mainStepOutput
 }
 
 func newRound(round int, apos *Apos, roundOverCh chan interface{}) *Round {
