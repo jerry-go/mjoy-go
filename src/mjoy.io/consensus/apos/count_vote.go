@@ -44,13 +44,19 @@ type countVote struct {
 	msgCh       chan *ByzantineAgreementStar
 	stopCh      chan interface{}
 	timer       *time.Timer
-	timeStep    uint
+	timerStep   uint
+	emptyBlock  types.Hash
+
+	sendVoteResult func(s int, hash types.Hash)
+
 
 }
 
-func newCountVote() *countVote {
+func newCountVote(sendVoteResult func(s int, hash types.Hash), emptyBlock  types.Hash) *countVote {
 	cv := new(countVote)
 	cv.init()
+	cv.sendVoteResult = sendVoteResult
+	cv.emptyBlock = emptyBlock
 	return cv
 }
 
@@ -73,11 +79,11 @@ func (cv *countVote) run() {
 			}
 		//timeout message
 		case <-cv.timer.C:
-			cv.timeStep++
-			fmt.Println("timeout", cv.timeStep)
+			cv.timerStep++
+			fmt.Println("timeout", cv.timerStep)
 			cv.timer.Reset(time.Second * 1)
 		case <-cv.stopCh:
-			fmt.Println("countVote run exit", cv.timeStep)
+			fmt.Println("countVote run exit", cv.timerStep)
 			return
 		}
 	}
@@ -85,15 +91,36 @@ func (cv *countVote) run() {
 
 func (cv *countVote) countSuccess(step int, hash types.Hash) {
 
-	switch step {
-	case STEP_REDUCTION_1:
-		delay := time.Second * time.Duration(Config().delayStep)
-		cv.timeStep++
-		cv.timer.Reset(delay)
-		//todo commitVote()
+	delay := time.Second * time.Duration(Config().delayStep)
+	//cv.timerStep++
+	//resetTimer := true
+	cv.timer.Reset(delay)
+	cv.sendVoteResult(step, hash)
 
-	default:
-		logger.Warn("invalid message step ", step)
+	//bba step
+	if step <= int(Config().maxStep) {
+		bbaIdex := step % 3
+		if bbaIdex == 1 {
+			//bba step 1
+			if hash != cv.emptyBlock {
+				//bba complete
+				cv.timerStep = STEP_FINAL
+			}
+		} else if bbaIdex == 2 {
+			//bba step 1
+			if hash == cv.emptyBlock {
+				//bba complete
+				cv.timerStep = STEP_FINAL
+			}
+		} else {
+			cv.timerStep++
+		}
+	} else if step == STEP_REDUCTION_1 {
+		cv.timerStep = STEP_REDUCTION_2
+	} else if  step == STEP_REDUCTION_2 {
+		cv.timerStep = 1
+	} else {
+		cv.timerStep = STEP_IDLE
 	}
 }
 

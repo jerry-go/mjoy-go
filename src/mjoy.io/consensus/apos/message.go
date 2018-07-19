@@ -38,6 +38,7 @@ const (
 	STEP_REDUCTION_1
 	STEP_REDUCTION_2
 	STEP_FINAL
+	STEP_IDLE
 )
 
 //go:generate msgp

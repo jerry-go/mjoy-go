@@ -23,11 +23,15 @@ package apos
 import (
 	"testing"
 	"time"
+	"mjoy.io/common/types"
 )
 
+func commitVote(s int , hash types.Hash) {
+
+}
 
 func TestCvRun(t *testing.T) {
-	cv := newCountVote()
+	cv := newCountVote(commitVote, types.Hash{})
 	Config().maxStep = 150
 	go cv.run()
 	time.Sleep(5 * time.Second)
