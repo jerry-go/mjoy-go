@@ -131,6 +131,7 @@ type Round struct {
 
 	//version 1.1
 	mainStepRlt   mainStepOutput
+	parentHash    types.Hash
 }
 
 func newRound(round int, apos *Apos, roundOverCh chan interface{}) *Round {
@@ -621,6 +622,11 @@ func (this *Round) receiveMsgBaStar(msg *ByzantineAgreementStar) {
 	//verify msg
 	if msg.Credential.Round != this.round {
 		logger.Warn("verify fail, ba msg is not in current round", msg.Credential.Round, this.round)
+		return
+	}
+
+	if msg.Credential.ParentHash != this.parentHash {
+		logger.Warn("verify fail, ba msg is not in current block chain", msg.Credential.ParentHash.String(), this.parentHash.String())
 		return
 	}
 
