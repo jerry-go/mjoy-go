@@ -178,6 +178,11 @@ func (z *CredentialSign) DecodeMsg(dc *msgp.Reader) (err error) {
 			if err != nil {
 				return
 			}
+		case "ParentHash":
+			err = z.ParentHash.DecodeMsg(dc)
+			if err != nil {
+				return
+			}
 		default:
 			err = dc.Skip()
 			if err != nil {
@@ -190,9 +195,9 @@ func (z *CredentialSign) DecodeMsg(dc *msgp.Reader) (err error) {
 
 // EncodeMsg implements msgp.Encodable
 func (z *CredentialSign) EncodeMsg(en *msgp.Writer) (err error) {
-	// map header, size 3
+	// map header, size 4
 	// write "Signature"
-	err = en.Append(0x83, 0xa9, 0x53, 0x69, 0x67, 0x6e, 0x61, 0x74, 0x75, 0x72, 0x65)
+	err = en.Append(0x84, 0xa9, 0x53, 0x69, 0x67, 0x6e, 0x61, 0x74, 0x75, 0x72, 0x65)
 	if err != nil {
 		return
 	}
@@ -218,15 +223,24 @@ func (z *CredentialSign) EncodeMsg(en *msgp.Writer) (err error) {
 	if err != nil {
 		return
 	}
+	// write "ParentHash"
+	err = en.Append(0xaa, 0x50, 0x61, 0x72, 0x65, 0x6e, 0x74, 0x48, 0x61, 0x73, 0x68)
+	if err != nil {
+		return
+	}
+	err = z.ParentHash.EncodeMsg(en)
+	if err != nil {
+		return
+	}
 	return
 }
 
 // MarshalMsg implements msgp.Marshaler
 func (z *CredentialSign) MarshalMsg(b []byte) (o []byte, err error) {
 	o = msgp.Require(b, z.Msgsize())
-	// map header, size 3
+	// map header, size 4
 	// string "Signature"
-	o = append(o, 0x83, 0xa9, 0x53, 0x69, 0x67, 0x6e, 0x61, 0x74, 0x75, 0x72, 0x65)
+	o = append(o, 0x84, 0xa9, 0x53, 0x69, 0x67, 0x6e, 0x61, 0x74, 0x75, 0x72, 0x65)
 	o, err = z.Signature.MarshalMsg(o)
 	if err != nil {
 		return
@@ -237,6 +251,12 @@ func (z *CredentialSign) MarshalMsg(b []byte) (o []byte, err error) {
 	// string "Step"
 	o = append(o, 0xa4, 0x53, 0x74, 0x65, 0x70)
 	o = msgp.AppendUint64(o, z.Step)
+	// string "ParentHash"
+	o = append(o, 0xaa, 0x50, 0x61, 0x72, 0x65, 0x6e, 0x74, 0x48, 0x61, 0x73, 0x68)
+	o, err = z.ParentHash.MarshalMsg(o)
+	if err != nil {
+		return
+	}
 	return
 }
 
@@ -271,6 +291,11 @@ func (z *CredentialSign) UnmarshalMsg(bts []byte) (o []byte, err error) {
 			if err != nil {
 				return
 			}
+		case "ParentHash":
+			bts, err = z.ParentHash.UnmarshalMsg(bts)
+			if err != nil {
+				return
+			}
 		default:
 			bts, err = msgp.Skip(bts)
 			if err != nil {
@@ -284,7 +309,7 @@ func (z *CredentialSign) UnmarshalMsg(bts []byte) (o []byte, err error) {
 
 // Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
 func (z *CredentialSign) Msgsize() (s int) {
-	s = 1 + 10 + z.Signature.Msgsize() + 6 + msgp.Uint64Size + 5 + msgp.Uint64Size
+	s = 1 + 10 + z.Signature.Msgsize() + 6 + msgp.Uint64Size + 5 + msgp.Uint64Size + 11 + z.ParentHash.Msgsize()
 	return
 }
 

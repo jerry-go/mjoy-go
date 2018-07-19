@@ -1,13 +1,13 @@
 package apos
 
 import (
-	"math/big"
-	"testing"
 	"fmt"
-	"mjoy.io/common/types"
-	"time"
+	"math/big"
 	"mjoy.io/common"
+	"mjoy.io/common/types"
 	"mjoy.io/utils/crypto"
+	"testing"
+	"time"
 )
 
 //func (s *Signature) init() {
@@ -16,25 +16,27 @@ import (
 //	s.V = new(types.BigInt)
 //}
 // End condition 0 for message bp bba
-func TestBba_EndCondition0(t *testing.T){
+func TestBba_EndCondition0(t *testing.T) {
 	Config().blockDelay = 2
 	Config().verifyDelay = 1
 	Config().maxBBASteps = 12
 	Config().prLeader = 10000000000
 	Config().prVerifier = 10000000000
 	Config().maxPotLeaders = big.NewInt(3)
-	Config().maxPotVerifiers =  big.NewInt(4)
+	Config().maxPotVerifiers = big.NewInt(4)
 	an := newAllNodeManager()
 	verifierCnt := an.initTestCommonNew(0)
-	logger.Debug(COLOR_PREFIX+COLOR_FRONT_BLUE+COLOR_SUFFIX , "Verifier Cnt:" , verifierCnt , COLOR_SHORT_RESET)
+	logger.Debug(COLOR_PREFIX+COLOR_FRONT_BLUE+COLOR_SUFFIX, "Verifier Cnt:", verifierCnt, COLOR_SHORT_RESET)
+	Config().maxPotLeaders = big.NewInt(3)
+	Config().maxPotVerifiers = big.NewInt(4)
 
 	priKey := generatePrivateKey()
 	cs := &CredentialSign{}
 	cs.Round = 100
 	cs.Step = 1
 	cs.Signature.init()
-	if _,_,_, err := cs.sign(priKey); err != nil {
-		fmt.Println("111",err)
+	if _, _, _, err := cs.sign(priKey); err != nil {
+		fmt.Println("111", err)
 		return
 	}
 	msgcs := NewMsgCredential(cs)
@@ -50,8 +52,8 @@ func TestBba_EndCondition0(t *testing.T){
 	bp.Esig.step = bp.Credential.Step
 	bp.Esig.val = hash.Bytes()
 	bp.Esig.Signature.init()
-	if _,_,_, err := bp.Esig.sign(priKey); err != nil {
-		fmt.Println("2222",err)
+	if _, _, _, err := bp.Esig.sign(priKey); err != nil {
+		fmt.Println("2222", err)
 	}
 
 	msgbp := NewMsgBlockProposal(bp)
@@ -60,15 +62,15 @@ func TestBba_EndCondition0(t *testing.T){
 	msg_css := []*msgCredentialSig{}
 	msg_bbas := []*msgBinaryByzantineAgreement{}
 
-	for i := 1 ;i <= 4; i++ {
+	for i := 1; i <= 4; i++ {
 		//time.Sleep(1 * time.Second)
 		priKey := generatePrivateKey()
 		cs := &CredentialSign{}
 		cs.Round = 100
 		cs.Step = 4 + 3
 		cs.Signature.init()
-		if _,_,_, err := cs.sign(priKey); err != nil {
-			fmt.Println("333",err)
+		if _, _, _, err := cs.sign(priKey); err != nil {
+			fmt.Println("333", err)
 			return
 		}
 		msgcs := NewMsgCredential(cs)
@@ -101,25 +103,93 @@ func TestBba_EndCondition0(t *testing.T){
 	}
 
 	for _, mbba := range msg_bbas {
-		time.Sleep(1*time.Second)
+		time.Sleep(1 * time.Second)
 		mbba.Send()
 	}
 
 	select {
-		case <-an.actualNode.StopCh():
+	case <-an.actualNode.StopCh():
 	}
 }
 
-func TestEvent1(t *testing.T){
+func TestBba_EndConditionM3(t *testing.T) {
 	Config().blockDelay = 2
 	Config().verifyDelay = 1
 	Config().maxBBASteps = 12
 	Config().prLeader = 10000000000
 	Config().prVerifier = 10000000000
 	Config().maxPotLeaders = big.NewInt(3)
-	Config().maxPotVerifiers =  big.NewInt(4)
+	Config().maxPotVerifiers = big.NewInt(4)
+	an := newAllNodeManager()
+	verifierCnt := an.initTestCommonNew(0)
+	logger.Debug(COLOR_PREFIX+COLOR_FRONT_BLUE+COLOR_SUFFIX, "Verifier Cnt:", verifierCnt, COLOR_SHORT_RESET)
+	Config().maxPotLeaders = big.NewInt(3)
+	Config().maxPotVerifiers = big.NewInt(2)
 
-	actualNode := NewApos(MsgTransfer() , newOutCommonTools())
+	msg_css := []*msgCredentialSig{}
+	msg_bbas := []*msgBinaryByzantineAgreement{}
+
+	for i := 1; i <= 2; i++ {
+		//time.Sleep(1 * time.Second)
+		priKey := generatePrivateKey()
+		cs := &CredentialSign{}
+		cs.Round = 100
+		cs.Step = 12 + 3
+		cs.Signature.init()
+		if _, _, _, err := cs.sign(priKey); err != nil {
+			fmt.Println("333", err)
+			return
+		}
+		msgcs := NewMsgCredential(cs)
+		msg_css = append(msg_css, msgcs)
+		bba := newBinaryByzantineAgreement()
+
+		bba.Credential = cs
+		bba.B = 1
+		hash := an.actualNode.roundCtx.getEmptyBlockHash()
+		bba.Hash = hash
+		//b
+		bba.EsigB.round = bba.Credential.Round
+		bba.EsigB.step = bba.Credential.Step
+		bba.EsigB.val = big.NewInt(int64(bba.B)).Bytes()
+		bba.EsigB.Signature.init()
+		bba.EsigB.sign(priKey)
+
+		//hash
+		bba.EsigV.round = bba.Credential.Round
+		bba.EsigV.step = bba.Credential.Step
+		bba.EsigV.val = hash.Bytes()
+		bba.EsigV.Signature.init()
+		bba.EsigV.sign(priKey)
+
+		msgBba := NewMsgBinaryByzantineAgreement(bba)
+		msg_bbas = append(msg_bbas, msgBba)
+	}
+
+	for _, mcs := range msg_css {
+		mcs.Send()
+	}
+
+	for _, mbba := range msg_bbas {
+		time.Sleep(1 * time.Second)
+		mbba.Send()
+	}
+
+	select {
+	case <-an.actualNode.StopCh():
+	}
+}
+
+func TestEvent1(t *testing.T) {
+	Config().blockDelay = 2
+	Config().verifyDelay = 1
+	Config().maxBBASteps = 12
+	Config().prLeader = 10000000000
+	Config().prVerifier = 10000000000
+	Config().maxPotLeaders = big.NewInt(3)
+	Config().maxPotVerifiers = big.NewInt(4)
+
+	actualNode := NewApos(MsgTransfer(), newOutCommonTools())
 
 	csCh := make(chan CsEvent, 1000)
 	csSub := MsgTransfer().SubscribeCsEvent(csCh)
@@ -160,28 +230,27 @@ func TestEvent1(t *testing.T){
 	cs.Round = 100
 	cs.Step = 1
 	cs.Signature.init()
-	if _,_,_, err := cs.sign(priKey); err != nil {
-		fmt.Println("111",err)
+	if _, _, _, err := cs.sign(priKey); err != nil {
+		fmt.Println("111", err)
 		return
 	}
 	msgcs := NewMsgCredential(cs)
 	msgcs.Send()
-
 
 	select {
 	case <-actualNode.StopCh():
 	}
 }
 
-func TestCs_validate_success(t *testing.T){
+func TestCs_validate_success(t *testing.T) {
 	Config().prVerifier = 10000000000
 	priKey := generatePrivateKey()
 	cs := &CredentialSign{}
 	cs.Round = 100
 	cs.Step = 2
 	cs.Signature.init()
-	if _,_,_, err := cs.sign(priKey); err != nil {
-		fmt.Println("111",err)
+	if _, _, _, err := cs.sign(priKey); err != nil {
+		fmt.Println("111", err)
 		return
 	}
 	msgcs := NewMsgCredential(cs)
@@ -190,15 +259,15 @@ func TestCs_validate_success(t *testing.T){
 }
 
 //credential has no right to verify
-func TestCs_validate_fail_1(t *testing.T){
+func TestCs_validate_fail_1(t *testing.T) {
 	Config().prVerifier = 1
 	priKey := generatePrivateKey()
 	cs := &CredentialSign{}
 	cs.Round = 100
 	cs.Step = 2
 	cs.Signature.init()
-	if _,_,_, err := cs.sign(priKey); err != nil {
-		fmt.Println("111",err)
+	if _, _, _, err := cs.sign(priKey); err != nil {
+		fmt.Println("111", err)
 		return
 	}
 	msgcs := NewMsgCredential(cs)
@@ -207,15 +276,15 @@ func TestCs_validate_fail_1(t *testing.T){
 }
 
 //verify CredentialSig fail: invalid chain id for signer
-func TestCs_validate_fail_2(t *testing.T){
+func TestCs_validate_fail_2(t *testing.T) {
 	Config().prVerifier = 10000000000
 	priKey := generatePrivateKey()
 	cs := &CredentialSign{}
 	cs.Round = 100
 	cs.Step = 2
 	cs.Signature.init()
-	if _,_,_, err := cs.sign(priKey); err != nil {
-		fmt.Println("111",err)
+	if _, _, _, err := cs.sign(priKey); err != nil {
+		fmt.Println("111", err)
 		return
 	}
 	cs.V.IntVal.Add(&cs.V.IntVal, common.Big2)
@@ -224,22 +293,22 @@ func TestCs_validate_fail_2(t *testing.T){
 	time.Sleep(2 * time.Second)
 }
 
-func TestCs_sava(t *testing.T){
+func TestCs_sava(t *testing.T) {
 	Config().blockDelay = 20
 	Config().verifyDelay = 10
 	Config().maxBBASteps = 12
 	Config().maxPotLeaders = big.NewInt(3)
 	an := newAllNodeManager()
 	verifierCnt := an.initTestCommonNew(0)
-	logger.Debug(COLOR_PREFIX+COLOR_FRONT_BLUE+COLOR_SUFFIX , "Verifier Cnt:" , verifierCnt , COLOR_SHORT_RESET)
+	logger.Debug(COLOR_PREFIX+COLOR_FRONT_BLUE+COLOR_SUFFIX, "Verifier Cnt:", verifierCnt, COLOR_SHORT_RESET)
 
 	priKey := generatePrivateKey()
 	cs := &CredentialSign{}
 	cs.Round = 100
 	cs.Step = 1
 	cs.Signature.init()
-	if _,_,_, err := cs.sign(priKey); err != nil {
-		fmt.Println("111",err)
+	if _, _, _, err := cs.sign(priKey); err != nil {
+		fmt.Println("111", err)
 		return
 	}
 
@@ -247,15 +316,15 @@ func TestCs_sava(t *testing.T){
 	msgcs.Send()
 	msgcs.Send()
 
-	for i := 1 ;i <= 10; i++ {
+	for i := 1; i <= 10; i++ {
 		time.Sleep(1 * time.Second)
 		priKey := generatePrivateKey()
 		cs := &CredentialSign{}
 		cs.Round = 100
 		cs.Step = 1
 		cs.Signature.init()
-		if _,_,_, err := cs.sign(priKey); err != nil {
-			fmt.Println("111",err)
+		if _, _, _, err := cs.sign(priKey); err != nil {
+			fmt.Println("111", err)
 			return
 		}
 
@@ -270,7 +339,7 @@ func TestCs_sava(t *testing.T){
 	}
 }
 
-func TestBp_validate_success(t *testing.T){
+func TestBp_validate_success(t *testing.T) {
 	Config().prVerifier = 10000000000
 	Config().prLeader = 10000000000
 	priKey := generatePrivateKey()
@@ -278,8 +347,8 @@ func TestBp_validate_success(t *testing.T){
 	cs.Round = 100
 	cs.Step = 1
 	cs.Signature.init()
-	if _,_,_, err := cs.sign(priKey); err != nil {
-		fmt.Println("111",err)
+	if _, _, _, err := cs.sign(priKey); err != nil {
+		fmt.Println("111", err)
 		return
 	}
 
@@ -293,8 +362,8 @@ func TestBp_validate_success(t *testing.T){
 	bp.Esig.step = bp.Credential.Step
 	bp.Esig.val = hash.Bytes()
 	bp.Esig.Signature.init()
-	if _,_,_, err := bp.Esig.sign(priKey); err != nil {
-		fmt.Println("2222",err)
+	if _, _, _, err := bp.Esig.sign(priKey); err != nil {
+		fmt.Println("2222", err)
 	}
 
 	msgbp := NewMsgBlockProposal(bp)
@@ -303,7 +372,7 @@ func TestBp_validate_success(t *testing.T){
 }
 
 //credential has no right to verify
-func TestBp_validate_fail_1(t *testing.T){
+func TestBp_validate_fail_1(t *testing.T) {
 	Config().prVerifier = 10000000000
 	Config().prLeader = 1
 	priKey := generatePrivateKey()
@@ -311,8 +380,8 @@ func TestBp_validate_fail_1(t *testing.T){
 	cs.Round = 100
 	cs.Step = 1
 	cs.Signature.init()
-	if _,_,_, err := cs.sign(priKey); err != nil {
-		fmt.Println("111",err)
+	if _, _, _, err := cs.sign(priKey); err != nil {
+		fmt.Println("111", err)
 		return
 	}
 
@@ -326,8 +395,8 @@ func TestBp_validate_fail_1(t *testing.T){
 	bp.Esig.step = bp.Credential.Step
 	bp.Esig.val = hash.Bytes()
 	bp.Esig.Signature.init()
-	if _,_,_, err := bp.Esig.sign(priKey); err != nil {
-		fmt.Println("2222",err)
+	if _, _, _, err := bp.Esig.sign(priKey); err != nil {
+		fmt.Println("2222", err)
 	}
 
 	msgbp := NewMsgBlockProposal(bp)
@@ -336,7 +405,7 @@ func TestBp_validate_fail_1(t *testing.T){
 }
 
 //Block Proposal step is not 1
-func TestBp_validate_fail_2(t *testing.T){
+func TestBp_validate_fail_2(t *testing.T) {
 	Config().prVerifier = 10000000000
 	Config().prLeader = 1
 	priKey := generatePrivateKey()
@@ -344,8 +413,8 @@ func TestBp_validate_fail_2(t *testing.T){
 	cs.Round = 100
 	cs.Step = 2
 	cs.Signature.init()
-	if _,_,_, err := cs.sign(priKey); err != nil {
-		fmt.Println("111",err)
+	if _, _, _, err := cs.sign(priKey); err != nil {
+		fmt.Println("111", err)
 		return
 	}
 
@@ -359,8 +428,8 @@ func TestBp_validate_fail_2(t *testing.T){
 	bp.Esig.step = bp.Credential.Step
 	bp.Esig.val = hash.Bytes()
 	bp.Esig.Signature.init()
-	if _,_,_, err := bp.Esig.sign(priKey); err != nil {
-		fmt.Println("2222",err)
+	if _, _, _, err := bp.Esig.sign(priKey); err != nil {
+		fmt.Println("2222", err)
 	}
 
 	msgbp := NewMsgBlockProposal(bp)
@@ -368,28 +437,27 @@ func TestBp_validate_fail_2(t *testing.T){
 	time.Sleep(2 * time.Second)
 }
 
-func TestBb_sava(t *testing.T){
+func TestBb_sava(t *testing.T) {
 	Config().blockDelay = 20
 	Config().verifyDelay = 10
 	Config().maxBBASteps = 12
 	Config().maxPotLeaders = big.NewInt(3)
 	an := newAllNodeManager()
 	verifierCnt := an.initTestCommonNew(0)
-	logger.Debug(COLOR_PREFIX+COLOR_FRONT_BLUE+COLOR_SUFFIX , "Verifier Cnt:" , verifierCnt , COLOR_SHORT_RESET)
+	logger.Debug(COLOR_PREFIX+COLOR_FRONT_BLUE+COLOR_SUFFIX, "Verifier Cnt:", verifierCnt, COLOR_SHORT_RESET)
 
 	priKey := generatePrivateKey()
 	cs := &CredentialSign{}
 	cs.Round = 100
 	cs.Step = 1
 	cs.Signature.init()
-	if _,_,_, err := cs.sign(priKey); err != nil {
-		fmt.Println("111",err)
+	if _, _, _, err := cs.sign(priKey); err != nil {
+		fmt.Println("111", err)
 		return
 	}
 
 	msgcs := NewMsgCredential(cs)
 	msgcs.Send()
-
 
 	bp := newBlockProposal()
 	bp.Credential = cs
@@ -401,23 +469,23 @@ func TestBb_sava(t *testing.T){
 	bp.Esig.step = bp.Credential.Step
 	bp.Esig.val = hash.Bytes()
 	bp.Esig.Signature.init()
-	if _,_,_, err := bp.Esig.sign(priKey); err != nil {
-		fmt.Println("2222",err)
+	if _, _, _, err := bp.Esig.sign(priKey); err != nil {
+		fmt.Println("2222", err)
 	}
 
 	//an.SendDataPackToActualNode(m1)
 	msgbp := NewMsgBlockProposal(bp)
 	msgbp.Send()
 
-	for i := 1 ;i <= 10; i++ {
+	for i := 1; i <= 10; i++ {
 		time.Sleep(1 * time.Second)
 		priKey := generatePrivateKey()
 		cs := &CredentialSign{}
 		cs.Round = 100
 		cs.Step = 1
 		cs.Signature.init()
-		if _,_,_, err := cs.sign(priKey); err != nil {
-			fmt.Println("111",err)
+		if _, _, _, err := cs.sign(priKey); err != nil {
+			fmt.Println("111", err)
 			return
 		}
 
@@ -434,8 +502,8 @@ func TestBb_sava(t *testing.T){
 		bp.Esig.step = bp.Credential.Step
 		bp.Esig.val = hash.Bytes()
 		bp.Esig.Signature.init()
-		if _,_,_, err := bp.Esig.sign(priKey); err != nil {
-			fmt.Println("2222",err)
+		if _, _, _, err := bp.Esig.sign(priKey); err != nil {
+			fmt.Println("2222", err)
 		}
 
 		//an.SendDataPackToActualNode(m1)
@@ -450,7 +518,7 @@ func TestBb_sava(t *testing.T){
 }
 
 //BP verify ephemeral signature fail: invalid chain id for signer
-func TestBp_validate_fail_3(t *testing.T){
+func TestBp_validate_fail_3(t *testing.T) {
 	Config().prVerifier = 10000000000
 	Config().prLeader = 10000000000
 	priKey := generatePrivateKey()
@@ -458,8 +526,8 @@ func TestBp_validate_fail_3(t *testing.T){
 	cs.Round = 100
 	cs.Step = 1
 	cs.Signature.init()
-	if _,_,_, err := cs.sign(priKey); err != nil {
-		fmt.Println("111",err)
+	if _, _, _, err := cs.sign(priKey); err != nil {
+		fmt.Println("111", err)
 		return
 	}
 
@@ -473,8 +541,8 @@ func TestBp_validate_fail_3(t *testing.T){
 	bp.Esig.step = bp.Credential.Step
 	bp.Esig.val = hash.Bytes()
 	bp.Esig.Signature.init()
-	if _,_,_, err := bp.Esig.sign(priKey); err != nil {
-		fmt.Println("2222",err)
+	if _, _, _, err := bp.Esig.sign(priKey); err != nil {
+		fmt.Println("2222", err)
 	}
 
 	bp.Esig.Signature.V.IntVal.Add(&bp.Esig.Signature.V.IntVal, common.Big2)
@@ -485,7 +553,7 @@ func TestBp_validate_fail_3(t *testing.T){
 }
 
 //sender's address is not equal in Credential and Ephemeral signature
-func TestBp_validate_fail_4(t *testing.T){
+func TestBp_validate_fail_4(t *testing.T) {
 	Config().prVerifier = 10000000000
 	Config().prLeader = 10000000000
 	priKey := generatePrivateKey()
@@ -495,8 +563,8 @@ func TestBp_validate_fail_4(t *testing.T){
 	cs.Round = 100
 	cs.Step = 1
 	cs.Signature.init()
-	if _,_,_, err := cs.sign(priKey); err != nil {
-		fmt.Println("111",err)
+	if _, _, _, err := cs.sign(priKey); err != nil {
+		fmt.Println("111", err)
 		return
 	}
 
@@ -510,8 +578,8 @@ func TestBp_validate_fail_4(t *testing.T){
 	bp.Esig.step = bp.Credential.Step
 	bp.Esig.val = hash.Bytes()
 	bp.Esig.Signature.init()
-	if _,_,_, err := bp.Esig.sign(priKey); err != nil {
-		fmt.Println("2222",err)
+	if _, _, _, err := bp.Esig.sign(priKey); err != nil {
+		fmt.Println("2222", err)
 	}
 
 	bp.Block.B_header.Time.IntVal.Add(&bp.Block.B_header.Time.IntVal, common.Big2)
@@ -521,8 +589,7 @@ func TestBp_validate_fail_4(t *testing.T){
 	time.Sleep(2 * time.Second)
 }
 
-
-func TestGc_validate_success(t *testing.T){
+func TestGc_validate_success(t *testing.T) {
 	Config().prVerifier = 10000000000
 	Config().prLeader = 10000000000
 	priKey := generatePrivateKey()
@@ -532,8 +599,8 @@ func TestGc_validate_success(t *testing.T){
 	cs.Round = 100
 	cs.Step = 2
 	cs.Signature.init()
-	if _,_,_, err := cs.sign(priKey); err != nil {
-		fmt.Println("111",err)
+	if _, _, _, err := cs.sign(priKey); err != nil {
+		fmt.Println("111", err)
 		return
 	}
 
@@ -546,8 +613,8 @@ func TestGc_validate_success(t *testing.T){
 	gc.Esig.step = gc.Credential.Step
 	gc.Esig.val = hash.Bytes()
 	gc.Esig.Signature.init()
-	if _,_,_, err := gc.Esig.sign(priKey); err != nil {
-		fmt.Println("2222",err)
+	if _, _, _, err := gc.Esig.sign(priKey); err != nil {
+		fmt.Println("2222", err)
 	}
 
 	msgGc := NewMsgGradedConsensus(gc)
@@ -556,7 +623,7 @@ func TestGc_validate_success(t *testing.T){
 }
 
 //message GradedConsensus validate error: Graded Consensus step is not 2 or 3
-func TestGc_validate_fail_1(t *testing.T){
+func TestGc_validate_fail_1(t *testing.T) {
 	Config().prVerifier = 10000000000
 	Config().prLeader = 10000000000
 	priKey := generatePrivateKey()
@@ -564,8 +631,8 @@ func TestGc_validate_fail_1(t *testing.T){
 	cs.Round = 100
 	cs.Step = 4
 	cs.Signature.init()
-	if _,_,_, err := cs.sign(priKey); err != nil {
-		fmt.Println("111",err)
+	if _, _, _, err := cs.sign(priKey); err != nil {
+		fmt.Println("111", err)
 		return
 	}
 
@@ -578,8 +645,8 @@ func TestGc_validate_fail_1(t *testing.T){
 	gc.Esig.step = gc.Credential.Step
 	gc.Esig.val = hash.Bytes()
 	gc.Esig.Signature.init()
-	if _,_,_, err := gc.Esig.sign(priKey); err != nil {
-		fmt.Println("2222",err)
+	if _, _, _, err := gc.Esig.sign(priKey); err != nil {
+		fmt.Println("2222", err)
 	}
 
 	msgGc := NewMsgGradedConsensus(gc)
@@ -588,7 +655,7 @@ func TestGc_validate_fail_1(t *testing.T){
 }
 
 //sender address is not equal
-func TestGc_validate_fail_2(t *testing.T){
+func TestGc_validate_fail_2(t *testing.T) {
 	Config().prVerifier = 10000000000
 	Config().prLeader = 10000000000
 	priKey := generatePrivateKey()
@@ -598,8 +665,8 @@ func TestGc_validate_fail_2(t *testing.T){
 	cs.Round = 100
 	cs.Step = 2
 	cs.Signature.init()
-	if _,_,_, err := cs.sign(priKey); err != nil {
-		fmt.Println("111",err)
+	if _, _, _, err := cs.sign(priKey); err != nil {
+		fmt.Println("111", err)
 		return
 	}
 
@@ -612,8 +679,8 @@ func TestGc_validate_fail_2(t *testing.T){
 	gc.Esig.step = gc.Credential.Step
 	gc.Esig.val = hash.Bytes()
 	gc.Esig.Signature.init()
-	if _,_,_, err := gc.Esig.sign(priKey); err != nil {
-		fmt.Println("2222",err)
+	if _, _, _, err := gc.Esig.sign(priKey); err != nil {
+		fmt.Println("2222", err)
 	}
 
 	msgGc := NewMsgGradedConsensus(gc)
@@ -621,7 +688,7 @@ func TestGc_validate_fail_2(t *testing.T){
 	time.Sleep(2 * time.Second)
 }
 
-func TestBba_validate_success(t *testing.T){
+func TestBba_validate_success(t *testing.T) {
 	Config().prVerifier = 10000000000
 	Config().prLeader = 10000000000
 	priKey := generatePrivateKey()
@@ -631,8 +698,8 @@ func TestBba_validate_success(t *testing.T){
 	cs.Round = 100
 	cs.Step = 4 + 3
 	cs.Signature.init()
-	if _,_,_, err := cs.sign(priKey); err != nil {
-		fmt.Println("111",err)
+	if _, _, _, err := cs.sign(priKey); err != nil {
+		fmt.Println("111", err)
 		return
 	}
 
@@ -662,7 +729,7 @@ func TestBba_validate_success(t *testing.T){
 }
 
 //step is not right
-func TestBba_validate_fail_1(t *testing.T){
+func TestBba_validate_fail_1(t *testing.T) {
 	Config().prVerifier = 10000000000
 	Config().prLeader = 10000000000
 	priKey := generatePrivateKey()
@@ -672,8 +739,8 @@ func TestBba_validate_fail_1(t *testing.T){
 	cs.Round = 100
 	cs.Step = 3
 	cs.Signature.init()
-	if _,_,_, err := cs.sign(priKey); err != nil {
-		fmt.Println("111",err)
+	if _, _, _, err := cs.sign(priKey); err != nil {
+		fmt.Println("111", err)
 		return
 	}
 
@@ -703,7 +770,7 @@ func TestBba_validate_fail_1(t *testing.T){
 }
 
 //B value 2 is not right in apos protocal
-func TestBba_validate_fail_2(t *testing.T){
+func TestBba_validate_fail_2(t *testing.T) {
 	Config().prVerifier = 10000000000
 	Config().prLeader = 10000000000
 	priKey := generatePrivateKey()
@@ -713,8 +780,8 @@ func TestBba_validate_fail_2(t *testing.T){
 	cs.Round = 100
 	cs.Step = 7
 	cs.Signature.init()
-	if _,_,_, err := cs.sign(priKey); err != nil {
-		fmt.Println("111",err)
+	if _, _, _, err := cs.sign(priKey); err != nil {
+		fmt.Println("111", err)
 		return
 	}
 
@@ -744,7 +811,7 @@ func TestBba_validate_fail_2(t *testing.T){
 }
 
 //sender's address is not equal in Credential and B Ephemeral signature
-func TestBba_validate_fail_3(t *testing.T){
+func TestBba_validate_fail_3(t *testing.T) {
 	Config().prVerifier = 10000000000
 	Config().prLeader = 10000000000
 	priKey := generatePrivateKey()
@@ -754,8 +821,8 @@ func TestBba_validate_fail_3(t *testing.T){
 	cs.Round = 100
 	cs.Step = 7
 	cs.Signature.init()
-	if _,_,_, err := cs.sign(priKey); err != nil {
-		fmt.Println("111",err)
+	if _, _, _, err := cs.sign(priKey); err != nil {
+		fmt.Println("111", err)
 		return
 	}
 
@@ -787,7 +854,7 @@ func TestBba_validate_fail_3(t *testing.T){
 }
 
 //sender's address is not equal in Credential and V Ephemeral
-func TestBba_validate_fail_4(t *testing.T){
+func TestBba_validate_fail_4(t *testing.T) {
 	Config().prVerifier = 10000000000
 	Config().prLeader = 10000000000
 	priKey := generatePrivateKey()
@@ -797,8 +864,8 @@ func TestBba_validate_fail_4(t *testing.T){
 	cs.Round = 100
 	cs.Step = 7
 	cs.Signature.init()
-	if _,_,_, err := cs.sign(priKey); err != nil {
-		fmt.Println("111",err)
+	if _, _, _, err := cs.sign(priKey); err != nil {
+		fmt.Println("111", err)
 		return
 	}
 
@@ -814,7 +881,6 @@ func TestBba_validate_fail_4(t *testing.T){
 	bba.EsigB.val = big.NewInt(int64(bba.B)).Bytes()
 	bba.EsigB.Signature.init()
 	bba.EsigB.sign(priKey)
-
 
 	//hash
 	bba.EsigV.round = bba.Credential.Round
@@ -830,7 +896,7 @@ func TestBba_validate_fail_4(t *testing.T){
 }
 
 //bba m + 3 step message'b is not equal 1
-func TestBba_validate_max(t *testing.T){
+func TestBba_validate_max(t *testing.T) {
 	Config().prVerifier = 10000000000
 	Config().prLeader = 10000000000
 	priKey := generatePrivateKey()
@@ -840,8 +906,8 @@ func TestBba_validate_max(t *testing.T){
 	cs.Round = 100
 	cs.Step = 180 + 3
 	cs.Signature.init()
-	if _,_,_, err := cs.sign(priKey); err != nil {
-		fmt.Println("111",err)
+	if _, _, _, err := cs.sign(priKey); err != nil {
+		fmt.Println("111", err)
 		return
 	}
 
@@ -858,7 +924,6 @@ func TestBba_validate_max(t *testing.T){
 	bba.EsigB.Signature.init()
 	bba.EsigB.sign(priKey)
 
-
 	//hash
 	bba.EsigV.round = bba.Credential.Round
 	bba.EsigV.step = bba.Credential.Step
@@ -869,4 +934,9 @@ func TestBba_validate_max(t *testing.T){
 	msgBba := NewMsgBinaryByzantineAgreement(bba)
 	msgBba.Send()
 	time.Sleep(2 * time.Second)
+}
+
+func TestBba_e(t *testing.T) {
+	a:= STEP_REDUCTION_1
+	fmt.Println(a)
 }

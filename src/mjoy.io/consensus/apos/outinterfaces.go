@@ -21,9 +21,9 @@
 package apos
 
 import (
+	"crypto/ecdsa"
 	"mjoy.io/common/types"
 	"mjoy.io/core/blockchain/block"
-	"crypto/ecdsa"
 )
 
 /*
@@ -31,16 +31,15 @@ For out caller
 */
 
 type dataPack interface {
-
 }
 
 type OutMsger interface {
 	//SendMsg([]byte)error
-	BroadCast([]byte)error
+	BroadCast([]byte) error
 	GetMsg() <-chan dataPack
 
 	GetDataMsg() <-chan dataPack
-	GetSubDataMsg()<-chan dataPack  //for test
+	GetSubDataMsg() <-chan dataPack //for test
 	// send msg means that the implement must send this message to apos (loopback)
 	// Propagate msg means that the implement just send msg to p2p
 	SendCredential(*CredentialSign) error
@@ -50,35 +49,32 @@ type OutMsger interface {
 	Send2Apos(dataPack)
 	PropagateMsg(dataPack) error
 }
+
 //some out tools offered by Mjoy,such as signer and blockInfo getter
 type CommonTools interface {
 	//
-	Sig(pCs *CredentialSign)error
-	Esig(pEphemeralSign *EphemeralSign)error
-	SigHash(hash types.Hash)[]byte
+	Sig(pCs *CredentialSign) error
+	Esig(pEphemeralSign *EphemeralSign) error
+	SigHash(hash types.Hash) []byte
 
-	SigVerify(hash types.Hash, sig *SignatureVal) (error)
+	SigVerify(hash types.Hash, sig *SignatureVal) error
 	Sender(hash types.Hash, sig *SignatureVal) (types.Address, error)
 
-
-	ESigVerify(hash types.Hash, sig []byte) (error)
+	ESigVerify(hash types.Hash, sig []byte) error
 	ESender(hash types.Hash, sig []byte) (types.Address, error)
 
 	GetLastQrSignature() []byte
 	GetQrSignature(round uint64) []byte
-	GetNowBlockNum()int
-	GetNextRound()int
-	GetNowBlockHash()types.Hash
-
+	GetNowBlockNum() int
+	GetNextRound() int
+	GetNowBlockHash() types.Hash
 
 	SetPriKey(priKey *ecdsa.PrivateKey)
 	CreateTmpPriKey(step int)
 	DelTmpKey(step int)
 	ClearTmpKeys()
 
-	GetProducerNewBlock(data *block.ConsensusData) *block.Block   //get a new block from block producer
-	MakeEmptyBlock(data *block.ConsensusData)*block.Block
+	GetProducerNewBlock(data *block.ConsensusData) *block.Block //get a new block from block producer
+	MakeEmptyBlock(data *block.ConsensusData) *block.Block
 	InsertChain(chain block.Blocks) (int, error)
 }
-
-

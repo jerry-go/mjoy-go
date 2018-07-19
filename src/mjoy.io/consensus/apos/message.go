@@ -21,19 +21,27 @@
 package apos
 
 import (
-	"mjoy.io/core/blockchain/block"
+	"errors"
+	"fmt"
+	"math/big"
+	"mjoy.io/common"
 	"mjoy.io/common/types"
 	"mjoy.io/consensus/message"
-	"fmt"
-	"errors"
-	"math/big"
-	"sync"
-	"reflect"
-	"mjoy.io/common"
 	"mjoy.io/utils/event"
+	"reflect"
+	"sync"
+	"mjoy.io/core/blockchain/block"
 )
+
+const (
+	STEP_BP = iota + 0xffff
+	STEP_REDUCTION_1
+	STEP_REDUCTION_2
+	STEP_FINAL
+)
+
 //go:generate msgp
-func (cs *CredentialSign) validate() (types.Address,error) {
+func (cs *CredentialSign) validate() (types.Address, error) {
 	//leader := false
 	//if 1 == cs.Step{
 	//	leader = true
@@ -55,11 +63,11 @@ func (cs *CredentialSign) validate() (types.Address,error) {
 }
 
 type msgCredentialSig struct {
-	cs    *CredentialSign
+	cs *CredentialSign
 	*message.MsgPriv
 }
 
-func NewMsgCredential(c *CredentialSign) *msgCredentialSig{
+func NewMsgCredential(c *CredentialSign) *msgCredentialSig {
 	msgCs := &msgCredentialSig{
 		cs:      c,
 		MsgPriv: message.NewMsgPriv(),
@@ -84,18 +92,18 @@ func (c *msgCredentialSig) StopHandle() {
 // step1 (Block Proposal) message
 // m(r,1) = (Br, esig(H(Br)), σr1)
 type BlockProposal struct {
-	Block         *block.Block
-	Esig          *EphemeralSign
-	Credential    *CredentialSign
+	Block      *block.Block
+	Esig       *EphemeralSign
+	Credential *CredentialSign
 }
 
-func newBlockProposal()*BlockProposal{
+func newBlockProposal() *BlockProposal {
 	b := new(BlockProposal)
 	b.Esig = new(EphemeralSign)
 	return b
 }
 
-func (bp *BlockProposal) validate() error{
+func (bp *BlockProposal) validate() error {
 	//verify step
 	if bp.Credential.Step != 1 {
 		return errors.New(fmt.Sprintf("Block Proposal step is not 1: %d", bp.Credential.Step))
@@ -120,19 +128,18 @@ func (bp *BlockProposal) validate() error{
 		return errors.New("sender's address between Credential and Ephemeral is not equal")
 	}
 
-
 	//todo block validate
 
 	return nil
 }
 
 type msgBlockProposal struct {
-	bp    *BlockProposal
+	bp *BlockProposal
 	*message.MsgPriv
 }
 
 // new a message
-func NewMsgBlockProposal(bp *BlockProposal) *msgBlockProposal{
+func NewMsgBlockProposal(bp *BlockProposal) *msgBlockProposal {
 	msgBp := &msgBlockProposal{
 		bp:      bp,
 		MsgPriv: message.NewMsgPriv(),
@@ -140,7 +147,6 @@ func NewMsgBlockProposal(bp *BlockProposal) *msgBlockProposal{
 	message.Msgcore().Handle(msgBp)
 	return msgBp
 }
-
 
 func (bp *msgBlockProposal) DataHandle(data interface{}) {
 	logger.Debug("msgBlockProposal data handle")
@@ -155,28 +161,27 @@ func (bp *msgBlockProposal) StopHandle() {
 	logger.Debug("msgBlockProposal stop ...")
 }
 
-
 // step2 (The First Step of the Graded Consensus Protocol GC) message
 // step3 (The Second Step of GC) message
 // step2 and step3 message has the same structure
 // m(r,2) = (ESIG(v′), σr2),v′= H(Bℓr) OR emptyHash{}
 type GradedConsensus struct {
 	//hash is v′, the hash of the next block
-	Hash          types.Hash    //the Br's hash
-	Esig          *EphemeralSign     //the signature of somebody's ephemeral secret key
-	Credential    *CredentialSign
+	Hash       types.Hash     //the Br's hash
+	Esig       *EphemeralSign //the signature of somebody's ephemeral secret key
+	Credential *CredentialSign
 }
 
-func newGradedConsensus()*GradedConsensus{
+func newGradedConsensus() *GradedConsensus {
 	g := new(GradedConsensus)
 	g.Esig = new(EphemeralSign)
 
 	return g
 }
 
-func (gc *GradedConsensus) validate() error{
+func (gc *GradedConsensus) validate() error {
 	step := gc.Credential.Step
-	if step != 2  && step != 3 {
+	if step != 2 && step != 3 {
 		return errors.New(fmt.Sprintf("Graded Consensus step is not 2 or 3: %d", gc.Credential.Step))
 	}
 	//verify Credential
@@ -202,19 +207,19 @@ func (gc *GradedConsensus) validate() error{
 }
 
 func (gc *GradedConsensus) GcHash() types.Hash {
-		hash, err := common.MsgpHash(gc)
-		if err != nil {
+	hash, err := common.MsgpHash(gc)
+	if err != nil {
 		return types.Hash{}
 	}
 	return hash
 }
 
 type msgGradedConsensus struct {
-	gc    *GradedConsensus
+	gc *GradedConsensus
 	*message.MsgPriv
 }
 
-func NewMsgGradedConsensus(gc *GradedConsensus) *msgGradedConsensus{
+func NewMsgGradedConsensus(gc *GradedConsensus) *msgGradedConsensus {
 	msgGc := &msgGradedConsensus{
 		gc:      gc,
 		MsgPriv: message.NewMsgPriv(),
@@ -240,15 +245,15 @@ func (gc *msgGradedConsensus) StopHandle() {
 // m(r,s) = (ESIG(b), ESIG(v′), σrs)
 type BinaryByzantineAgreement struct {
 	//B is the BBA⋆ input b, 0 or 1
-	B             uint
-	EsigB         *EphemeralSign
+	B     uint
+	EsigB *EphemeralSign
 	//hash is v′, the hash of the next block
-	Hash          types.Hash
-	EsigV         *EphemeralSign
-	Credential    *CredentialSign
+	Hash       types.Hash
+	EsigV      *EphemeralSign
+	Credential *CredentialSign
 }
 
-func newBinaryByzantineAgreement()*BinaryByzantineAgreement{
+func newBinaryByzantineAgreement() *BinaryByzantineAgreement {
 	b := new(BinaryByzantineAgreement)
 	b.EsigB = new(EphemeralSign)
 	b.EsigV = new(EphemeralSign)
@@ -256,7 +261,7 @@ func newBinaryByzantineAgreement()*BinaryByzantineAgreement{
 	return b
 }
 
-func (bba *BinaryByzantineAgreement) validate() error{
+func (bba *BinaryByzantineAgreement) validate() error {
 	//verify step
 	if bba.Credential.Step < 4 {
 		return errors.New(fmt.Sprintf("Binary Byzantine Agreement step is not right: %d", bba.Credential.Step))
@@ -272,7 +277,7 @@ func (bba *BinaryByzantineAgreement) validate() error{
 	}
 
 	//for step m + 3
-	if Config().maxBBASteps + 3 == int(bba.Credential.Step) {
+	if Config().maxBBASteps+3 == int(bba.Credential.Step) {
 		// for step m +3, b must be 1 and v must be Hash(empty block(qr = last qr))
 		if bba.B != 1 {
 			logger.Info("bba m + 3 step message'b is not equal 1", bba.B)
@@ -326,13 +331,13 @@ func (bba *BinaryByzantineAgreement) BbaHash() types.Hash {
 }
 
 type msgBinaryByzantineAgreement struct {
-	bba    *BinaryByzantineAgreement
+	bba *BinaryByzantineAgreement
 	*message.MsgPriv
 }
 
-func NewMsgBinaryByzantineAgreement(bba *BinaryByzantineAgreement) *msgBinaryByzantineAgreement{
+func NewMsgBinaryByzantineAgreement(bba *BinaryByzantineAgreement) *msgBinaryByzantineAgreement {
 	msgBba := &msgBinaryByzantineAgreement{
-		bba:      bba,
+		bba:     bba,
 		MsgPriv: message.NewMsgPriv(),
 	}
 	message.Msgcore().Handle(msgBba)
@@ -352,53 +357,129 @@ func (bba *msgBinaryByzantineAgreement) StopHandle() {
 	logger.Debug("msgBinaryByzantineAgreement stop ...")
 }
 
+
+type ByzantineAgreementStar struct {
+	Hash       types.Hash      //voted block's hash.
+	Esig       *EphemeralSign  //the signature of somebody's ephemeral secret key
+	Credential *CredentialSign
+}
+
+func newByzantineAgreementStar() *ByzantineAgreementStar {
+	b := new(ByzantineAgreementStar)
+	b.Esig = new(EphemeralSign)
+	return b
+}
+
+func (ba *ByzantineAgreementStar) validate() error {
+	//verify step
+	if ba.Credential.Step < 1 || uint(ba.Credential.Step) > Config().maxStep{
+		return errors.New(fmt.Sprintf("Byzantine Agreement Star step is not right: %d", ba.Credential.Step))
+	}
+	//verify Credential
+	cretSender, err := ba.Credential.validate()
+	if err != nil {
+		return err
+	}
+
+	//verify ephemeral signature
+	ba.Esig.round = ba.Credential.Round
+	ba.Esig.step = ba.Credential.Step
+	ba.Esig.val = ba.Hash.Bytes()
+	sender, err := ba.Esig.sender()
+	if err != nil {
+		return errors.New(fmt.Sprintf("BA* verify ephemeral signature fail: %s", err))
+	}
+
+	if cretSender != sender {
+		logger.Debug("BA* Ephemeral hash signature address is not equal to Credential signature address", sender.Hex(), cretSender.Hex())
+		return errors.New("sender's address between Credential and Hash Ephemeral is not equal")
+	}
+
+	return nil
+}
+
+func (ba *ByzantineAgreementStar) BaHash() types.Hash {
+	hash, err := common.MsgpHash(ba)
+	if err != nil {
+		return types.Hash{}
+	}
+	return hash
+}
+
+type msgByzantineAgreementStar struct {
+	ba *ByzantineAgreementStar
+	*message.MsgPriv
+}
+
+func NewMsgByzantineAgreementStar(ba *ByzantineAgreementStar) *msgByzantineAgreementStar {
+	msgBba := &msgByzantineAgreementStar{
+		ba:     ba,
+		MsgPriv: message.NewMsgPriv(),
+	}
+	message.Msgcore().Handle(msgBba)
+	return msgBba
+}
+
+func (ba *msgByzantineAgreementStar) DataHandle(data interface{}) {
+	logger.Debug("msgByzantineAgreementStar data handle", ba.ba.Credential.Round, ba.ba.Credential.Step)
+	if err := ba.ba.validate(); err != nil {
+		logger.Info("message ByzantineAgreementStar validate error:", err)
+		return
+	}
+	MsgTransfer().Send2Apos(ba.ba)
+}
+
+func (bba *msgByzantineAgreementStar) StopHandle() {
+	logger.Debug("msgByzantineAgreementStar stop ...")
+}
+
 //message transfer between msg and Apos
 type msgTransfer struct {
-	receiveSubChan chan dataPack
+	receiveSubChan     chan dataPack
 	somebodyGetSubChan bool
-	receiveChan chan dataPack    //receive message from BBa, Gc, Bp and etc.
-	sendChan    chan dataPack
+	receiveChan        chan dataPack //receive message from BBa, Gc, Bp and etc.
+	sendChan           chan dataPack
 
-	csFeed       event.Feed
-	bpFeed       event.Feed
-	gcFeed       event.Feed
-	bbaFeed      event.Feed
-	scope        event.SubscriptionScope
+	csFeed  event.Feed
+	bpFeed  event.Feed
+	gcFeed  event.Feed
+	bbaFeed event.Feed
+	scope   event.SubscriptionScope
 }
 
 // about MsgTransfer singleton
 var (
 	msgTransferInstance *msgTransfer
-	msgTransferOnce		sync.Once
+	msgTransferOnce     sync.Once
 )
+
 // get the MsgTransfer singleton
 func MsgTransfer() *msgTransfer {
 	msgTransferOnce.Do(func() {
 		msgTransferInstance = &msgTransfer{
-			receiveChan: make(chan dataPack, 10),
-			receiveSubChan:make(chan dataPack , 10),
-			sendChan: make(chan dataPack, 10),
-			somebodyGetSubChan:false,
+			receiveChan:        make(chan dataPack, 10),
+			receiveSubChan:     make(chan dataPack, 10),
+			sendChan:           make(chan dataPack, 10),
+			somebodyGetSubChan: false,
 		}
 	})
 	return msgTransferInstance
 }
 
-
 func (mt *msgTransfer) BroadCast(msg []byte) error {
 	return nil
 }
 
-func (mt *msgTransfer) GetMsg() (<-chan dataPack) {
+func (mt *msgTransfer) GetMsg() <-chan dataPack {
 	return mt.receiveChan
 }
 
-func (mt *msgTransfer) GetDataMsg() (<-chan dataPack) {
+func (mt *msgTransfer) GetDataMsg() <-chan dataPack {
 	return mt.receiveChan
 }
 
 //return the chan sub chan,just for test
-func (mt *msgTransfer) GetSubDataMsg()<-chan dataPack{
+func (mt *msgTransfer) GetSubDataMsg() <-chan dataPack {
 	mt.somebodyGetSubChan = true
 	return mt.receiveSubChan
 }
@@ -414,17 +495,17 @@ func (mt *msgTransfer) PropagateCredential(c *CredentialSign) error {
 }
 
 func (mt *msgTransfer) sendInner(data dataPack) {
-	mt.receiveChan<-data
+	mt.receiveChan <- data
 
 	//send the data to receiveSubCh
 	if mt.somebodyGetSubChan {
-		mt.receiveSubChan<-data
+		mt.receiveSubChan <- data
 	}
 }
 
 func (mt *msgTransfer) SendInner(data dataPack) error {
 	//todo here need to validate process??
-	logger.Debug("SendInner type:" , reflect.TypeOf(data))
+	logger.Debug("SendInner type:", reflect.TypeOf(data))
 	go mt.sendInner(data)
 
 	return nil
@@ -442,15 +523,14 @@ func (mt *msgTransfer) PropagateMsg(data dataPack) error {
 	case *BinaryByzantineAgreement:
 		go mt.bbaFeed.Send(BbaEvent{v})
 	default:
-		logger.Warn("in PropagateMsg invalid message type ",reflect.TypeOf(v))
+		logger.Warn("in PropagateMsg invalid message type ", reflect.TypeOf(v))
 	}
 	return nil
 }
 
 func (mt *msgTransfer) Send2Apos(data dataPack) {
-	mt.receiveChan<-data
+	mt.receiveChan <- data
 }
-
 
 func (mt *msgTransfer) SubscribeCsEvent(ch chan<- CsEvent) event.Subscription {
 	return mt.scope.Track(mt.csFeed.Subscribe(ch))
@@ -465,8 +545,7 @@ func (mt *msgTransfer) SubscribeBbaEvent(ch chan<- BbaEvent) event.Subscription 
 	return mt.scope.Track(mt.bbaFeed.Subscribe(ch))
 }
 
-type CsEvent struct{ Cs *CredentialSign}
-type BpEvent struct{ Bp *BlockProposal}
-type GcEvent struct{ Gc *GradedConsensus}
-type BbaEvent struct{ Bba *BinaryByzantineAgreement}
-
+type CsEvent struct{ Cs *CredentialSign }
+type BpEvent struct{ Bp *BlockProposal }
+type GcEvent struct{ Gc *GradedConsensus }
+type BbaEvent struct{ Bba *BinaryByzantineAgreement }

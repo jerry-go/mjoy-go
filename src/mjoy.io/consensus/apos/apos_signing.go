@@ -21,20 +21,19 @@
 package apos
 
 import (
+	"crypto/ecdsa"
+	"errors"
+	"fmt"
 	"math/big"
 	"mjoy.io/common"
-	"fmt"
-	"errors"
-	"mjoy.io/utils/crypto"
 	"mjoy.io/common/types"
-	"crypto/ecdsa"
+	"mjoy.io/utils/crypto"
 )
 
 var (
-	//ErrInvalidSig = errors.New("invalid  v, r, s values")
-	//ErrInvalidChainId = errors.New("invalid chain id for signer")
+//ErrInvalidSig = errors.New("invalid  v, r, s values")
+//ErrInvalidChainId = errors.New("invalid chain id for signer")
 )
-
 
 // SignCredential signs the CredentialData using the given signer and private key
 func SignCredential(c *CredentialData, s Signer, prv *ecdsa.PrivateKey) (*CredentialSig, error) {
@@ -80,7 +79,7 @@ func NewSigner(chainId *big.Int) AlgRandSigner {
 		chainIdMul: new(big.Int).Mul(chainId, common.Big2),
 	}
 
-	fmt.Println("NewSigner ChainId:" , algSigner.chainId.Int64() , "Mul:" , algSigner.chainIdMul.Int64())
+	fmt.Println("NewSigner ChainId:", algSigner.chainId.Int64(), "Mul:", algSigner.chainIdMul.Int64())
 
 	return algSigner
 }
@@ -99,23 +98,22 @@ func (s AlgRandSigner) Sender(cdata *CredentialData, sig *SignatureVal) (types.A
 	if s.chainId.Sign() != 0 {
 		V = V.Sub(&sig.V.IntVal, s.chainIdMul)
 		V.Sub(V, common.Big35)
-	} else{
+	} else {
 		V = V.Sub(&sig.V.IntVal, common.Big27)
 	}
-	address, err :=  recoverPlain(cdata.Hash(), &sig.R.IntVal, &sig.S.IntVal, V, true)
+	address, err := recoverPlain(cdata.Hash(), &sig.R.IntVal, &sig.S.IntVal, V, true)
 	return address, err
 }
-
 
 // SignatureValues returns a  R S V based given signature. This signature
 // needs to be in the [R || S || V] format where V is 0 or 1.
 func (s AlgRandSigner) SignatureValues(sig []byte) (R, S, V *big.Int, err error) {
 	//fmt.Println("SignatureValue sig Len:" , len(sig))
 	if len(sig) != 65 {
-		errStr:=fmt.Sprintf("wrong size for signature: got %d, want 65", len(sig))
+		errStr := fmt.Sprintf("wrong size for signature: got %d, want 65", len(sig))
 		err = errors.New(errStr)
 		return nil, nil, nil, err
-	}else{
+	} else {
 		R = new(big.Int).SetBytes(sig[:32])
 		S = new(big.Int).SetBytes(sig[32:64])
 

@@ -21,22 +21,22 @@
 package apos
 
 import (
-	"math/big"
-	"fmt"
-	"errors"
-	"mjoy.io/common/types"
 	"crypto/ecdsa"
+	"errors"
+	"fmt"
+	"math/big"
 	"mjoy.io/common"
+	"mjoy.io/common/types"
 	"mjoy.io/utils/crypto"
 )
 
 //go:generate msgp
 
 var (
-	ErrInvalidSig = errors.New("invalid  v, r, s values")
+	ErrInvalidSig     = errors.New("invalid  v, r, s values")
 	ErrInvalidChainId = errors.New("invalid chain id for signer")
 
-	gCommonTools      CommonTools
+	gCommonTools CommonTools
 )
 
 // Signer encapsulates apos signature handling. Note that this interface is not a
@@ -54,14 +54,13 @@ type signer interface {
 
 // Qr = H(SIGℓr (Qr−1), r),
 type Quantity struct {
-	Signature      // SIGℓr (Qr−1) is the signature of leader m1
-	Round uint64
+	Signature // SIGℓr (Qr−1) is the signature of leader m1
+	Round     uint64
 }
 
-
-func (this *Quantity)Hash()types.Hash{
-	h , err := common.MsgpHash(this)
-	if err != nil{
+func (this *Quantity) Hash() types.Hash {
+	h, err := common.MsgpHash(this)
+	if err != nil {
 		return types.Hash{}
 	}
 	return h
@@ -73,9 +72,9 @@ type QuantityEmpty struct {
 	Round       uint64
 }
 
-func (this *QuantityEmpty)Hash()types.Hash{
-	h , err := common.MsgpHash(this)
-	if err != nil{
+func (this *QuantityEmpty) Hash() types.Hash {
+	h, err := common.MsgpHash(this)
+	if err != nil {
 		return types.Hash{}
 	}
 	return h
@@ -88,7 +87,7 @@ type Signature struct {
 	V *types.BigInt
 }
 
-func MakeEmptySignature()*Signature{
+func MakeEmptySignature() *Signature {
 	s := new(Signature)
 	s.init()
 	return s
@@ -100,7 +99,7 @@ func (s *Signature) init() {
 	s.V = new(types.BigInt)
 }
 
-func (s *Signature)Init(){
+func (s *Signature) Init() {
 	s.init()
 }
 
@@ -122,14 +121,14 @@ func (s *Signature) checkObj() {
 	}
 }
 
-func (s *Signature)hashBytes()[]byte{
+func (s *Signature) hashBytes() []byte {
 	return s.Hash().Bytes()
 
 }
 
-func (s *Signature)Hash()types.Hash{
+func (s *Signature) Hash() types.Hash {
 
-	h  , err := common.MsgpHash(s)
+	h, err := common.MsgpHash(s)
 	if err != nil {
 		return types.Hash{}
 	}
@@ -155,10 +154,10 @@ func (s *Signature) get(sig []byte) (err error) {
 	return nil
 }
 
-func (s *Signature)FillBySig(sig []byte)(R,S,V *big.Int,err error){
+func (s *Signature) FillBySig(sig []byte) (R, S, V *big.Int, err error) {
 	err = s.get(sig)
-	if err != nil{
-		return nil,nil,nil,err
+	if err != nil {
+		return nil, nil, nil, err
 	}
 
 	R = new(big.Int)
@@ -170,7 +169,7 @@ func (s *Signature)FillBySig(sig []byte)(R,S,V *big.Int,err error){
 	V = new(big.Int)
 	V.Set(&s.V.IntVal)
 
-	return R,S,V,nil
+	return R, S, V, nil
 }
 
 func (s Signature) toBytes() (sig []byte) {
@@ -181,7 +180,7 @@ func (s Signature) toBytes() (sig []byte) {
 	if Config().chainId.Sign() != 0 {
 		V.IntVal.Sub(&sV.IntVal, Config().chainIdMul)
 		V.IntVal.Sub(&V.IntVal, common.Big35)
-	} else{
+	} else {
 		V.IntVal.Sub(&sV.IntVal, common.Big27)
 	}
 
@@ -203,14 +202,15 @@ func (s Signature) toBytes() (sig []byte) {
 // long-term key singer
 type CredentialSign struct {
 	Signature
-	Round  		uint64		// round
-	Step   		uint64		// step
+	Round      uint64 // round
+	Step       uint64 // step
+	ParentHash types.Hash
 }
 
 type CredentialSigForHash struct {
-	Round  		uint64		// round
-	Step   		uint64		// step
-	Quantity    []byte		// quantity(seed, Qr-1)
+	Round    uint64 // round
+	Step     uint64 // step
+	Quantity []byte // quantity(seed, Qr-1)
 }
 
 func (a *CredentialSign) sigHashBig() *big.Int {
@@ -218,7 +218,7 @@ func (a *CredentialSign) sigHashBig() *big.Int {
 	return new(big.Int).SetBytes(h)
 }
 
-func (a *CredentialSign)Cmp(b *CredentialSign)int{
+func (a *CredentialSign) Cmp(b *CredentialSign) int {
 	h := a.Signature.hashBytes()
 	aInt := new(big.Int).SetBytes(h)
 
@@ -228,16 +228,16 @@ func (a *CredentialSign)Cmp(b *CredentialSign)int{
 	return aInt.Cmp(bInt)
 }
 
-func (this *CredentialSign)ToCredentialSigKey()*CredentialSigForKey{
+func (this *CredentialSign) ToCredentialSigKey() *CredentialSigForKey {
 	r := new(CredentialSigForKey)
 	r.Round = this.Round
-	r.Step  = this.Step
-	r.R     = this.R.IntVal.Uint64()
-	r.S     = this.S.IntVal.Uint64()
-	r.V     = this.V.IntVal.Uint64()
+	r.Step = this.Step
+	r.R = this.R.IntVal.Uint64()
+	r.S = this.S.IntVal.Uint64()
+	r.V = this.V.IntVal.Uint64()
 	return r
 }
-func (cret *CredentialSign)Sign(prv *ecdsa.PrivateKey)(R *types.BigInt, S *types.BigInt, V *types.BigInt, err error){
+func (cret *CredentialSign) Sign(prv *ecdsa.PrivateKey) (R *types.BigInt, S *types.BigInt, V *types.BigInt, err error) {
 	return cret.sign(prv)
 }
 func (cret *CredentialSign) sign(prv *ecdsa.PrivateKey) (R *types.BigInt, S *types.BigInt, V *types.BigInt, err error) {
@@ -273,23 +273,23 @@ func (cret *CredentialSign) sender() (types.Address, error) {
 	if Config().chainId != nil && deriveChainId(&cret.V.IntVal).Cmp(Config().chainId) != 0 {
 		return types.Address{}, ErrInvalidChainId
 	}
-	if Config().chainId == nil{
+	if Config().chainId == nil {
 		panic("Config().chainId == nil")
 	}
 	V := &big.Int{}
 	if Config().chainId.Sign() != 0 {
 		V = V.Sub(&cret.V.IntVal, Config().chainIdMul)
 		V.Sub(V, common.Big35)
-	} else{
+	} else {
 		V = V.Sub(&cret.V.IntVal, common.Big27)
 	}
-	address, err :=  recoverPlain(cret.hash(), &cret.R.IntVal, &cret.S.IntVal, V, true)
+	address, err := recoverPlain(cret.hash(), &cret.R.IntVal, &cret.S.IntVal, V, true)
 	return address, err
 }
 
 func (cret *CredentialSign) hash() types.Hash {
 	//get Q(r-1)
-	qr_1, err := getQuantity(gCommonTools.GetQrSignature(cret.Round - 1), cret.Round - 1)
+	qr_1, err := getQuantity(gCommonTools.GetQrSignature(cret.Round-1), cret.Round-1)
 	if err != nil {
 		logger.Error("get Quantity fail")
 		return types.Hash{}
@@ -297,7 +297,7 @@ func (cret *CredentialSign) hash() types.Hash {
 	cretforhash := &CredentialSigForHash{
 		cret.Round,
 		cret.Step,
-		qr_1.Bytes(),	// TODO: to get Quantity !!!!!!!!!!!!!!! need to implement a global function(round)
+		qr_1.Bytes(), // TODO: to get Quantity !!!!!!!!!!!!!!! need to implement a global function(round)
 	}
 	hash, err := common.MsgpHash(cretforhash)
 	if err != nil {
@@ -310,18 +310,18 @@ func (cret *CredentialSign) hash() types.Hash {
 // ephemeral key singer
 type EphemeralSign struct {
 	Signature
-	round  		uint64		// round
-	step   		uint64		// step
-	val		    []byte		// Val = Hash(B), or Val = 0, or Val = 1
+	round uint64 // round
+	step  uint64 // step
+	val   []byte // Val = Hash(B), or Val = 0, or Val = 1
 }
 
 type EphemeralSigForHash struct {
-	Round  		uint64		// round
-	Step   		uint64		// step
-	Val		    []byte		// Val = Hash(B), or Val = 0, or Val = 1
+	Round uint64 // round
+	Step  uint64 // step
+	Val   []byte // Val = Hash(B), or Val = 0, or Val = 1
 }
 
-func (esig *EphemeralSign)GetStep()uint64{
+func (esig *EphemeralSign) GetStep() uint64 {
 	return esig.step
 }
 func (esig *EphemeralSign) Sign(prv *ecdsa.PrivateKey) (R *types.BigInt, S *types.BigInt, V *types.BigInt, err error) {
@@ -367,10 +367,10 @@ func (esig *EphemeralSign) sender() (types.Address, error) {
 	if Config().chainId.Sign() != 0 {
 		V = V.Sub(&esig.V.IntVal, Config().chainIdMul)
 		V.Sub(V, common.Big35)
-	} else{
+	} else {
 		V = V.Sub(&esig.V.IntVal, common.Big27)
 	}
-	address, err :=  recoverPlain(esig.hash(), &esig.R.IntVal, &esig.S.IntVal, V, true)
+	address, err := recoverPlain(esig.hash(), &esig.R.IntVal, &esig.S.IntVal, V, true)
 	return address, err
 }
 
@@ -391,7 +391,7 @@ func (esig *EphemeralSign) hash() types.Hash {
 }
 
 func RecoverPlain(sighash types.Hash, R, S, Vb *big.Int, homestead bool) (types.Address, error) {
-	return recoverPlain(sighash , R,S,Vb , homestead)
+	return recoverPlain(sighash, R, S, Vb, homestead)
 }
 func recoverPlain(sighash types.Hash, R, S, Vb *big.Int, homestead bool) (types.Address, error) {
 	if Vb.BitLen() > 8 {

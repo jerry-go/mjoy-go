@@ -14,28 +14,22 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-// @File: log.go
-// @Date: 2018/06/12 17:18:09
+// @File: count_vote_test.go
+// @Date: 2018/07/19 14:15:19
 ////////////////////////////////////////////////////////////////////////////////
 
 package apos
 
 import (
-	"fmt"
-	"mjoy.io/log"
-	"os"
+	"testing"
+	"time"
 )
 
-var (
-	logTag = "consensus.apos"
-	logger log.Logger
-)
 
-func init() {
-	logger = log.GetLogger(logTag)
-	logger.SetLevel(log.LevelDebug)
-	if logger == nil {
-		fmt.Errorf("Can not get logger(%s)\n", logTag)
-		os.Exit(1)
-	}
+func TestCvRun(t *testing.T) {
+	cv := newCountVote()
+	Config().maxStep = 150
+	go cv.run()
+	time.Sleep(5 * time.Second)
+	cv.stopCh <- 1
 }

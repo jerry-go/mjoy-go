@@ -209,6 +209,8 @@ func (this *aposTools)MakeEmptyBlock(data *block.ConsensusData)*block.Block{
 	header.Number = types.NewBigInt(*big.NewInt(header.Number.IntVal.Int64() + 1))
 	header.ConsensusData = *data
 
+	header.Bloom = types.Bloom{}
+
 	b := block.NewBlock(header , nil , nil)
 	//use system private key to sign the block
 	err := block.SignHeaderInner(b.B_header, block.NewBlockSigner(apos.Config().GetChainId()), params.RewordPrikey)

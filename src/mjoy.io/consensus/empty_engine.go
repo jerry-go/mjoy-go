@@ -21,15 +21,14 @@
 package consensus
 
 import (
-	"mjoy.io/core/blockchain/block"
 	"mjoy.io/common/types"
+	"mjoy.io/core/blockchain/block"
 	"mjoy.io/core/state"
 	"mjoy.io/core/transaction"
 )
 
 type Engine_empty struct {
 }
-
 
 func (empty *Engine_empty) Author(chain ChainReader, header *block.Header) (types.Address, error) {
 	return header.BlockProducer, nil
@@ -55,7 +54,6 @@ func (empty *Engine_empty) Prepare(chain ChainReader, header *block.Header) erro
 	return nil
 }
 
-
 func (empty *Engine_empty) Finalize(chain ChainReader, header *block.Header, state *state.StateDB, txs []*transaction.Transaction, receipts []*transaction.Receipt) (*block.Block, error) {
 	//reward := big.NewInt(5e+18)
 	//state.AddBalance(header.BlockProducer, reward)
@@ -63,7 +61,7 @@ func (empty *Engine_empty) Finalize(chain ChainReader, header *block.Header, sta
 	return block.NewBlock(header, txs, receipts), nil
 }
 
-func (empty *Engine_empty) Seal(chain ChainReader, block *block.Block, stop <-chan struct{}) (*block.Block, error){
+func (empty *Engine_empty) Seal(chain ChainReader, block *block.Block, stop <-chan struct{}) (*block.Block, error) {
 	header := block.Header()
 	return block.WithSeal(header), nil
 }
