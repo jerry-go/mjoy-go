@@ -29,7 +29,7 @@ func (this *BpObj) run() {
 		select {
 		case <-timer:
 			//todo :should
-		case bp := <-this.msgChan:
+		case <-this.msgChan:
 				//logic do
 		}
 	}

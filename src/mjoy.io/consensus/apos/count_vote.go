@@ -22,7 +22,6 @@ package apos
 
 import (
 	"mjoy.io/common/types"
-	"fmt"
 	"time"
 )
 
@@ -84,10 +83,10 @@ func (cv *countVote) run() {
 			}
 		//timeout message
 		case <-cv.timer.C:
-			fmt.Println("timeout", cv.timerStep)
+			logger.Debug("countVote timeout, step", cv.timerStep)
 			cv.timeoutHandle()
 		case <-cv.stopCh:
-			fmt.Println("countVote run exit", cv.timerStep)
+			logger.Info("countVote run exit", cv.timerStep)
 			cv.timer.Stop()
 			return
 		}
@@ -230,4 +229,12 @@ func (cv *countVote) processMsg(ba *ByzantineAgreementStar) (int, types.Hash, bo
 		return step, hash, true
 	}
 	return step, hash, false
+}
+
+func (cv *countVote) sendMsg(ba *ByzantineAgreementStar) {
+	cv.msgCh<- ba
+}
+
+func (cv *countVote) stop() {
+	cv.stopCh<- 1
 }

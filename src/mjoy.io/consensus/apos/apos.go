@@ -132,6 +132,7 @@ type Round struct {
 	//version 1.1
 	mainStepRlt   mainStepOutput
 	parentHash    types.Hash
+	countVote     *countVote
 }
 
 func newRound(round int, apos *Apos, roundOverCh chan interface{}) *Round {
@@ -194,6 +195,10 @@ func (this *Round) init(round int, apos *Apos, roundOverCh chan interface{}) {
 	//}
 	this.voteObj = makeVoteObj(stepCtx)
 
+	sendVoteData := func(step int, hash types.Hash) {
+		this.voteObj.SendVoteData(100, step, hash)
+	}
+	this.countVote = newCountVote(sendVoteData, emptyBlock.Hash())
 
 }
 
@@ -668,7 +673,12 @@ func (this *Round) receiveMsgBaStar(msg *ByzantineAgreementStar) {
 		return
 	}
 
-	//todo send msg to ba
+	//todo send msg to ba countVote or BP
+	if msg.Credential.Step != STEP_BP {
+		this.countVote.sendMsg(msg)
+	} else {
+		//todo
+	}
 
 	//Propagate message via p2p
 	this.apos.outMsger.PropagateMsg(msg)

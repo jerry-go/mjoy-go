@@ -79,6 +79,7 @@ type peer struct {
 	knownBps    *set.Set
 	knownGcs    *set.Set
 	knownBbas   *set.Set
+	knownBas    *set.Set
 }
 
 func newPeer(version int, p *p2p.Peer, rw p2p.MsgReadWriter) *peer {
@@ -95,6 +96,7 @@ func newPeer(version int, p *p2p.Peer, rw p2p.MsgReadWriter) *peer {
 		knownBps:    set.New(),
 		knownGcs:    set.New(),
 		knownBbas:   set.New(),
+		knownBas:    set.New(),
 	}
 }
 
@@ -180,6 +182,14 @@ func (p *peer) MarkBinaryByzantineAgreement(hash types.Hash) {
 	p.knownBbas.Add(hash)
 }
 
+func (p *peer) MarkByzantineAgreementStar(hash types.Hash) {
+	// If we reached the memory allowance, drop a previously known  hash
+	for p.knownBas.Size() >= maxKnownApos {
+		p.knownBas.Pop()
+	}
+	p.knownBas.Add(hash)
+}
+
 func (p *peer) SendCredential(cs *apos.CredentialSign) error {
 	p.knownCss.Add(cs.Signature.Hash())
 	return p2p.Send(p.rw, CsMsg, cs)
@@ -195,6 +205,10 @@ func (p *peer) SendGradedConsensus(gc *apos.GradedConsensus) error {
 func (p *peer) SendBinaryByzantineAgreement(bba *apos.BinaryByzantineAgreement) error {
 	p.knownBbas.Add(bba.BbaHash())
 	return p2p.Send(p.rw, BbaMsg, bba)
+}
+func (p *peer) SendByzantineAgreementStar(ba *apos.ByzantineAgreementStar) error {
+	p.knownBas.Add(ba.BaHash())
+	return p2p.Send(p.rw, BaMsg, ba)
 }
 
 // SendTransactions sends transactions to the peer and includes the hashes
@@ -516,6 +530,18 @@ func (ps *peerSet) PeersWithoutBbas(hash types.Hash) []*peer {
 	list := make([]*peer, 0, len(ps.peers))
 	for _, p := range ps.peers {
 		if !p.knownBbas.Has(hash) {
+			list = append(list, p)
+		}
+	}
+	return list
+}
+func (ps *peerSet) PeersWithoutBas(hash types.Hash) []*peer {
+	ps.lock.RLock()
+	defer ps.lock.RUnlock()
+
+	list := make([]*peer, 0, len(ps.peers))
+	for _, p := range ps.peers {
+		if !p.knownBas.Has(hash) {
 			list = append(list, p)
 		}
 	}

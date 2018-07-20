@@ -96,6 +96,8 @@ type ProtocolManager struct {
 	gcSub         event.Subscription
 	bbaCh         chan apos.BbaEvent
 	bbaSub        event.Subscription
+	baCh          chan apos.BaEvent
+	baSub         event.Subscription
 
 
 
@@ -235,6 +237,10 @@ func (pm *ProtocolManager) Start(maxPeers int) {
 	pm.bbaCh = make(chan apos.BbaEvent, aposChanSize)
 	pm.bbaSub = apos.MsgTransfer().SubscribeBbaEvent(pm.bbaCh)
 	go pm.bbaBroadcastLoop()
+
+	pm.baCh = make(chan apos.BaEvent, aposChanSize)
+	pm.baSub = apos.MsgTransfer().SubscribeBaEvent(pm.baCh)
+	go pm.baBroadcastLoop()
 
 	// broadcast transactions
 	pm.txCh = make(chan core.TxPreEvent, txChanSize)
@@ -702,7 +708,16 @@ func (pm *ProtocolManager) handleMsg(p *peer) error {
 
 		msgBba := apos.NewMsgBinaryByzantineAgreement(&bba)
 		msgBba.Send()
+	case msg.Code == BaMsg:
+		var ba apos.ByzantineAgreementStar
+		if err := msg.Decode(&ba); err != nil {
+			return errResp(ErrDecode, "msg %v: %v", msg, err)
+		}
 
+		p.MarkByzantineAgreementStar(ba.BaHash())
+
+		msgBa := apos.NewMsgByzantineAgreementStar(&ba)
+		msgBa.Send()
 
 	default:
 		return errResp(ErrInvalidMsgCode, "%v", msg.Code)
@@ -796,6 +811,16 @@ func (pm *ProtocolManager) BroadcastBba(hash types.Hash, bba *apos.BinaryByzanti
 	logger.Tracef("Broadcast BinaryByzantineAgreement. hash %x, recipients %v", hash, len(peers))
 }
 
+func (pm *ProtocolManager) BroadcastBa(hash types.Hash, ba *apos.ByzantineAgreementStar) {
+	// Broadcast BinaryByzantineAgreement to a batch of peers not knowing about it
+	peers := pm.peers.PeersWithoutBbas(hash)
+
+	for _, peer := range peers {
+		peer.SendByzantineAgreementStar(ba)
+	}
+	logger.Tracef("Broadcast ByzantineAgreementStar. hash %x, recipients %v", hash, len(peers))
+}
+
 // Produced broadcast loop
 func (self *ProtocolManager) producedBroadcastLoop() {
 	// automatically stops if unsubscribe
@@ -868,6 +893,19 @@ func (self *ProtocolManager) bbaBroadcastLoop() {
 
 		// Err() channel will be closed when unsubscribing.
 		case <-self.bbaSub.Err():
+			return
+		}
+	}
+}
+
+func (self *ProtocolManager) baBroadcastLoop() {
+	for {
+		select {
+		case event := <-self.baCh:
+			self.BroadcastBa(event.Ba.BaHash(), event.Ba)
+
+			// Err() channel will be closed when unsubscribing.
+		case <-self.baSub.Err():
 			return
 		}
 	}
