@@ -199,6 +199,8 @@ func (s Signature) toBytes() (sig []byte) {
 	return sig
 }
 
+
+
 // long-term key singer
 type CredentialSign struct {
 	Signature

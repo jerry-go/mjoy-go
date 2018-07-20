@@ -77,4 +77,6 @@ type CommonTools interface {
 	GetProducerNewBlock(data *block.ConsensusData) *block.Block //get a new block from block producer
 	MakeEmptyBlock(data *block.ConsensusData) *block.Block
 	InsertChain(chain block.Blocks) (int, error)
+	GetCurrentBlock()*block.Block
+	GetBlockByNum(num uint64)*block.Block
 }

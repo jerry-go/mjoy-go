@@ -183,6 +183,8 @@ func (this *aposTools) GetLastQrSignature() []byte{
 	return blk.B_header.ConsensusData.Para
 }
 
+
+
 func (this *aposTools) GetQrSignature(round uint64) []byte {
 	blk := this.blockChainHandler.GetBlockByNumber(round)
 	if blk == nil {
@@ -235,7 +237,12 @@ func (this *aposTools)InsertChain(chain block.Blocks) (int, error){
 	return this.blockChainHandler.InsertChain(chain)
 }
 
-
+func (this *aposTools)GetCurrentBlock()*block.Block{
+	return this.blockChainHandler.CurrentBlock()
+}
+func (this *aposTools)GetBlockByNum(num int)*block.Block{
+	return this.blockChainHandler.GetBlockByNumber(uint64(num))
+}
 
 
 

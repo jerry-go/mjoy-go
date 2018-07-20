@@ -21,8 +21,8 @@ var(
 
 
 type VoteData struct {
-	Round int
-	Step int
+	Round uint64
+	Step uint64
 	Value types.Hash
 }
 
@@ -30,7 +30,7 @@ type  VoteObj struct {
 	lock sync.RWMutex
 	ctx *stepCtx
 	msgChan chan *VoteData
-	SendStatus map[int]*VoteData
+	SendStatus map[uint64]*VoteData
 
 	emptyHash types.Hash    //H(Empty(round H(ctx.last_block)))
 	bbaBlockHash types.Hash //the block hash set by the reduction last step
@@ -40,7 +40,7 @@ type  VoteObj struct {
 func makeVoteObj(ctx *stepCtx)*VoteObj{
 	v := new(VoteObj)
 	v.ctx = ctx
-	v.SendStatus = make(map[int]*VoteData)
+	v.SendStatus = make(map[uint64]*VoteData)
 	v.msgChan = make(chan *VoteData , 1000)
 	v.emptyHash = v.ctx.getGiladEmptyHash()
 
@@ -49,7 +49,7 @@ func makeVoteObj(ctx *stepCtx)*VoteObj{
 
 //return true:we have send a data with same step ,
 //return false:we do not send a data with same step,can send a data
-func (this *VoteObj)isSendSameStepData(step int)bool{
+func (this *VoteObj)isSendSameStepData(step uint64)bool{
 	this.lock.RLock()
 	defer this.lock.RUnlock()
 
@@ -67,7 +67,7 @@ func (this *VoteObj)markSendData(data *VoteData){
 	this.SendStatus[data.Step] = data
 }
 
-func (this *VoteObj)SendVoteData(r,s int , hash types.Hash){
+func (this *VoteObj)SendVoteData(r,s uint64 , hash types.Hash){
 	v := new(VoteData)
 	v.Round = r
 	v.Step = s
@@ -94,7 +94,19 @@ func (this *VoteObj)run(){
 
 func (this *VoteObj)CommitteeVote(data *VoteData){
 
-	j := this.ctx.sortition(data.Step)
+	cret := this.ctx.getCredentialByStep(uint64(data.Step))
+	if cret == nil {
+		return
+	}
+	sender , err := cret.sender()
+	if err != nil {
+		logger.Error("CommitteeVote cret.sender Err:" , err.Error())
+		return
+	}
+
+
+	hash := cret.Signature.Hash()
+	j := this.ctx.sortition(hash,this.ctx.getVoteThreshold() , this.ctx.getAccountMonney(sender , data.Round) , this.ctx.getTotalMonney(data.Round))
 	if j > 0 {
 		this.markSendData(data)
 		this.ctx.sendInner(data)

@@ -58,6 +58,25 @@ func (s *CredentialData) GetMsgp() []byte {
 	return buf.Bytes()
 }
 
+type EmptyHash struct {
+	LastHash types.Hash
+	Round uint64
+}
+func makeEmptyHash(round uint64 , lastHash types.Hash)*EmptyHash{
+	e := new(EmptyHash)
+	e.LastHash = lastHash
+	e.Round = round
+	return e
+}
+
+func (this *EmptyHash)hash()types.Hash{
+	hash, err := common.MsgpHash(this)
+	if err != nil {
+		return types.Hash{}
+	}
+	return hash
+}
+
 type CredentialSig struct {
 	Round types.BigInt
 	Step  types.BigInt
@@ -84,6 +103,7 @@ func (s *CredentialSig) GetMsgp() []byte {
 
 	return buf.Bytes()
 }
+
 
 //   -1 if a <  b
 //    0 if a == b

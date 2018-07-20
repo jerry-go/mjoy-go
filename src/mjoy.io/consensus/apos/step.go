@@ -136,9 +136,16 @@ type stepCtx struct {
 	//getPrivKey
 
 	//gilad
-	commonCoin func(round , step , t int)int
-	resetTimer func()
-	writeRet func(data *VoteData)
-	getGiladEmptyHash func()types.Hash
-	sortition func(step int)int
+	commonCoin func(round , step , t uint64)uint64  //x
+	resetTimer func()                               //x
+	writeRet func(data *VoteData)                   //x
+	getGiladEmptyHash func(round uint64)types.Hash
+	sortition func(hash types.Hash , t,w,W uint64)uint64
+	verifyBlock func(b *block.Block)bool
+	verifySort func(cret CredentialSign , w, W,t uint64)uint64
+	getCredentialByStep   func(step uint64)*CredentialSign
+	getAccountMonney func (address types.Address , round uint64)uint64
+	getTotalMonney func(round uint64)uint64
+	getBpThreshold func()uint64
+	getVoteThreshold func()uint64
 }

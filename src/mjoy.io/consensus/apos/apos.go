@@ -126,6 +126,7 @@ type Round struct {
 
 	quitCh      chan *block.Block
 	roundOverCh chan interface{}
+	bpObj   *BpObj
 	voteObj  *VoteObj
 
 
@@ -133,6 +134,51 @@ type Round struct {
 	mainStepRlt   mainStepOutput
 	parentHash    types.Hash
 }
+
+//gilad tools
+
+
+
+func CalculatePriority(hash types.Hash , w , W ,t uint64 )uint64{
+	return 10
+}
+
+func (this *Round)verifyBlock(b *block.Block)bool{
+	lastHash := this.apos.commonTools.GetNowBlockHash()
+
+	//here we just compare the parent hash is right or not
+	if lastHash.Equal(&b.B_header.ParentHash){
+		return true
+	}
+	return false
+}
+
+func (this *Round)getGiladEmptyHash (round uint64)types.Hash{
+	lastHash := this.apos.commonTools.GetNowBlockHash()
+	empty := makeEmptyHash(round , lastHash)
+	return empty.hash()
+}
+
+
+func (this *Round)sortition (hash types.Hash , t,w,W uint64 )uint64{
+	//no need take VRFsk
+	return CalculatePriority(hash , w,W,t)
+}
+
+func (this *Round)verifySort(cret CredentialSign , w, W,t uint64)uint64{
+
+	//credential
+
+	_ , err := cret.sender()
+	if err != nil {
+		return 0
+	}
+	//here should call interface
+	return CalculatePriority(cret.Signature.Hash() , w , W , t)
+
+}
+
+
 
 func newRound(round int, apos *Apos, roundOverCh chan interface{}) *Round {
 	r := new(Round)
@@ -192,6 +238,7 @@ func (this *Round) init(round int, apos *Apos, roundOverCh chan interface{}) {
 	//	this.stopAllStepRoutine()
 	//	// TODO: ......
 	//}
+	this.bpObj = makeBpObj(stepCtx)
 	this.voteObj = makeVoteObj(stepCtx)
 
 
