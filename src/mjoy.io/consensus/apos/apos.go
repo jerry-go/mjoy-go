@@ -81,6 +81,7 @@ type peerMsgs struct {
 	msgBbas map[int]*peerBba
 	msgGcs  map[int]*GradedConsensus
 	msgCs   map[int]*CredentialSign
+	msgBas  map[int]*ByzantineAgreementStar
 
 	//0 :default honesty peer. 1: malicious peer
 	honesty uint
@@ -133,6 +134,7 @@ type Round struct {
 	//version 1.1
 	mainStepRlt   mainStepOutput
 	parentHash    types.Hash
+	countVote     *countVote
 }
 
 //gilad tools
@@ -241,6 +243,10 @@ func (this *Round) init(round int, apos *Apos, roundOverCh chan interface{}) {
 	this.bpObj = makeBpObj(stepCtx)
 	this.voteObj = makeVoteObj(stepCtx)
 
+	sendVoteData := func(step int, hash types.Hash) {
+		this.voteObj.SendVoteData(100, step, hash)
+	}
+	this.countVote = newCountVote(sendVoteData, emptyBlock.Hash())
 
 }
 
@@ -356,6 +362,7 @@ func (this *Round) filterMsgCs(msg *CredentialSign) error {
 		}
 	} else {
 		ps := &peerMsgs{
+			msgBas:  make(map[int]*ByzantineAgreementStar),
 			msgBbas: make(map[int]*peerBba),
 			msgGcs:  make(map[int]*GradedConsensus),
 			msgCs:   make(map[int]*CredentialSign),
@@ -510,6 +517,7 @@ func (this *Round) filterMsgGc(msg *GradedConsensus) error {
 		}
 	} else {
 		ps := &peerMsgs{
+			msgBas:  make(map[int]*ByzantineAgreementStar),
 			msgBbas: make(map[int]*peerBba),
 			msgGcs:  make(map[int]*GradedConsensus),
 			msgCs:   make(map[int]*CredentialSign),
@@ -585,6 +593,7 @@ func (this *Round) filterMsgBba(msg *BinaryByzantineAgreement) error {
 		}
 	} else {
 		ps := &peerMsgs{
+			msgBas:  make(map[int]*ByzantineAgreementStar),
 			msgBbas: make(map[int]*peerBba),
 			msgGcs:  make(map[int]*GradedConsensus),
 			msgCs:   make(map[int]*CredentialSign),
@@ -696,6 +705,37 @@ func (this *Round) receiveMsgBba(msg *BinaryByzantineAgreement) {
 	}
 }
 func (this *Round) filterMsgBa(msg *ByzantineAgreementStar) error {
+	address, err := msg.Credential.sender()
+	if err != nil {
+		return err
+	}
+	step := msg.Credential.Step
+
+	if peerMsgBas, ok := this.msgs[address]; ok {
+		if peerMsgBas.honesty == 1 {
+			return errors.New("not honesty peer")
+		}
+		if peerba, ok := peerMsgBas.msgBas[int(step)]; ok {
+			if peerba.Hash == msg.Hash {
+				return errors.New("duplicate message ByzantineAgreementStar")
+			} else {
+				peerMsgBas.honesty = 1
+				return errors.New("receive different hash in BA message, it must a malicious peer")
+			}
+		} else {
+			peerMsgBas.msgBas[int(step)] = msg
+		}
+	} else {
+		ps := &peerMsgs{
+			msgBas:  make(map[int]*ByzantineAgreementStar),
+			msgBbas: make(map[int]*peerBba),
+			msgGcs:  make(map[int]*GradedConsensus),
+			msgCs:   make(map[int]*CredentialSign),
+			honesty: 0,
+		}
+		ps.msgBas[int(step)] = msg
+		this.msgs[address] = ps
+	}
 	return nil
 }
 func (this *Round) receiveMsgBaStar(msg *ByzantineAgreementStar) {
@@ -715,7 +755,12 @@ func (this *Round) receiveMsgBaStar(msg *ByzantineAgreementStar) {
 		return
 	}
 
-	//todo send msg to ba
+	//todo send msg to ba countVote or BP
+	if msg.Credential.Step != STEP_BP {
+		this.countVote.sendMsg(msg)
+	} else {
+		//todo
+	}
 
 	//Propagate message via p2p
 	this.apos.outMsger.PropagateMsg(msg)
@@ -754,6 +799,8 @@ func (this *Round) commonProcess() {
 }
 
 func (this *Round) run() {
+
+	go this.countVote.run()
 	wg := sync.WaitGroup{}
 	logger.Debug("run()......step1")
 	// make verifiers Credential

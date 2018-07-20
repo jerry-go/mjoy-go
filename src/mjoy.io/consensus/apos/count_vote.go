@@ -22,7 +22,6 @@ package apos
 
 import (
 	"mjoy.io/common/types"
-	"fmt"
 	"time"
 )
 
@@ -44,13 +43,19 @@ type countVote struct {
 	msgCh       chan *ByzantineAgreementStar
 	stopCh      chan interface{}
 	timer       *time.Timer
-	timeStep    uint
+	timerStep   uint
+	emptyBlock  types.Hash
+
+	sendVoteResult func(s int, hash types.Hash)
+
 
 }
 
-func newCountVote() *countVote {
+func newCountVote(sendVoteResult func(s int, hash types.Hash), emptyBlock  types.Hash) *countVote {
 	cv := new(countVote)
 	cv.init()
+	cv.sendVoteResult = sendVoteResult
+	cv.emptyBlock = emptyBlock
 	return cv
 }
 
@@ -60,9 +65,14 @@ func (cv *countVote) init() {
 	cv.stopCh = make(chan interface{}, 1)
 }
 
+//this function should be called by BP handle
+func (cv *countVote) startTimer(delay int) {
+	delayDuration := time.Second * time.Duration(delay)
+	cv.timer = time.NewTimer(delayDuration)
+	cv.timerStep = STEP_REDUCTION_1
+}
+
 func (cv *countVote) run() {
-	cv.timer = time.NewTimer(time.Second * 1)
-	defer cv.timer.Stop()
 	for {
 		select {
 		// receive message
@@ -73,27 +83,109 @@ func (cv *countVote) run() {
 			}
 		//timeout message
 		case <-cv.timer.C:
-			cv.timeStep++
-			fmt.Println("timeout", cv.timeStep)
-			cv.timer.Reset(time.Second * 1)
+			logger.Debug("countVote timeout, step", cv.timerStep)
+			cv.timeoutHandle()
 		case <-cv.stopCh:
-			fmt.Println("countVote run exit", cv.timeStep)
+			logger.Info("countVote run exit", cv.timerStep)
+			cv.timer.Stop()
 			return
 		}
 	}
 }
 
-func (cv *countVote) countSuccess(step int, hash types.Hash) {
+func (cv *countVote) getNextTimerStep(step int) int {
+	timeoutStep := step
+	for {
+		switch {
+		case timeoutStep == STEP_REDUCTION_1:
+			timeoutStep = STEP_REDUCTION_2
+		case timeoutStep == STEP_REDUCTION_2:
+			timeoutStep = 1
+		case timeoutStep < int(Config().maxStep):
+			timeoutStep++
+			if timeoutStep == int(Config().maxStep) {
+				timeoutStep = STEP_IDLE
+			}
+		case timeoutStep == STEP_FINAL:
+			timeoutStep = STEP_IDLE
+		default:
+			//ignore
+			timeoutStep = STEP_IDLE
+		}
+		if sv, ok:= cv.voteRecord[timeoutStep]; ok {
+			if sv.isFinish == true {
+				continue
+			}
+		}
+		break
+	}
+	cv.timerStep = uint(timeoutStep)
+	return timeoutStep
+}
 
-	switch step {
-	case STEP_REDUCTION_1:
+func (cv *countVote) timeoutHandle() {
+	timeoutStep := int(cv.timerStep)
+
+	//fill results in voteRecord
+	if sv, ok:= cv.voteRecord[timeoutStep]; !ok {
+		svNew := newStepVotes()
+		cv.voteRecord[timeoutStep] = svNew
+		svNew.isFinish = true
+		svNew.value = TimeOut
+	} else {
+		sv.isFinish = true
+		sv.value = TimeOut
+	}
+
+	resetTimer := true
+	nextTimoutStep := cv.getNextTimerStep(timeoutStep)
+	if nextTimoutStep == STEP_IDLE {
+		resetTimer = false
+	}
+
+	if resetTimer {
 		delay := time.Second * time.Duration(Config().delayStep)
-		cv.timeStep++
 		cv.timer.Reset(delay)
-		//todo commitVote()
+	}
 
-	default:
-		logger.Warn("invalid message step ", step)
+	cv.sendVoteResult(timeoutStep, TimeOut)
+
+}
+
+func (cv *countVote) countSuccess(step int, hash types.Hash) {
+	//send result
+	cv.sendVoteResult(step, hash)
+
+	resetTimer := false
+	nextTimoutStep := 0
+	if int(cv.timerStep) == step {
+		//reset timer
+		resetTimer = true
+		nextTimoutStep = cv.getNextTimerStep(step)
+	}
+
+	if step < int(Config().maxStep) {
+		bbaIdex := step % 3
+		if bbaIdex == 1 && hash != cv.emptyBlock {
+			//bba complete: block hash
+			nextTimoutStep = STEP_FINAL
+			cv.timerStep = STEP_FINAL
+			resetTimer = true
+		} else if bbaIdex == 2 && hash == cv.emptyBlock {
+			//bba complete: empty block hash
+			nextTimoutStep = STEP_FINAL
+			cv.timerStep = STEP_FINAL
+			resetTimer = true
+		}
+	}
+
+	if nextTimoutStep == STEP_IDLE {
+		resetTimer = false
+	}
+
+	if resetTimer {
+		delay := time.Second * time.Duration(Config().delayStep)
+		cv.timer.Reset(delay)
 	}
 }
 
@@ -108,8 +200,9 @@ func (cv *countVote) addVotes(ba *ByzantineAgreementStar) (types.Hash, uint) {
 		return hash, votes
 	} else {
 		if hashVote, ok := sv.counts[hash]; ok {
-			hashVote += votes
-			return hash, hashVote
+			sumVote := hashVote + votes
+			sv.counts[hash] = sumVote
+			return hash, sumVote
 		} else {
 			sv.counts[hash] = votes
 			return hash, votes
@@ -119,19 +212,29 @@ func (cv *countVote) addVotes(ba *ByzantineAgreementStar) (types.Hash, uint) {
 
 func (cv *countVote) processMsg(ba *ByzantineAgreementStar) (int, types.Hash, bool) {
 	step := int(ba.Credential.Step)
+	sv, ok := cv.voteRecord[step]
+	if ok {
+		//check this step whether is finish
+		if sv.isFinish {
+			logger.Info("step", step, "is finished, ignore vote")
+			return step, types.Hash{}, false
+		}
+	}
 
 	hash, votes := cv.addVotes(ba)
 
-	sv := cv.voteRecord[step]
-
-	//check this step whether is finish
-	if sv.isFinish {
-		return step, types.Hash{}, false
-	}
-
+	sv = cv.voteRecord[step]
 	if votes > getThreshold(step) {
 		sv.isFinish = true
 		return step, hash, true
 	}
 	return step, hash, false
+}
+
+func (cv *countVote) sendMsg(ba *ByzantineAgreementStar) {
+	cv.msgCh<- ba
+}
+
+func (cv *countVote) stop() {
+	cv.stopCh<- 1
 }

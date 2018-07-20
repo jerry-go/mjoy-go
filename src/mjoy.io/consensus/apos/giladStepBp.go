@@ -83,6 +83,7 @@ func (this *BpObj) run() {
 	for {
 		select {
 		case <-timer:
+
 			if this.BpHeap.Len() == 0 {
 				//specialdo
 			}else{
@@ -93,6 +94,7 @@ func (this *BpObj) run() {
 				return
 			}
 		case bp := <-this.msgChan:
+
 				//logic do
 				//verify the block
 				if !this.ctx.verifyBlock(bp.Block){
