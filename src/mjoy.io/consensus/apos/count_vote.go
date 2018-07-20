@@ -94,52 +94,98 @@ func (cv *countVote) run() {
 	}
 }
 
+func (cv *countVote) getNextTimerStep(step int) int {
+	timeoutStep := step
+	for {
+		switch {
+		case timeoutStep == STEP_REDUCTION_1:
+			timeoutStep = STEP_REDUCTION_2
+		case timeoutStep == STEP_REDUCTION_2:
+			timeoutStep = 1
+		case timeoutStep < int(Config().maxStep):
+			timeoutStep++
+			if timeoutStep == int(Config().maxStep) {
+				timeoutStep = STEP_IDLE
+			}
+		case timeoutStep == STEP_FINAL:
+			timeoutStep = STEP_IDLE
+		default:
+			//ignore
+			timeoutStep = STEP_IDLE
+		}
+		if sv, ok:= cv.voteRecord[timeoutStep]; ok {
+			if sv.isFinish == true {
+				continue
+			}
+		}
+		break
+	}
+	cv.timerStep = uint(timeoutStep)
+	return timeoutStep
+}
+
 func (cv *countVote) timeoutHandle() {
-	timeoutStep := cv.timerStep
+	timeoutStep := int(cv.timerStep)
+
+	//fill results in voteRecord
+	if sv, ok:= cv.voteRecord[timeoutStep]; !ok {
+		svNew := newStepVotes()
+		cv.voteRecord[timeoutStep] = svNew
+		svNew.isFinish = true
+		svNew.value = TimeOut
+	} else {
+		sv.isFinish = true
+		sv.value = TimeOut
+	}
+
 	resetTimer := true
-	switch {
-	case timeoutStep == STEP_REDUCTION_1:
-		cv.timerStep = STEP_REDUCTION_2
-	case timeoutStep == STEP_REDUCTION_2:
-		cv.timerStep = 1
-	case timeoutStep <= Config().maxStep:
-		cv.timerStep++
-	default:
-		//ignore
+	nextTimoutStep := cv.getNextTimerStep(timeoutStep)
+	if nextTimoutStep == STEP_IDLE {
 		resetTimer = false
 	}
 
-	delay := time.Second * time.Duration(Config().delayStep)
 	if resetTimer {
+		delay := time.Second * time.Duration(Config().delayStep)
 		cv.timer.Reset(delay)
 	}
-	cv.sendVoteResult(int(timeoutStep), TimeOut)
+
+	cv.sendVoteResult(timeoutStep, TimeOut)
 
 }
 
 func (cv *countVote) countSuccess(step int, hash types.Hash) {
-
-	delay := time.Second * time.Duration(Config().delayStep)
-	cv.timer.Reset(delay)
+	//send result
 	cv.sendVoteResult(step, hash)
 
-	switch {
-	case step == STEP_REDUCTION_1:
-		cv.timerStep = STEP_REDUCTION_2
-	case step == STEP_REDUCTION_2:
-		cv.timerStep = 1
-	case step <= int(Config().maxStep):
+	resetTimer := false
+	nextTimoutStep := 0
+	if int(cv.timerStep) == step {
+		//reset timer
+		resetTimer = true
+		nextTimoutStep = cv.getNextTimerStep(step)
+	}
+
+	if step < int(Config().maxStep) {
 		bbaIdex := step % 3
 		if bbaIdex == 1 && hash != cv.emptyBlock {
 			//bba complete: block hash
-			cv.timerStep = STEP_FINAL
+			nextTimoutStep = STEP_FINAL
+			resetTimer = true
 		} else if bbaIdex == 2 && hash == cv.emptyBlock {
 			//bba complete: empty block hash
-			cv.timerStep = STEP_FINAL
+			nextTimoutStep = STEP_FINAL
+			resetTimer = true
 		}
-		cv.timerStep++
-	default:
-		cv.timerStep = STEP_IDLE
+	}
+
+
+	if nextTimoutStep == STEP_IDLE {
+		resetTimer = false
+	}
+
+	if resetTimer {
+		delay := time.Second * time.Duration(Config().delayStep)
+		cv.timer.Reset(delay)
 	}
 }
 
