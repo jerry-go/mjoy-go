@@ -66,9 +66,14 @@ func (cv *countVote) init() {
 	cv.stopCh = make(chan interface{}, 1)
 }
 
+//this function should be called by BP handle
+func (cv *countVote) startTimer(delay int) {
+	delayDuration := time.Second * time.Duration(delay)
+	cv.timer = time.NewTimer(delayDuration)
+	cv.timerStep = STEP_REDUCTION_1
+}
+
 func (cv *countVote) run() {
-	cv.timer = time.NewTimer(time.Second * 1)
-	defer cv.timer.Stop()
 	for {
 		select {
 		// receive message
@@ -79,47 +84,61 @@ func (cv *countVote) run() {
 			}
 		//timeout message
 		case <-cv.timer.C:
-			cv.timerStep++
 			fmt.Println("timeout", cv.timerStep)
-			cv.timer.Reset(time.Second * 1)
+			cv.timeoutHandle()
 		case <-cv.stopCh:
 			fmt.Println("countVote run exit", cv.timerStep)
+			cv.timer.Stop()
 			return
 		}
 	}
 }
 
+func (cv *countVote) timeoutHandle() {
+	timeoutStep := cv.timerStep
+	resetTimer := true
+	switch {
+	case timeoutStep == STEP_REDUCTION_1:
+		cv.timerStep = STEP_REDUCTION_2
+	case timeoutStep == STEP_REDUCTION_2:
+		cv.timerStep = 1
+	case timeoutStep <= Config().maxStep:
+		cv.timerStep++
+	default:
+		//ignore
+		resetTimer = false
+	}
+
+	delay := time.Second * time.Duration(Config().delayStep)
+	if resetTimer {
+		cv.timer.Reset(delay)
+	}
+	cv.sendVoteResult(int(timeoutStep), TimeOut)
+
+}
+
 func (cv *countVote) countSuccess(step int, hash types.Hash) {
 
 	delay := time.Second * time.Duration(Config().delayStep)
-	//cv.timerStep++
-	//resetTimer := true
 	cv.timer.Reset(delay)
 	cv.sendVoteResult(step, hash)
 
-	//bba step
-	if step <= int(Config().maxStep) {
-		bbaIdex := step % 3
-		if bbaIdex == 1 {
-			//bba step 1
-			if hash != cv.emptyBlock {
-				//bba complete
-				cv.timerStep = STEP_FINAL
-			}
-		} else if bbaIdex == 2 {
-			//bba step 1
-			if hash == cv.emptyBlock {
-				//bba complete
-				cv.timerStep = STEP_FINAL
-			}
-		} else {
-			cv.timerStep++
-		}
-	} else if step == STEP_REDUCTION_1 {
+	switch {
+	case step == STEP_REDUCTION_1:
 		cv.timerStep = STEP_REDUCTION_2
-	} else if  step == STEP_REDUCTION_2 {
+	case step == STEP_REDUCTION_2:
 		cv.timerStep = 1
-	} else {
+	case step <= int(Config().maxStep):
+		bbaIdex := step % 3
+		if bbaIdex == 1 && hash != cv.emptyBlock {
+			//bba complete: block hash
+			cv.timerStep = STEP_FINAL
+		} else if bbaIdex == 2 && hash == cv.emptyBlock {
+			//bba complete: empty block hash
+			cv.timerStep = STEP_FINAL
+		}
+		cv.timerStep++
+	default:
 		cv.timerStep = STEP_IDLE
 	}
 }
