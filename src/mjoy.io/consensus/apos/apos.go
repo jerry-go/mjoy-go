@@ -81,6 +81,7 @@ type peerMsgs struct {
 	msgBbas map[int]*peerBba
 	msgGcs  map[int]*GradedConsensus
 	msgCs   map[int]*CredentialSign
+	msgBas  map[int]*ByzantineAgreementStar
 
 	//0 :default honesty peer. 1: malicious peer
 	honesty uint
@@ -314,6 +315,7 @@ func (this *Round) filterMsgCs(msg *CredentialSign) error {
 		}
 	} else {
 		ps := &peerMsgs{
+			msgBas:  make(map[int]*ByzantineAgreementStar),
 			msgBbas: make(map[int]*peerBba),
 			msgGcs:  make(map[int]*GradedConsensus),
 			msgCs:   make(map[int]*CredentialSign),
@@ -468,6 +470,7 @@ func (this *Round) filterMsgGc(msg *GradedConsensus) error {
 		}
 	} else {
 		ps := &peerMsgs{
+			msgBas:  make(map[int]*ByzantineAgreementStar),
 			msgBbas: make(map[int]*peerBba),
 			msgGcs:  make(map[int]*GradedConsensus),
 			msgCs:   make(map[int]*CredentialSign),
@@ -543,6 +546,7 @@ func (this *Round) filterMsgBba(msg *BinaryByzantineAgreement) error {
 		}
 	} else {
 		ps := &peerMsgs{
+			msgBas:  make(map[int]*ByzantineAgreementStar),
 			msgBbas: make(map[int]*peerBba),
 			msgGcs:  make(map[int]*GradedConsensus),
 			msgCs:   make(map[int]*CredentialSign),
@@ -654,6 +658,37 @@ func (this *Round) receiveMsgBba(msg *BinaryByzantineAgreement) {
 	}
 }
 func (this *Round) filterMsgBa(msg *ByzantineAgreementStar) error {
+	address, err := msg.Credential.sender()
+	if err != nil {
+		return err
+	}
+	step := msg.Credential.Step
+
+	if peerMsgBas, ok := this.msgs[address]; ok {
+		if peerMsgBas.honesty == 1 {
+			return errors.New("not honesty peer")
+		}
+		if peerba, ok := peerMsgBas.msgBas[int(step)]; ok {
+			if peerba.Hash == msg.Hash {
+				return errors.New("duplicate message ByzantineAgreementStar")
+			} else {
+				peerMsgBas.honesty = 1
+				return errors.New("receive different hash in BA message, it must a malicious peer")
+			}
+		} else {
+			peerMsgBas.msgBas[int(step)] = msg
+		}
+	} else {
+		ps := &peerMsgs{
+			msgBas:  make(map[int]*ByzantineAgreementStar),
+			msgBbas: make(map[int]*peerBba),
+			msgGcs:  make(map[int]*GradedConsensus),
+			msgCs:   make(map[int]*CredentialSign),
+			honesty: 0,
+		}
+		ps.msgBas[int(step)] = msg
+		this.msgs[address] = ps
+	}
 	return nil
 }
 func (this *Round) receiveMsgBaStar(msg *ByzantineAgreementStar) {
@@ -717,6 +752,8 @@ func (this *Round) commonProcess() {
 }
 
 func (this *Round) run() {
+
+	go this.countVote.run()
 	wg := sync.WaitGroup{}
 	logger.Debug("run()......step1")
 	// make verifiers Credential
