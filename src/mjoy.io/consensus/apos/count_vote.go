@@ -170,14 +170,15 @@ func (cv *countVote) countSuccess(step int, hash types.Hash) {
 		if bbaIdex == 1 && hash != cv.emptyBlock {
 			//bba complete: block hash
 			nextTimoutStep = STEP_FINAL
+			cv.timerStep = STEP_FINAL
 			resetTimer = true
 		} else if bbaIdex == 2 && hash == cv.emptyBlock {
 			//bba complete: empty block hash
 			nextTimoutStep = STEP_FINAL
+			cv.timerStep = STEP_FINAL
 			resetTimer = true
 		}
 	}
-
 
 	if nextTimoutStep == STEP_IDLE {
 		resetTimer = false
@@ -200,8 +201,9 @@ func (cv *countVote) addVotes(ba *ByzantineAgreementStar) (types.Hash, uint) {
 		return hash, votes
 	} else {
 		if hashVote, ok := sv.counts[hash]; ok {
-			hashVote += votes
-			return hash, hashVote
+			sumVote := hashVote + votes
+			sv.counts[hash] = sumVote
+			return hash, sumVote
 		} else {
 			sv.counts[hash] = votes
 			return hash, votes
@@ -211,16 +213,18 @@ func (cv *countVote) addVotes(ba *ByzantineAgreementStar) (types.Hash, uint) {
 
 func (cv *countVote) processMsg(ba *ByzantineAgreementStar) (int, types.Hash, bool) {
 	step := int(ba.Credential.Step)
+	sv, ok := cv.voteRecord[step]
+	if ok {
+		//check this step whether is finish
+		if sv.isFinish {
+			logger.Info("step", step, "is finished, ignore vote")
+			return step, types.Hash{}, false
+		}
+	}
 
 	hash, votes := cv.addVotes(ba)
 
-	sv := cv.voteRecord[step]
-
-	//check this step whether is finish
-	if sv.isFinish {
-		return step, types.Hash{}, false
-	}
-
+	sv = cv.voteRecord[step]
 	if votes > getThreshold(step) {
 		sv.isFinish = true
 		return step, hash, true
