@@ -505,7 +505,7 @@ func (this *Round) receiveMsgCs(msg *CredentialSign) {
 		return
 	}
 	//Propagate message via p2p
-	this.apos.outMsger.PropagateCredential(msg)
+	this.apos.outMsger.PropagateMsg(msg)
 }
 
 func (this *Round) saveBp(msg *BlockProposal) error {

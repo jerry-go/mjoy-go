@@ -34,17 +34,8 @@ type dataPack interface {
 }
 
 type OutMsger interface {
-	//SendMsg([]byte)error
-	BroadCast([]byte) error
-	GetMsg() <-chan dataPack
-
 	GetDataMsg() <-chan dataPack
 	GetSubDataMsg() <-chan dataPack //for test
-	// send msg means that the implement must send this message to apos (loopback)
-	// Propagate msg means that the implement just send msg to p2p
-	SendCredential(*CredentialSign) error
-	PropagateCredential(*CredentialSign) error
-
 	SendInner(dataPack) error
 	Send2Apos(dataPack)
 	PropagateMsg(dataPack) error

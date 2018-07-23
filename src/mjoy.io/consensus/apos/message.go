@@ -466,14 +466,6 @@ func MsgTransfer() *msgTransfer {
 	return msgTransferInstance
 }
 
-func (mt *msgTransfer) BroadCast(msg []byte) error {
-	return nil
-}
-
-func (mt *msgTransfer) GetMsg() <-chan dataPack {
-	return mt.receiveChan
-}
-
 func (mt *msgTransfer) GetDataMsg() <-chan dataPack {
 	return mt.receiveChan
 }
@@ -482,16 +474,6 @@ func (mt *msgTransfer) GetDataMsg() <-chan dataPack {
 func (mt *msgTransfer) GetSubDataMsg() <-chan dataPack {
 	mt.somebodyGetSubChan = true
 	return mt.receiveSubChan
-}
-
-func (mt *msgTransfer) SendCredential(c *CredentialSign) error {
-	return nil
-}
-
-func (mt *msgTransfer) PropagateCredential(c *CredentialSign) error {
-	//logger.Debug("PropagateCredential", c.Round, c.Step)
-	go mt.csFeed.Send(CsEvent{c})
-	return nil
 }
 
 func (mt *msgTransfer) sendInner(data dataPack) {
