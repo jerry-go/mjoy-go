@@ -284,6 +284,33 @@ func (this *Round) init(round int, apos *Apos, roundOverCh chan interface{}) {
 
 }
 
+func (this *Round) setBpResult(hash types.Hash) {
+	logger.Info("round", this.round,this,"setBpResult", hash)
+	this.mainStepRlt.setBpResult(hash)
+}
+func (this *Round) setReductionResult(hash types.Hash) {
+	logger.Info("round", this.round,this,"setReductionResult", hash)
+	this.mainStepRlt.setReductionResult(hash)
+}
+
+func (this *Round) setBbaResult(hash types.Hash) {
+	logger.Info("round", this.round,this,"setBbaResult", hash)
+	complete := this.mainStepRlt.setBbaResult(hash)
+	if complete {
+		//todo this.quitCh <- consensusBlock
+		this.broadCastStop()
+	}
+}
+
+func (this *Round) setFinalResult(hash types.Hash) {
+	logger.Info("round", this.round,this,"setFinalResult", hash)
+	complete :=this.mainStepRlt.setFinalResult(hash)
+	if complete {
+		// todo this.quitCh <- consensusBlock
+		this.broadCastStop()
+	}
+}
+
 func (this *Round) setSmallestBrM1(bp *BlockProposal) {
 	this.lock.Lock()
 	defer this.lock.Unlock()
@@ -308,6 +335,7 @@ func (this *Round) broadCastStop() {
 	for _, v := range this.allStepObj {
 		v.stop()
 	}
+	this.countVote.stop()
 }
 
 // Generate valid Credentials in current round
