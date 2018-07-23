@@ -157,7 +157,7 @@ func (cv *countVote) countSuccess(step int, hash types.Hash) {
 	cv.sendVoteResult(step, hash)
 
 	resetTimer := false
-	nextTimoutStep := 0
+	nextTimoutStep := STEP_IDLE
 	if int(cv.timerStep) == step {
 		//reset timer
 		resetTimer = true

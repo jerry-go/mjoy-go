@@ -77,8 +77,6 @@ type peer struct {
 
 	knownCss    *set.Set
 	knownBps    *set.Set
-	knownGcs    *set.Set
-	knownBbas   *set.Set
 	knownBas    *set.Set
 }
 
@@ -94,8 +92,6 @@ func newPeer(version int, p *p2p.Peer, rw p2p.MsgReadWriter) *peer {
 		knownBlocks: set.New(),
 		knownCss:    set.New(),
 		knownBps:    set.New(),
-		knownGcs:    set.New(),
-		knownBbas:   set.New(),
 		knownBas:    set.New(),
 	}
 }
@@ -166,22 +162,6 @@ func (p *peer) MarkBlockProposal(hash types.Hash) {
 	p.knownBps.Add(hash)
 }
 
-func (p *peer) MarkGradedConsensus(hash types.Hash) {
-	// If we reached the memory allowance, drop a previously known  hash
-	for p.knownGcs.Size() >= maxKnownApos {
-		p.knownGcs.Pop()
-	}
-	p.knownGcs.Add(hash)
-}
-
-func (p *peer) MarkBinaryByzantineAgreement(hash types.Hash) {
-	// If we reached the memory allowance, drop a previously known  hash
-	for p.knownBbas.Size() >= maxKnownApos {
-		p.knownBbas.Pop()
-	}
-	p.knownBbas.Add(hash)
-}
-
 func (p *peer) MarkByzantineAgreementStar(hash types.Hash) {
 	// If we reached the memory allowance, drop a previously known  hash
 	for p.knownBas.Size() >= maxKnownApos {
@@ -197,14 +177,6 @@ func (p *peer) SendCredential(cs *apos.CredentialSign) error {
 func (p *peer) SendBlockProposal(bp *apos.BlockProposal) error {
 	p.knownBps.Add(bp.Block.Hash())
 	return p2p.Send(p.rw, BpMsg, bp)
-}
-func (p *peer) SendGradedConsensus(gc *apos.GradedConsensus) error {
-	p.knownGcs.Add(gc.GcHash())
-	return p2p.Send(p.rw, GcMsg, gc)
-}
-func (p *peer) SendBinaryByzantineAgreement(bba *apos.BinaryByzantineAgreement) error {
-	p.knownBbas.Add(bba.BbaHash())
-	return p2p.Send(p.rw, BbaMsg, bba)
 }
 func (p *peer) SendByzantineAgreementStar(ba *apos.ByzantineAgreementStar) error {
 	p.knownBas.Add(ba.BaHash())
@@ -499,6 +471,7 @@ func (ps *peerSet) PeersWithoutCss(hash types.Hash) []*peer {
 	}
 	return list
 }
+
 func (ps *peerSet) PeersWithoutBps(hash types.Hash) []*peer {
 	ps.lock.RLock()
 	defer ps.lock.RUnlock()
@@ -511,30 +484,7 @@ func (ps *peerSet) PeersWithoutBps(hash types.Hash) []*peer {
 	}
 	return list
 }
-func (ps *peerSet) PeersWithoutGcs(hash types.Hash) []*peer {
-	ps.lock.RLock()
-	defer ps.lock.RUnlock()
 
-	list := make([]*peer, 0, len(ps.peers))
-	for _, p := range ps.peers {
-		if !p.knownGcs.Has(hash) {
-			list = append(list, p)
-		}
-	}
-	return list
-}
-func (ps *peerSet) PeersWithoutBbas(hash types.Hash) []*peer {
-	ps.lock.RLock()
-	defer ps.lock.RUnlock()
-
-	list := make([]*peer, 0, len(ps.peers))
-	for _, p := range ps.peers {
-		if !p.knownBbas.Has(hash) {
-			list = append(list, p)
-		}
-	}
-	return list
-}
 func (ps *peerSet) PeersWithoutBas(hash types.Hash) []*peer {
 	ps.lock.RLock()
 	defer ps.lock.RUnlock()

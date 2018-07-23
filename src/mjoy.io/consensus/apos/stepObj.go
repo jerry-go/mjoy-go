@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 )
-
+/*
 var (
 	LessTimeDelayFlag bool = false //let step spend less time to deal msg received
 	LessTimeDelayCnt  int  = 5
@@ -693,3 +693,4 @@ func (this *stepObjm3) dataHandle(data interface{}) {
 func (this *stepObjm3) stopHandle() {
 
 }
+*/
