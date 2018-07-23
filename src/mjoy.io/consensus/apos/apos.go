@@ -97,6 +97,40 @@ type mainStepOutput struct {
 	reduction types.Hash
 	bba       types.Hash
 	final     types.Hash
+
+	mu        sync.Mutex
+}
+
+func (this *mainStepOutput) setBpResult(bp types.Hash) {
+	this.mu.Lock()
+	defer this.mu.Unlock()
+	this.bp = bp
+}
+func (this *mainStepOutput) setReductionResult(reduction types.Hash) {
+	this.mu.Lock()
+	defer this.mu.Unlock()
+	this.reduction = reduction
+}
+func (this *mainStepOutput) setBbaResult(bba types.Hash) bool {
+	this.mu.Lock()
+	defer this.mu.Unlock()
+	this.bba = bba
+	nullHash := types.Hash{}
+
+	if this.final != nullHash {
+		return true
+	}
+	return false
+}
+func (this *mainStepOutput) setFinalResult(final types.Hash) bool {
+	this.mu.Lock()
+	defer this.mu.Unlock()
+	this.final = final
+	nullHash := types.Hash{}
+	if this.bba != nullHash {
+		return true
+	}
+	return false
 }
 
 //round context
@@ -244,7 +278,7 @@ func (this *Round) init(round int, apos *Apos, roundOverCh chan interface{}) {
 	this.voteObj = makeVoteObj(stepCtx)
 
 	sendVoteData := func(step int, hash types.Hash) {
-		this.voteObj.SendVoteData(100, step, hash)
+		this.voteObj.SendVoteData(uint64(round), uint64(step), hash)
 	}
 	this.countVote = newCountVote(sendVoteData, emptyBlock.Hash())
 
