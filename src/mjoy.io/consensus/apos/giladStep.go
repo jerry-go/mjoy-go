@@ -133,16 +133,8 @@ func (this *VoteObj)CommitteeVote(data *VoteData){
 	if cret == nil {
 		return
 	}
-	sender , err := cret.sender()
-	if err != nil {
-		logger.Error("CommitteeVote cret.sender Err:" , err.Error())
-		return
-	}
 
-
-	hash := cret.Signature.Hash()
-	j := this.ctx.sortition(hash,this.ctx.getVoteThreshold() , this.ctx.getAccountMonney(sender , data.Round) , this.ctx.getTotalMonney(data.Round))
-	if j > 0 {
+	if cret.votes > 0{
 		this.markSendData(data)
 		this.ctx.sendInner(data)
 	}
