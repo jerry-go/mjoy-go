@@ -54,6 +54,8 @@ func (cs *CredentialSign) validate() (types.Address, error) {
 	//}
 
 	//verify signature
+	//todo 1. validate parentHash
+	//todo 2. validate right
 	sender, err := cs.sender()
 	if err != nil {
 		return types.Address{}, errors.New(fmt.Sprintf("verify CredentialSig fail: %s", err))

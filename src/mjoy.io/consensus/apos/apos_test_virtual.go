@@ -1,12 +1,5 @@
 package apos
 
-import (
-	"math/big"
-	"mjoy.io/common/types"
-	"mjoy.io/core/blockchain/block"
-	"sync"
-	"time"
-)
 
 /*
 virtual node:

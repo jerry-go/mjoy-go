@@ -33,7 +33,8 @@ func commitVote(s int , hash types.Hash) {
 func TestCvRun(t *testing.T) {
 	cv := newCountVote(commitVote, types.Hash{})
 	go cv.run()
-	cv.startTimer(2)
+	time.Sleep(1* time.Second)
+	cv.startTimer(1)
 	time.Sleep(500 * time.Second)
 	cv.stopCh <- 1
 }

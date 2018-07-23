@@ -1,14 +1,5 @@
 package apos
 
-import (
-	"container/heap"
-	"fmt"
-	"math/big"
-	"mjoy.io/common/types"
-	"mjoy.io/core/blockchain/block"
-	"sync"
-	"time"
-)
 /*
 var (
 	LessTimeDelayFlag bool = false //let step spend less time to deal msg received

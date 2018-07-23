@@ -1,5 +1,5 @@
 package apos
-
+/*
 import (
 	"fmt"
 	"math/big"
@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 )
-/*
+
 func TestAposRunning(t *testing.T) {
 	fmt.Println("TestAposRunning.........")
 	an := newAllNodeManager()

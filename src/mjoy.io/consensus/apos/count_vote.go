@@ -63,16 +63,19 @@ func (cv *countVote) init() {
 	cv.voteRecord = make(map[int]*stepVotes)
 	cv.msgCh = make(chan *ByzantineAgreementStar, 1)
 	cv.stopCh = make(chan interface{}, 1)
+	cv.timerStep = STEP_IDLE
 }
 
 //this function should be called by BP handle
 func (cv *countVote) startTimer(delay int) {
 	delayDuration := time.Second * time.Duration(delay)
-	cv.timer = time.NewTimer(delayDuration)
+	cv.timer.Reset(delayDuration)
 	cv.timerStep = STEP_REDUCTION_1
 }
 
 func (cv *countVote) run() {
+	cv.timer = time.NewTimer(0)
+	cv.timer.Stop()
 	for {
 		select {
 		// receive message
@@ -87,7 +90,6 @@ func (cv *countVote) run() {
 			cv.timeoutHandle()
 		case <-cv.stopCh:
 			logger.Info("countVote run exit", cv.timerStep)
-			cv.timer.Stop()
 			return
 		}
 	}
@@ -125,6 +127,11 @@ func (cv *countVote) getNextTimerStep(step int) int {
 
 func (cv *countVote) timeoutHandle() {
 	timeoutStep := int(cv.timerStep)
+
+	if timeoutStep == STEP_IDLE {
+		//ignore
+		return
+	}
 
 	//fill results in voteRecord
 	if sv, ok:= cv.voteRecord[timeoutStep]; !ok {

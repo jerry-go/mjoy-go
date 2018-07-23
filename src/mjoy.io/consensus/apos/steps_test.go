@@ -1,11 +1,5 @@
 package apos
 
-import (
-	"math/big"
-	"mjoy.io/common/types"
-	"testing"
-	"time"
-)
 
 //instructions:
 //this test file just test the steps running right or not,we just send the data which the steps need
