@@ -16,7 +16,7 @@ type BpWithPriority struct {
 type BpWithPriorityHeap []*BpWithPriority
 
 func (h BpWithPriorityHeap)Len() int            {return len(h)}
-func (h BpWithPriorityHeap)Less(i , j int)bool  {return h[i].j < h[j].j}
+func (h BpWithPriorityHeap)Less(i , j int)bool  {return h[i].j > h[j].j}
 func (h BpWithPriorityHeap)Swap(i , j int)      {h[i],h[j] = h[j],h[i]}
 
 func (h *BpWithPriorityHeap)Push(x interface{}){
