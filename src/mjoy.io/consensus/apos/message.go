@@ -54,8 +54,18 @@ func (cs *CredentialSign) validate() (types.Address, error) {
 	//}
 
 	//verify signature
-	//todo 1. validate parentHash
+	//1. validate parentHash
+	parentBlock := gCommonTools.GetBlockByHash(cs.ParentHash)
+	if parentBlock == nil {
+		return types.Address{}, errors.New(fmt.Sprintf("verify CredentialSig fail: can't get block form hash %s", cs.ParentHash))
+	}
+
+	if parentBlock.B_header.Number.IntVal.Uint64() != cs.Round {
+		return types.Address{}, errors.New(fmt.Sprintf("verify CredentialSig fail: Round %s is not equal block number", cs.Round))
+	}
 	//todo 2. validate right
+	_ := cs.Signature.Hash()
+	cs.votes = 1  //todo here just for compile
 	sender, err := cs.sender()
 	if err != nil {
 		return types.Address{}, errors.New(fmt.Sprintf("verify CredentialSig fail: %s", err))

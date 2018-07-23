@@ -27,6 +27,7 @@ type BlockChainHandler interface {
 	GetNowBlockHash()types.Hash
 	InsertChain(chain block.Blocks) (int, error)
 	GetBlockByNumber(number uint64) *block.Block
+	GetBlockByHash(hash types.Hash) *block.Block
 }
 
 type BlockProducerHandler interface {
@@ -242,6 +243,9 @@ func (this *aposTools)GetCurrentBlock()*block.Block{
 }
 func (this *aposTools)GetBlockByNum(num int)*block.Block{
 	return this.blockChainHandler.GetBlockByNumber(uint64(num))
+}
+func (this *aposTools) GetBlockByHash(hash types.Hash) *block.Block {
+	return this.blockChainHandler.GetBlockByHash(hash)
 }
 
 

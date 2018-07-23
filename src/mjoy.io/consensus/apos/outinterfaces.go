@@ -24,6 +24,7 @@ import (
 	"crypto/ecdsa"
 	"mjoy.io/common/types"
 	"mjoy.io/core/blockchain/block"
+	"mjoy.io/params"
 )
 
 /*
@@ -70,4 +71,7 @@ type CommonTools interface {
 	InsertChain(chain block.Blocks) (int, error)
 	GetCurrentBlock()*block.Block
 	GetBlockByNum(num uint64)*block.Block
+
+	//version 1.1
+	GetBlockByHash(hash types.Hash) *block.Block
 }
