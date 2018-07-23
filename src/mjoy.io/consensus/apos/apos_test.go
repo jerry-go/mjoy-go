@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 )
-
+/*
 func TestAposRunning(t *testing.T) {
 	fmt.Println("TestAposRunning.........")
 	an := newAllNodeManager()
@@ -1104,3 +1104,4 @@ func TestBp(t *testing.T) {
 	msgbp := NewMsgBlockProposal(bp)
 	msgbp.Send()
 }
+*/

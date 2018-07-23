@@ -1,5 +1,5 @@
 package apos
-
+/*
 import (
 	"bytes"
 	"crypto/ecdsa"
@@ -242,17 +242,6 @@ func (this *allNodeManager) runTestStep(checkStep int64) {
 	}
 }
 
-/*
-//some out tools offered by Mjoy,such as signer and blockInfo getter
-type CommonTools interface {
-	//
-	SIG([]byte )(R,S,V *big.Int)
-	ESIG(hash types.Hash)([]byte)
-	GetQr_k(k int)types.Hash
-	GetNowBlockNum()int
-	GetNextRound()int
-}
-*/
 func generatePrivateKey() *ecdsa.PrivateKey {
 	randBytes := make([]byte, 64)
 	_, err := rand.Read(randBytes)
@@ -458,3 +447,4 @@ func (this *outCommonTools) InsertChain(chain block.Blocks) (int, error) {
 func (this *outCommonTools) SetPriKey(priKey *ecdsa.PrivateKey) {
 
 }
+*/

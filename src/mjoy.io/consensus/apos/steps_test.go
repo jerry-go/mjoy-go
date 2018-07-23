@@ -24,7 +24,7 @@ type stepInterface interface {
 
 
 */
-
+/*
 func TestStep3Result(t *testing.T) {
 	//open the Flag_StepTest
 	Flag_StepTest = true
@@ -185,3 +185,4 @@ func TestStepCommonResult_ChangeHashAndB(t *testing.T) {
 		//fmt.Println("apos_test doing....")
 	}
 }
+*/

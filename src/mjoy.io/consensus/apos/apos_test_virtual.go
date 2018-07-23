@@ -17,6 +17,7 @@ what's works virtual node do:
 4.when VN get msg from AN,add it's credential and sign the member of msg with it privateKey
 
 */
+/*
 type virtualNode struct {
 
 	//usefull member
@@ -300,3 +301,4 @@ func (this *virtualNode) run() {
 		}
 	}
 }
+*/

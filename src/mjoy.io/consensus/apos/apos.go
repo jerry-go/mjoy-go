@@ -71,15 +71,7 @@ func (this *PotentialLeader) AddVoteNumber(step uint, b uint) int {
 	return this.stepMsg[step].sum
 }
 
-type peerBba struct {
-	bba *BinaryByzantineAgreement
-	//B 1: msg.b == 0; 2: msg.b == 1; 3 means that receive two messages with different B
-	B uint
-}
-
 type peerMsgs struct {
-	msgBbas map[int]*peerBba
-	msgGcs  map[int]*GradedConsensus
 	msgCs   map[int]*CredentialSign
 	msgBas  map[int]*ByzantineAgreementStar
 
@@ -395,10 +387,10 @@ func (this *Round) startVerify(wg *sync.WaitGroup) {
 		}
 
 		// create step
-		stepObj := this.apos.stepsFactory(stepCtx)
+		//stepObj := this.apos.stepsFactory(stepCtx)
 
 		// run
-		stepRoutineObj.run(stepObj)
+		//stepRoutineObj.run(stepObj)
 	}
 }
 
@@ -425,8 +417,6 @@ func (this *Round) filterMsgCs(msg *CredentialSign) error {
 	} else {
 		ps := &peerMsgs{
 			msgBas:  make(map[int]*ByzantineAgreementStar),
-			msgBbas: make(map[int]*peerBba),
-			msgGcs:  make(map[int]*GradedConsensus),
 			msgCs:   make(map[int]*CredentialSign),
 			honesty: 0,
 		}
@@ -555,160 +545,7 @@ func (this *Round) receiveMsgBp(msg *BlockProposal) {
 
 }
 
-func (this *Round) filterMsgGc(msg *GradedConsensus) error {
-	address, err := msg.Credential.sender()
-	if err != nil {
-		return err
-	}
-	step := msg.Credential.Step
-
-	if peerMsgGcs, ok := this.msgs[address]; ok {
-		if peerMsgGcs.honesty == 1 {
-			return errors.New("not honesty peer")
-		}
-
-		if gc, ok := peerMsgGcs.msgGcs[int(step)]; ok {
-			if gc.Hash == msg.Hash {
-				return errors.New("duplicate message GradedConsensus")
-			} else {
-				peerMsgGcs.honesty = 1
-				return errors.New("receive different vote GradedConsensus message ,it must a malicious peer")
-			}
-		} else {
-			peerMsgGcs.msgGcs[int(step)] = msg
-		}
-	} else {
-		ps := &peerMsgs{
-			msgBas:  make(map[int]*ByzantineAgreementStar),
-			msgBbas: make(map[int]*peerBba),
-			msgGcs:  make(map[int]*GradedConsensus),
-			msgCs:   make(map[int]*CredentialSign),
-			honesty: 0,
-		}
-		ps.msgGcs[int(step)] = msg
-		this.msgs[address] = ps
-	}
-	return nil
-}
-
-func (this *Round) receiveMsgGc(msg *GradedConsensus) {
-	//verify msg
-	if msg.Credential.Round != this.round {
-		logger.Warn("verify fail, GradedConsensus msg is not in current round", msg.Credential.Round, this.round)
-		return
-	}
-	step := int(msg.Credential.Step)
-	if pqcs, ok := this.csPq[step]; !ok {
-		logger.Debug("GradedConsensus message have not corresponding Credential 0, ignore. Credential hash:", msg.Credential.Signature.Hash().String())
-		return
-	} else {
-		msgPri := msg.Credential.sigHashBig()
-		if _, ok := pqcs.credentials[msgPri.String()]; !ok {
-			logger.Debug("GradedConsensus message have not corresponding Credential 1, ignore. Credential hash:", msg.Credential.Signature.Hash().String())
-			return
-		}
-	}
-
-	if err := this.filterMsgGc(msg); err != nil {
-		logger.Info("filter GradedConsensus fail", err)
-		return
-	}
-
-	//countVote
-	//send this msg to step3 or step4 goroutine
-	if stepObj, ok := this.allStepObj[step+1]; ok {
-		go stepObj.sendMsg(msg)
-	}
-
-	//Propagate message via p2p
-	this.apos.outMsger.PropagateMsg(msg)
-	logger.Info("Propagate Graded Consensus message via p2p")
-}
-
-func (this *Round) filterMsgBba(msg *BinaryByzantineAgreement) error {
-	address, err := msg.Credential.sender()
-	if err != nil {
-		return err
-	}
-	step := msg.Credential.Step
-
-	if peerMsgBbas, ok := this.msgs[address]; ok {
-		if peerMsgBbas.honesty == 1 {
-			return errors.New("not honesty peer")
-		}
-
-		if peerbba, ok := peerMsgBbas.msgBbas[int(step)]; ok {
-			if peerbba.bba.Hash == msg.Hash && (peerbba.B == 3 || peerbba.B == msg.B+1) {
-				return errors.New("duplicate bba message")
-			} else if peerbba.bba.Hash == msg.Hash {
-				// for bba message, player j can send different B value
-				peerbba.B = 3
-				logger.Info("receive different vote bba message!", msg.B)
-				return nil
-			} else {
-				peerMsgBbas.honesty = 1
-				return errors.New("receive different hash in BBA message, it must a malicious peer")
-			}
-		} else {
-			msgPeer := &peerBba{msg, msg.B + 1}
-			peerMsgBbas.msgBbas[int(step)] = msgPeer
-		}
-	} else {
-		ps := &peerMsgs{
-			msgBas:  make(map[int]*ByzantineAgreementStar),
-			msgBbas: make(map[int]*peerBba),
-			msgGcs:  make(map[int]*GradedConsensus),
-			msgCs:   make(map[int]*CredentialSign),
-			honesty: 0,
-		}
-		msgPeer := &peerBba{msg, msg.B + 1}
-		ps.msgBbas[int(step)] = msgPeer
-		this.msgs[address] = ps
-	}
-	return nil
-}
-
-func (this *Round) endCondition(voteNum int, b uint) int {
-
-	//if voteNum >= this.targetNum {
-	if isAbsHonest(voteNum, false) {
-		logger.Info("end condition ", b, "vote number", voteNum)
-		if 0 == b {
-			return ENDCONDITION0
-		} else if 1 == b {
-			return ENDCONDITION1
-		} else {
-			return ENDMAX
-		}
-	} else {
-		return IDLE
-	}
-}
-
-func (this *Round) saveMsgBba(msg *BinaryByzantineAgreement) int {
-	hash := msg.Hash
-	if pleader, ok := this.leaders[hash]; ok {
-		step := msg.Credential.Step
-		b := msg.B
-		voteNum := 0
-		if ((step+1-2)%3 == 0) && (0 == b) {
-			voteNum = pleader.AddVoteNumber(uint(step), b)
-		}
-
-		if ((step+1-2)%3 == 1) && (1 == b) {
-			voteNum = pleader.AddVoteNumber(uint(step), b)
-		}
-
-		if int(step) == Config().maxBBASteps+3 {
-			b = 2
-			voteNum = pleader.AddVoteNumber(uint(step), b)
-		}
-		logger.Info("save bba message: leader", hash.String(), "step", step, "vote result", b, "vote number sum", voteNum)
-		return this.endCondition(voteNum, b)
-	}
-	return IDLE
-}
-
+/*
 func (this *Round) receiveMsgBba(msg *BinaryByzantineAgreement) {
 	//verify msg
 	if msg.Credential.Round != this.round {
@@ -766,6 +603,8 @@ func (this *Round) receiveMsgBba(msg *BinaryByzantineAgreement) {
 
 	}
 }
+*/
+
 func (this *Round) filterMsgBa(msg *ByzantineAgreementStar) error {
 	address, err := msg.Credential.sender()
 	if err != nil {
@@ -790,8 +629,6 @@ func (this *Round) filterMsgBa(msg *ByzantineAgreementStar) error {
 	} else {
 		ps := &peerMsgs{
 			msgBas:  make(map[int]*ByzantineAgreementStar),
-			msgBbas: make(map[int]*peerBba),
-			msgGcs:  make(map[int]*GradedConsensus),
 			msgCs:   make(map[int]*CredentialSign),
 			honesty: 0,
 		}
@@ -838,10 +675,6 @@ func (this *Round) commonProcess() {
 				this.receiveMsgCs(v)
 			case *BlockProposal:
 				this.receiveMsgBp(v)
-			case *GradedConsensus:
-				this.receiveMsgGc(v)
-			case *BinaryByzantineAgreement:
-				this.receiveMsgBba(v)
 			case *ByzantineAgreementStar:
 				this.receiveMsgBaStar(v)
 			default:
@@ -1026,35 +859,7 @@ func (this *Apos) judgeVerifier(cs *CredentialSign, setp int) bool {
 	return isPotVerifier(h.Bytes(), leader)
 }
 
-//before
-
-//func (this *Apos)stepsFactory(step int , pCredential *CredentialSig)(stepObj stepInterface){
-//	stepObj = nil
-//	switch step {
-//	case 1:
-//		stepObj = makeStep1Obj(this,pCredential,step)
-//	case 2:
-//		stepObj = makeStep2Obj(this,pCredential,step)
-//	case 3:
-//		stepObj = makeStep3Obj(this,pCredential,step)
-//	case 4:
-//		stepObj = makeStep4Obj(this,pCredential,step)
-//
-//	default:
-//		if step > Config().maxBBASteps + 3{
-//			stepObj = nil
-//		}else if (step >= 5 && step <= (Config().maxBBASteps + 2)) {
-//			stepObj = makeStep567Obj(this,pCredential,step)
-//		}else if (step == (Config().maxBBASteps + 3)){
-//			stepObj = makeStepm3Obj(this,pCredential,step)
-//		}else{
-//			stepObj = nil
-//		}
-//	}
-//	return
-//}
-
-//now
+/*
 func (this *Apos) stepsFactory(ctx *stepCtx) (stepObj step) {
 	switch ctx.getStep() {
 	case 1:
@@ -1095,3 +900,4 @@ func (this *Apos) stepsFactory(ctx *stepCtx) (stepObj step) {
 	}
 	return
 }
+*/

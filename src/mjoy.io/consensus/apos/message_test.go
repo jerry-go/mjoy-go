@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 )
-
+/*
 //func (s *Signature) init() {
 //	s.R = new(types.BigInt)
 //	s.S = new(types.BigInt)
@@ -940,3 +940,4 @@ func TestBba_e(t *testing.T) {
 	a:= STEP_REDUCTION_1
 	fmt.Println(a)
 }
+*/
