@@ -37,40 +37,6 @@ import (
 
 )
 
-const (
-	IDLE = iota
-	ENDCONDITION0
-	ENDCONDITION1
-	ENDMAX
-)
-
-/*
-Instructions For Apos:
-The Type-Apos manage the main loop of Apos consensus,
-handle the Condition0,Condition1 and m+3,
-and Output Apos-SystemParam to the sub-goroutine
-*/
-
-type VoteInfo struct {
-	sum int
-}
-
-// Potential Leader used for judge End condition 0 and 1
-type PotentialLeader struct {
-	bp      *BlockProposal
-	stepMsg map[uint]*VoteInfo
-}
-
-func (this *PotentialLeader) AddVoteNumber(step uint, b uint) int {
-	if _, ok := this.stepMsg[step]; !ok {
-		vi := &VoteInfo{1}
-		this.stepMsg[step] = vi
-		return 1
-	}
-	this.stepMsg[step].sum++
-	return this.stepMsg[step].sum
-}
-
 type peerMsgs struct {
 	msgCs   map[int]*CredentialSign
 	msgBas  map[int]*ByzantineAgreementStar
@@ -140,7 +106,6 @@ type Round struct {
 	smallestLBr *BlockProposal
 	lock        sync.RWMutex
 
-	leaders       map[types.Hash]*PotentialLeader
 	emptyBlock    *block.Block
 	maxLeaderNum  int
 	curLeaderNum  int
@@ -230,11 +195,9 @@ func (this *Round) init(round int, apos *Apos, roundOverCh chan interface{}) {
 	// this.maxLeaderNum = this.apos.algoParam.maxLeaderNum
 	this.credentials = make(map[int]*CredentialSign)
 	this.allStepObj = make(map[int]*stepRoutine)
-	this.leaders = make(map[types.Hash]*PotentialLeader)
 	emptyBlock := this.apos.commonTools.MakeEmptyBlock(makeEmptyBlockConsensusData(this.round))
 	this.emptyBlock = emptyBlock
-	pleader := &PotentialLeader{nil, make(map[uint]*VoteInfo)}
-	this.leaders[emptyBlock.Hash()] = pleader
+
 
 	this.quitCh = make(chan *block.Block, 1)
 
@@ -503,33 +466,6 @@ func (this *Round) receiveMsgCs(msg *CredentialSign) {
 	this.apos.outMsger.PropagateMsg(msg)
 }
 
-func (this *Round) saveBp(msg *BlockProposal) error {
-
-	hash := msg.Block.Hash()
-	if _, ok := this.leaders[hash]; ok {
-		logger.Debug("duplicate Block Proposal message , ignore. hash:", hash.String())
-		return errors.New("duplicate Block Proposal message")
-	}
-
-	step := int(msg.Credential.Step)
-
-	if pqcs, ok := this.csPq[step]; !ok {
-		logger.Debug("Block Proposal message have not corresponding Credential 0, ignore. hash:", hash.String())
-		return errors.New("Block Proposal message have not corresponding Credential, 0")
-	} else {
-		msgPri := msg.Credential.sigHashBig()
-		if _, ok := pqcs.credentials[msgPri.String()]; ok {
-			pleader := &PotentialLeader{msg, make(map[uint]*VoteInfo)}
-			this.leaders[hash] = pleader
-			this.curLeaderNum++
-			logger.Debug("saveBp.add hash in map: CreHash:", msg.Credential.Signature.Hash().String(), "  BlockHash:", hash.String())
-			return nil
-		} else {
-			logger.Debug("Block Proposal message have not corresponding Credential 1, ignore. hash:", hash.String())
-			return errors.New("Block Proposal message have not corresponding Credential, 1")
-		}
-	}
-}
 
 func (this *Round) receiveMsgBp(msg *BlockProposal) {
 	//verify msg
@@ -538,15 +474,8 @@ func (this *Round) receiveMsgBp(msg *BlockProposal) {
 		return
 	}
 
-	if err := this.saveBp(msg); err != nil {
-		return
-	}
-
-	//send this msg to step2 goroutine
-	if stepObj, ok := this.allStepObj[2]; ok {
-		go stepObj.sendMsg(msg)
-	}
-	// for M1 Propagate process will in stepObj
+	this.bpObj.sendMsg(msg)
+	// for BP Propagate process will in stepObj
 
 }
 
@@ -659,12 +588,9 @@ func (this *Round) receiveMsgBaStar(msg *ByzantineAgreementStar) {
 		return
 	}
 
-	//todo send msg to ba countVote or BP
-	if msg.Credential.Step != STEP_BP {
-		this.countVote.sendMsg(msg)
-	} else {
-		//todo
-	}
+
+	this.countVote.sendMsg(msg)
+
 
 	//Propagate message via p2p
 	this.apos.outMsger.PropagateMsg(msg)
