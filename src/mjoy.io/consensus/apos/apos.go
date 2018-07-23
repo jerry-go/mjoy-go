@@ -127,6 +127,7 @@ type Round struct {
 
 	quitCh      chan *block.Block
 	roundOverCh chan interface{}
+
 	bpObj   *BpObj
 	voteObj  *VoteObj
 
@@ -143,6 +144,9 @@ type Round struct {
 
 func CalculatePriority(hash types.Hash , w , W ,t uint64 )uint64{
 	return 10
+}
+func (this *Round)startVoteTimer(delay int){
+	this.countVote.startTimer(delay)
 }
 
 func (this *Round)verifyBlock(b *block.Block)bool{
@@ -244,7 +248,7 @@ func (this *Round) init(round int, apos *Apos, roundOverCh chan interface{}) {
 	this.voteObj = makeVoteObj(stepCtx)
 
 	sendVoteData := func(step int, hash types.Hash) {
-		this.voteObj.SendVoteData(100, step, hash)
+		this.voteObj.SendVoteData(100, uint64(step), hash)
 	}
 	this.countVote = newCountVote(sendVoteData, emptyBlock.Hash())
 

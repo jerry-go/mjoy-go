@@ -8,10 +8,9 @@ import (
 const(
 
 	StepBp          = 0xffff + 0
-	StepBpOver      = 0xffff + 1
-	StepReduction1  = 0xffff + 2
-	StepReduction2  = 0xffff + 3
-	StepFinal       = 0xffff + 5
+	StepReduction1  = 0xffff + 1
+	StepReduction2  = 0xffff + 2
+	StepFinal       = 0xffff + 3
 
 )
 
@@ -34,6 +33,10 @@ type  VoteObj struct {
 
 	emptyHash types.Hash    //H(Empty(round H(ctx.last_block)))
 	bbaBlockHash types.Hash //the block hash set by the reduction last step
+
+	isBbaIsOk bool
+	bbaStayList []*VoteData
+	listLock sync.RWMutex
 	exit chan interface{}
 }
 
@@ -42,9 +45,41 @@ func makeVoteObj(ctx *stepCtx)*VoteObj{
 	v.ctx = ctx
 	v.SendStatus = make(map[uint64]*VoteData)
 	v.msgChan = make(chan *VoteData , 1000)
-	v.emptyHash = v.ctx.getGiladEmptyHash()
+	v.emptyHash = v.ctx.getGiladEmptyHash(uint64(ctx.getRound()))
 
 	return v
+}
+
+func (this *VoteObj)isBbaEmpty()bool{
+	return this.isBbaIsOk
+}
+
+
+func (this *VoteObj)setBbaBlockHash(bHash types.Hash){
+	this.listLock.Lock()
+	defer this.listLock.Unlock()
+
+	if this.isBbaEmpty(){
+
+		copy(this.bbaBlockHash[:] , bHash[:])
+		//set isBbaIsOk
+		this.isBbaIsOk = true
+		//need clear bbastay list
+		for _ , v := range this.bbaStayList{
+			copy(v.Value[:] , this.bbaBlockHash[:])
+			this.CommitteeVote(v)
+		}
+		//a new one ,old one need GC
+		this.bbaStayList = []*VoteData{}
+
+	}
+}
+
+func (this *VoteObj)addStayBbaData(data *VoteData){
+	this.listLock.Lock()
+	defer this.listLock.Unlock()
+
+	this.bbaStayList = append(this.bbaStayList , data)
 }
 
 //return true:we have send a data with same step ,
@@ -112,6 +147,15 @@ func (this *VoteObj)CommitteeVote(data *VoteData){
 		this.ctx.sendInner(data)
 	}
 }
+//this function just using in
+func (this *VoteObj)safetyBbaCommitteeVote(data *VoteData){
+	if this.isBbaEmpty(){
+		this.addStayBbaData(data)
+	}else{
+		this.CommitteeVote(data)
+	}
+}
+
 func (this *VoteObj)dataDeal(data *VoteData){
 	this.lock.Lock()
 	defer this.lock.Unlock()
@@ -120,11 +164,9 @@ func (this *VoteObj)dataDeal(data *VoteData){
 	this.ctx.resetTimer()
 
 	step := data.Step
-	//special status
+	//special status,when get data with step == stepBp,mean that the bpStep is over
 	if step == StepBp {
-
-	}else if step == StepBpOver {
-		//StepOver is the first step of Reduction
+		data.Step = StepReduction1
 		this.CommitteeVote(data)
 	}else if step == StepReduction1{
 		//check the hblock1 is Timeout
@@ -138,8 +180,9 @@ func (this *VoteObj)dataDeal(data *VoteData){
 		if timeout := data.Value.Equal(&TimeOut);timeout{
 			copy(data.Value[:] , this.emptyHash[:])
 		}
+		this.setBbaBlockHash(data.Value)
 		//set the bba block hash
-		copy(this.bbaBlockHash[:] , data.Value[:])
+		//copy(this.bbaBlockHash[:] , data.Value[:])
 		//send the bba first step data
 		data.Step = 1
 		//this is the bba first step
@@ -161,19 +204,20 @@ func (this *VoteObj)dataDeal(data *VoteData){
 				//set data.value to the bbaBlockHash
 				copy(data.Value[:] , this.bbaBlockHash[:])
 				data.Step += 1
-				this.CommitteeVote(data)
+				this.safetyBbaCommitteeVote(data)
+
 			}else if empty := data.Value.Equal(&this.emptyHash);!empty {
 				for i:= step + 1;i <= step + 3; i++{
 					dataNew := new(VoteData)
 					dataNew.Round = data.Round
 					dataNew.Step = i
 					copy(dataNew.Value[:] , data.Value[:])
-					this.CommitteeVote(dataNew)
+					this.safetyBbaCommitteeVote(dataNew)
 				}
 
 				if step == 1 {
 					data.Step = StepFinal
-					this.CommitteeVote(data)
+					this.safetyBbaCommitteeVote(data)
 				}
 				//return ,just write the Ret
 				this.ctx.writeRet(data)
@@ -185,7 +229,7 @@ func (this *VoteObj)dataDeal(data *VoteData){
 				//ste data.value to the emptyhash
 				copy(data.Value[:] , this.emptyHash[:])
 				data.Step += 1
-				this.CommitteeVote(data)
+				this.safetyBbaCommitteeVote(data)
 
 			}else if empty := data.Value.Equal(&this.emptyHash);empty{
 				for i := step + 1; i <= step + 3; i++ {
@@ -193,7 +237,7 @@ func (this *VoteObj)dataDeal(data *VoteData){
 					dataNew.Round = data.Round
 					dataNew.Step = i
 					copy(dataNew.Value[:] , data.Value[:])
-					this.CommitteeVote(dataNew)
+					this.safetyBbaCommitteeVote(dataNew)
 				}
 
 				this.ctx.writeRet(data)
@@ -208,8 +252,7 @@ func (this *VoteObj)dataDeal(data *VoteData){
 				}
 			}
 			data.Step += 1
-			this.CommitteeVote(data)
-
+			this.safetyBbaCommitteeVote(data)
 		}
 	}
 

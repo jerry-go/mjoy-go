@@ -148,4 +148,6 @@ type stepCtx struct {
 	getTotalMonney func(round uint64)uint64
 	getBpThreshold func()uint64
 	getVoteThreshold func()uint64
+
+	startVoteTimer func(delay int)
 }

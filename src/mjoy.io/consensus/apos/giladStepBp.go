@@ -35,6 +35,7 @@ type BpObj struct {
 	lock    sync.RWMutex
 	BpHeap  BpWithPriorityHeap
 	msgChan chan *BlockProposal
+	exit    chan interface{}
 	ctx     *stepCtx
 }
 
@@ -43,6 +44,7 @@ func makeBpObj(ctx *stepCtx) *BpObj {
 	s.ctx = ctx
 	s.BpHeap = make(BpWithPriorityHeap , 0)
 	s.msgChan = make(chan *BlockProposal)
+	s.exit = make(chan interface{})
 
 	return s
 }
@@ -58,7 +60,7 @@ func (this *BpObj)makeBlock(){
 	bp.Block = this.ctx.getProducerNewBlock(bcd)
 
 	bp.Esig.round = bp.Credential.Round
-	bp.Esig.step = 0
+	bp.Esig.step = StepBp
 	bp.Esig.val = make([]byte , 0)
 	h := bp.Block.Hash()
 	bp.Esig.val = append(bp.Esig.val , h[:]...)
@@ -82,14 +84,26 @@ func (this *BpObj) run() {
 
 	for {
 		select {
+		case <-this.exit:
+			return
 		case <-timer:
 
 			if this.BpHeap.Len() == 0 {
 				//specialdo
 			}else{
+
 				sort.Sort(&this.BpHeap)
 				x := this.BpHeap[0]
-				_ = x
+
+				//make reduction input data
+				vd := new(VoteData)
+				vd.Round = x.bp.Credential.Round
+				vd.Step = StepBp
+				vd.Value = x.bp.Block.Hash()
+
+				this.ctx.sendInner(vd)
+				this.ctx.startVoteTimer(int(Config().delayStep))
+
 				//todo:inform the reduction
 				return
 			}
@@ -98,7 +112,7 @@ func (this *BpObj) run() {
 				//logic do
 				//verify the block
 				if !this.ctx.verifyBlock(bp.Block){
-					return
+					continue
 				}
 				//get the priority
 				sender ,err  := bp.Credential.sender()
@@ -120,8 +134,17 @@ func (this *BpObj) run() {
 						//get the bigger one
 						x := this.BpHeap[0]
 						_ = x
+
+						vd := new(VoteData)
+						vd.Round = x.bp.Credential.Round
+						vd.Step = StepBp
+						vd.Value = x.bp.Block.Hash()
+
+						this.ctx.sendInner(vd)
+						this.ctx.startVoteTimer(int(Config().delayStep))
 						//todo:inform the reduction
 
+						return
 					}
 				}
 
