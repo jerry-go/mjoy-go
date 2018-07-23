@@ -231,7 +231,7 @@ func (cv *countVote) processMsg(ba *ByzantineAgreementStar) (int, types.Hash, bo
 	logger.Debug("processMsg", ba.Credential.Step, ba.Hash.String())
 	step := int(ba.Credential.Step)
 	if step < int(Config().maxStep) && cv.bbaFinish {
-		logger.Info("all bba finished ", step, "will ignore")
+		logger.Info("all bba finished. step ", step, "will ignore")
 		return step, types.Hash{}, false
 	}
 	sv, ok := cv.voteRecord[step]
