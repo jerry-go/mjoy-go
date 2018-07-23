@@ -151,3 +151,7 @@ func (this *BpObj) run() {
 		}
 	}
 }
+
+func (this *BpObj) sendMsg(bp *BlockProposal) {
+	this.msgChan <- bp
+}
