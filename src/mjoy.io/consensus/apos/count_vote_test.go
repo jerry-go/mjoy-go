@@ -27,7 +27,7 @@ import (
 )
 
 func commitVote(s int , hash types.Hash) {
-
+	logger.Info("Test commitVote s hash",s, hash.String())
 }
 
 func TestCvRun(t *testing.T) {
@@ -36,5 +36,123 @@ func TestCvRun(t *testing.T) {
 	time.Sleep(1* time.Second)
 	cv.startTimer(1)
 	time.Sleep(500 * time.Second)
+	cv.stopCh <- 1
+}
+
+func TestVoteSuccess(t *testing.T) {
+	cv := newCountVote(commitVote, types.Hash{})
+	go cv.run()
+	time.Sleep(1* time.Second)
+	cv.startTimer(int(Config().delayStep))
+	hash := types.Hash{}
+	hash[1] = 1
+
+	Config().tStepThreshold = 50
+	for i:=0; i<52; i++ {
+		ba := &ByzantineAgreementStar{hash,nil, &CredentialSign{Step:STEP_REDUCTION_1,votes:1,}}
+		cv.sendMsg(ba)
+	}
+
+	time.Sleep(5 * time.Second)
+	cv.stopCh <- 1
+}
+
+func TestVoteSuccess1(t *testing.T) {
+	cv := newCountVote(commitVote, types.Hash{})
+	go cv.run()
+	time.Sleep(1* time.Second)
+	cv.startTimer(int(Config().delayStep))
+	hash := types.Hash{}
+	hash[1] = 1
+
+	Config().tStepThreshold = 50
+	for i:=0; i<52; i++ {
+		ba := &ByzantineAgreementStar{hash,nil, &CredentialSign{Step:STEP_REDUCTION_2,votes:1,}}
+		cv.sendMsg(ba)
+	}
+
+	time.Sleep(11 * time.Second)
+	cv.stopCh <- 1
+}
+
+func TestVoteSuccess_bba(t *testing.T) {
+	cv := newCountVote(commitVote, types.Hash{})
+	go cv.run()
+	time.Sleep(1* time.Second)
+	cv.startTimer(int(Config().delayStep))
+	hash := types.Hash{}
+	hash[1] = 1
+
+	Config().tStepThreshold = 50
+	for i:=0; i<52; i++ {
+		ba := &ByzantineAgreementStar{hash,nil, &CredentialSign{Step:1,votes:1,}}
+		cv.sendMsg(ba)
+	}
+
+	time.Sleep(30 * time.Second)
+	cv.stopCh <- 1
+}
+
+func TestVoteSuccess_reduction_bba(t *testing.T) {
+	cv := newCountVote(commitVote, types.Hash{})
+	go cv.run()
+	time.Sleep(1* time.Second)
+	cv.startTimer(int(Config().delayStep))
+	hash := types.Hash{}
+	hash[1] = 1
+
+	Config().tStepThreshold = 50
+	for i:=0; i<52; i++ {
+		ba := &ByzantineAgreementStar{hash,nil, &CredentialSign{Step:STEP_REDUCTION_1,votes:1,}}
+		cv.sendMsg(ba)
+	}
+
+	time.Sleep(1 * time.Second)
+	for i:=0; i<52; i++ {
+		ba := &ByzantineAgreementStar{hash,nil, &CredentialSign{Step:STEP_REDUCTION_2,votes:1,}}
+		cv.sendMsg(ba)
+	}
+	time.Sleep(1 * time.Second)
+	for i:=0; i<52; i++ {
+		ba := &ByzantineAgreementStar{hash,nil, &CredentialSign{Step:1,votes:1,}}
+		cv.sendMsg(ba)
+	}
+
+	time.Sleep(30 * time.Second)
+	cv.stopCh <- 1
+}
+
+func TestVoteSuccess_reduction_bba_final(t *testing.T) {
+	cv := newCountVote(commitVote, types.Hash{})
+	go cv.run()
+	time.Sleep(1* time.Second)
+	cv.startTimer(int(Config().delayStep))
+	hash := types.Hash{}
+	hash[1] = 1
+
+	Config().tStepThreshold = 50
+	for i:=0; i<52; i++ {
+		ba := &ByzantineAgreementStar{hash,nil, &CredentialSign{Step:STEP_REDUCTION_1,votes:1,}}
+		cv.sendMsg(ba)
+	}
+
+	time.Sleep(1 * time.Second)
+	for i:=0; i<52; i++ {
+		ba := &ByzantineAgreementStar{hash,nil, &CredentialSign{Step:STEP_REDUCTION_2,votes:1,}}
+		cv.sendMsg(ba)
+	}
+	time.Sleep(1 * time.Second)
+	for i:=0; i<52; i++ {
+		ba := &ByzantineAgreementStar{hash,nil, &CredentialSign{Step:1,votes:1,}}
+		cv.sendMsg(ba)
+	}
+	time.Sleep(1 * time.Second)
+	Config().tFinalThreshold = 50
+	for i:=0; i<52; i++ {
+		ba := &ByzantineAgreementStar{hash,nil, &CredentialSign{Step:STEP_FINAL,votes:1,}}
+		cv.sendMsg(ba)
+	}
+
+	time.Sleep(30 * time.Second)
 	cv.stopCh <- 1
 }

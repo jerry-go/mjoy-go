@@ -46,9 +46,9 @@ type countVote struct {
 	timerStep   uint
 	emptyBlock  types.Hash
 
+	bbaFinish   bool
+
 	sendVoteResult func(s int, hash types.Hash)
-
-
 }
 
 func newCountVote(sendVoteResult func(s int, hash types.Hash), emptyBlock  types.Hash) *countVote {
@@ -114,6 +114,10 @@ func (cv *countVote) getNextTimerStep(step int) int {
 			//ignore
 			timeoutStep = STEP_IDLE
 		}
+		if timeoutStep < int(Config().maxStep) && cv.bbaFinish{
+			timeoutStep = STEP_FINAL
+			break
+		}
 		if sv, ok:= cv.voteRecord[timeoutStep]; ok {
 			if sv.isFinish == true {
 				continue
@@ -175,14 +179,20 @@ func (cv *countVote) countSuccess(step int, hash types.Hash) {
 		bbaIdex := step % 3
 		if bbaIdex == 1 && hash != cv.emptyBlock {
 			//bba complete: block hash
-			nextTimoutStep = STEP_FINAL
-			cv.timerStep = STEP_FINAL
-			resetTimer = true
+			cv.bbaFinish = true
+			if cv.timerStep < (Config().maxStep) {
+				nextTimoutStep = STEP_FINAL
+				cv.timerStep = STEP_FINAL
+				resetTimer = true
+			}
 		} else if bbaIdex == 2 && hash == cv.emptyBlock {
 			//bba complete: empty block hash
-			nextTimoutStep = STEP_FINAL
-			cv.timerStep = STEP_FINAL
-			resetTimer = true
+			cv.bbaFinish = true
+			if cv.timerStep < (Config().maxStep) {
+				nextTimoutStep = STEP_FINAL
+				cv.timerStep = STEP_FINAL
+				resetTimer = true
+			}
 		}
 	}
 
@@ -218,7 +228,12 @@ func (cv *countVote) addVotes(ba *ByzantineAgreementStar) (types.Hash, uint) {
 }
 
 func (cv *countVote) processMsg(ba *ByzantineAgreementStar) (int, types.Hash, bool) {
+	logger.Debug("processMsg", ba.Credential.Step, ba.Hash.String())
 	step := int(ba.Credential.Step)
+	if step < int(Config().maxStep) && cv.bbaFinish {
+		logger.Info("all bba finished. step ", step, "will ignore")
+		return step, types.Hash{}, false
+	}
 	sv, ok := cv.voteRecord[step]
 	if ok {
 		//check this step whether is finish
