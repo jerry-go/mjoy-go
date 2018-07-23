@@ -5,6 +5,7 @@ import (
 	"time"
 	"sort"
 	"mjoy.io/core/blockchain/block"
+	"mjoy.io/common/types"
 )
 
 type BpWithPriority struct {
@@ -34,6 +35,7 @@ func (h *BpWithPriorityHeap)Pop()interface{}{
 type BpObj struct {
 	lock    sync.RWMutex
 	BpHeap  BpWithPriorityHeap
+	existMap map[types.Hash]bool
 	msgChan chan *BlockProposal
 	exit    chan interface{}
 	ctx     *stepCtx
@@ -44,9 +46,27 @@ func makeBpObj(ctx *stepCtx) *BpObj {
 	s.ctx = ctx
 	s.BpHeap = make(BpWithPriorityHeap , 0)
 	s.msgChan = make(chan *BlockProposal)
+	s.existMap = make(map[types.Hash]bool)
 	s.exit = make(chan interface{})
 
 	return s
+}
+
+func (this *BpObj)isExistBlock(blockHash types.Hash)bool{
+	this.lock.RLock()
+	defer this.lock.RUnlock()
+
+	if _,ok := this.existMap[blockHash];ok{
+		return true
+	}
+	return false
+}
+
+func (this *BpObj)addExistBlock(blockHash types.Hash){
+	this.lock.Lock()
+	defer this.lock.Unlock()
+
+	this.existMap[blockHash] = true
 }
 
 func (this *BpObj)makeBlock(){
@@ -114,6 +134,10 @@ func (this *BpObj) run() {
 				if !this.ctx.verifyBlock(bp.Block){
 					continue
 				}
+				//check is exist a same block
+				if this.isExistBlock(bp.Block.Hash()) {
+					continue
+				}
 				//get the priority
 				sender ,err  := bp.Credential.sender()
 				if err != nil{
@@ -127,8 +151,15 @@ func (this *BpObj) run() {
 				//check the node has the right to produce a block
 				pri := this.ctx.verifySort(*bp.Credential , w , W  , t)
 				if pri > 0{
+
 					bpp := new(BpWithPriority)
+					bpp.j = int(pri)
+					bpp.bp = bp
+
 					this.BpHeap.Push(bpp)
+					this.addExistBlock(bp.Block.Hash())
+					this.ctx.propagateMsg(bp)
+
 					if this.BpHeap.Len() > 26 {
 						sort.Sort(&this.BpHeap)
 						//get the bigger one

@@ -1,5 +1,5 @@
 package apos
-
+/*
 import (
 	"fmt"
 	"math/big"
@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 )
-/*
+
 //func (s *Signature) init() {
 //	s.R = new(types.BigInt)
 //	s.S = new(types.BigInt)

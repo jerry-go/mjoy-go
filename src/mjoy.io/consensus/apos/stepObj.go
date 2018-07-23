@@ -1,5 +1,5 @@
 package apos
-
+/*
 import (
 	"container/heap"
 	"fmt"
@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 )
-/*
+
 var (
 	LessTimeDelayFlag bool = false //let step spend less time to deal msg received
 	LessTimeDelayCnt  int  = 5

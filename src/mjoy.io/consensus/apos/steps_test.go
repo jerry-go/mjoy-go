@@ -1,5 +1,5 @@
 package apos
-
+/*
 import (
 	"math/big"
 	"mjoy.io/common/types"
@@ -11,7 +11,7 @@ import (
 //this test file just test the steps running right or not,we just send the data which the steps need
 //That is , we just need focus on the result of the test
 
-/*
+
 each step obj like below:
 type stepInterface interface {
 	sendMsg(dataPack,*Round) error

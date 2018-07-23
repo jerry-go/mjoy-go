@@ -1,5 +1,5 @@
 package apos
-
+/*
 import (
 	"math/big"
 	"mjoy.io/common/types"
@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-/*
+
 virtual node:
 what's works virtual node do:
 1.generate privateKey
