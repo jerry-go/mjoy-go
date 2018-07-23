@@ -443,8 +443,6 @@ type msgTransfer struct {
 
 	csFeed  event.Feed
 	bpFeed  event.Feed
-	gcFeed  event.Feed
-	bbaFeed event.Feed
 	baFeed  event.Feed
 	scope   event.SubscriptionScope
 }
@@ -520,10 +518,6 @@ func (mt *msgTransfer) PropagateMsg(data dataPack) error {
 		go mt.csFeed.Send(CsEvent{v})
 	case *BlockProposal:
 		go mt.bpFeed.Send(BpEvent{v})
-	case *GradedConsensus:
-		go mt.gcFeed.Send(GcEvent{v})
-	case *BinaryByzantineAgreement:
-		go mt.bbaFeed.Send(BbaEvent{v})
 	case *ByzantineAgreementStar:
 		go mt.baFeed.Send(BaEvent{v})
 	default:
@@ -542,18 +536,10 @@ func (mt *msgTransfer) SubscribeCsEvent(ch chan<- CsEvent) event.Subscription {
 func (mt *msgTransfer) SubscribeBpEvent(ch chan<- BpEvent) event.Subscription {
 	return mt.scope.Track(mt.bpFeed.Subscribe(ch))
 }
-func (mt *msgTransfer) SubscribeGcEvent(ch chan<- GcEvent) event.Subscription {
-	return mt.scope.Track(mt.gcFeed.Subscribe(ch))
-}
-func (mt *msgTransfer) SubscribeBbaEvent(ch chan<- BbaEvent) event.Subscription {
-	return mt.scope.Track(mt.bbaFeed.Subscribe(ch))
-}
 func (mt *msgTransfer) SubscribeBaEvent(ch chan<- BaEvent) event.Subscription {
 	return mt.scope.Track(mt.baFeed.Subscribe(ch))
 }
 
 type CsEvent struct{ Cs *CredentialSign }
 type BpEvent struct{ Bp *BlockProposal }
-type GcEvent struct{ Gc *GradedConsensus }
-type BbaEvent struct{ Bba *BinaryByzantineAgreement }
 type BaEvent struct{ Ba *ByzantineAgreementStar }

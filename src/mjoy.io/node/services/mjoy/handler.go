@@ -92,10 +92,6 @@ type ProtocolManager struct {
 	csSub         event.Subscription
 	bpCh          chan apos.BpEvent
 	bpSub         event.Subscription
-	gcCh          chan apos.GcEvent
-	gcSub         event.Subscription
-	bbaCh         chan apos.BbaEvent
-	bbaSub        event.Subscription
 	baCh          chan apos.BaEvent
 	baSub         event.Subscription
 
@@ -230,14 +226,6 @@ func (pm *ProtocolManager) Start(maxPeers int) {
 	pm.bpSub = apos.MsgTransfer().SubscribeBpEvent(pm.bpCh)
 	go pm.bpBroadcastLoop()
 
-	pm.gcCh = make(chan apos.GcEvent, aposChanSize)
-	pm.gcSub = apos.MsgTransfer().SubscribeGcEvent(pm.gcCh)
-	go pm.gcBroadcastLoop()
-
-	pm.bbaCh = make(chan apos.BbaEvent, aposChanSize)
-	pm.bbaSub = apos.MsgTransfer().SubscribeBbaEvent(pm.bbaCh)
-	go pm.bbaBroadcastLoop()
-
 	pm.baCh = make(chan apos.BaEvent, aposChanSize)
 	pm.baSub = apos.MsgTransfer().SubscribeBaEvent(pm.baCh)
 	go pm.baBroadcastLoop()
@@ -264,8 +252,6 @@ func (pm *ProtocolManager) Stop() {
 
 	pm.csSub.Unsubscribe()
 	pm.bpSub.Unsubscribe()
-	pm.gcSub.Unsubscribe()
-	pm.bbaSub.Unsubscribe()
 
 	// Quit the sync loop.
 	// After this send has completed, no new peers will be accepted.
@@ -688,26 +674,6 @@ func (pm *ProtocolManager) handleMsg(p *peer) error {
 
 		msgBp := apos.NewMsgBlockProposal(&bp)
 		msgBp.Send()
-	case msg.Code == GcMsg:
-		var gc apos.GradedConsensus
-		if err := msg.Decode(&gc); err != nil {
-			return errResp(ErrDecode, "msg %v: %v", msg, err)
-		}
-
-		p.MarkGradedConsensus(gc.GcHash())
-
-		msgGc := apos.NewMsgGradedConsensus(&gc)
-		msgGc.Send()
-	case msg.Code == BbaMsg:
-		var bba apos.BinaryByzantineAgreement
-		if err := msg.Decode(&bba); err != nil {
-			return errResp(ErrDecode, "msg %v: %v", msg, err)
-		}
-
-		p.MarkBinaryByzantineAgreement(bba.BbaHash())
-
-		msgBba := apos.NewMsgBinaryByzantineAgreement(&bba)
-		msgBba.Send()
 	case msg.Code == BaMsg:
 		var ba apos.ByzantineAgreementStar
 		if err := msg.Decode(&ba); err != nil {
@@ -791,26 +757,6 @@ func (pm *ProtocolManager) BroadcastBp(hash types.Hash, bp *apos.BlockProposal) 
 	logger.Tracef("Broadcast BlockProposal. hash %x, recipients %v", hash, len(peers))
 }
 
-func (pm *ProtocolManager) BroadcastGc(hash types.Hash, gc *apos.GradedConsensus) {
-	// Broadcast GradedConsensus to a batch of peers not knowing about it
-	peers := pm.peers.PeersWithoutGcs(hash)
-
-	for _, peer := range peers {
-		peer.SendGradedConsensus(gc)
-	}
-	logger.Tracef("Broadcast GradedConsensus. hash %x, recipients %v", hash, len(peers))
-}
-
-func (pm *ProtocolManager) BroadcastBba(hash types.Hash, bba *apos.BinaryByzantineAgreement) {
-	// Broadcast BinaryByzantineAgreement to a batch of peers not knowing about it
-	peers := pm.peers.PeersWithoutBbas(hash)
-
-	for _, peer := range peers {
-		peer.SendBinaryByzantineAgreement(bba)
-	}
-	logger.Tracef("Broadcast BinaryByzantineAgreement. hash %x, recipients %v", hash, len(peers))
-}
-
 func (pm *ProtocolManager) BroadcastBa(hash types.Hash, ba *apos.ByzantineAgreementStar) {
 	// Broadcast BinaryByzantineAgreement to a batch of peers not knowing about it
 	peers := pm.peers.PeersWithoutBbas(hash)
@@ -867,32 +813,6 @@ func (self *ProtocolManager) bpBroadcastLoop() {
 
 		// Err() channel will be closed when unsubscribing.
 		case <-self.bpSub.Err():
-			return
-		}
-	}
-}
-
-func (self *ProtocolManager) gcBroadcastLoop() {
-	for {
-		select {
-		case event := <-self.gcCh:
-			self.BroadcastGc(event.Gc.GcHash(), event.Gc)
-
-		// Err() channel will be closed when unsubscribing.
-		case <-self.gcSub.Err():
-			return
-		}
-	}
-}
-
-func (self *ProtocolManager) bbaBroadcastLoop() {
-	for {
-		select {
-		case event := <-self.bbaCh:
-			self.BroadcastBba(event.Bba.BbaHash(), event.Bba)
-
-		// Err() channel will be closed when unsubscribing.
-		case <-self.bbaSub.Err():
 			return
 		}
 	}

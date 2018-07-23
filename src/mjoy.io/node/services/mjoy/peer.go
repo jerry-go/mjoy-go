@@ -198,14 +198,6 @@ func (p *peer) SendBlockProposal(bp *apos.BlockProposal) error {
 	p.knownBps.Add(bp.Block.Hash())
 	return p2p.Send(p.rw, BpMsg, bp)
 }
-func (p *peer) SendGradedConsensus(gc *apos.GradedConsensus) error {
-	p.knownGcs.Add(gc.GcHash())
-	return p2p.Send(p.rw, GcMsg, gc)
-}
-func (p *peer) SendBinaryByzantineAgreement(bba *apos.BinaryByzantineAgreement) error {
-	p.knownBbas.Add(bba.BbaHash())
-	return p2p.Send(p.rw, BbaMsg, bba)
-}
 func (p *peer) SendByzantineAgreementStar(ba *apos.ByzantineAgreementStar) error {
 	p.knownBas.Add(ba.BaHash())
 	return p2p.Send(p.rw, BaMsg, ba)
