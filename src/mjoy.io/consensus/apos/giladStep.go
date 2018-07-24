@@ -181,15 +181,12 @@ func (this *VoteObj)dataDeal(data *VoteData){
 	defer this.lock.Unlock()
 
 	step := data.Step
-	//special status,when get data with step == stepBp,mean that the bpStep is over
-	if step == StepBp {
-		data.Step = StepReduction1
-		this.CommitteeVote(data)
-	}else if step == StepReduction1{
+	if step == StepReduction1{
 		//check the hblock1 is Timeout
 		if timeout := data.Value.Equal(&TimeOut);timeout {
 			copy(data.Value[:], this.emptyHash[:])
 		}
+		data.Step = StepReduction2
 		this.CommitteeVote(data)
 
 	}else if step == StepReduction2 {
@@ -206,7 +203,8 @@ func (this *VoteObj)dataDeal(data *VoteData){
 		this.CommitteeVote(data)
 
 	}else if step == StepFinal{
-
+		//when get StepFinal,return the hash
+		this.ctx.writeRet(data)
 	}else{
 		//common step:BBA Step
 		index := step % 3

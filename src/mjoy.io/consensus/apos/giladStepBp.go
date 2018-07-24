@@ -155,7 +155,7 @@ func (this *BpObj) run() {
 				//make reduction input data
 				vd := new(VoteData)
 				vd.Round = x.bp.Credential.Round
-				vd.Step = StepBp
+				vd.Step = StepReduction1
 				vd.Value = x.bp.Block.Hash()
 
 				this.CommitteeVote(vd)
@@ -210,10 +210,10 @@ func (this *BpObj) run() {
 
 					vd := new(VoteData)
 					vd.Round = x.bp.Credential.Round
-					vd.Step = StepBp
+					vd.Step = StepReduction1
 					vd.Value = x.bp.Block.Hash()
 
-					this.ctx.sendInner(vd)
+					this.CommitteeVote(vd)
 					this.ctx.startVoteTimer(int(Config().delayStep))
 					//todo:inform the reduction
 
