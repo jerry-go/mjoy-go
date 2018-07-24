@@ -201,10 +201,11 @@ func (this *VoteObj)dataDeal(data *VoteData){
 		data.Step = 1
 		//this is the bba first step
 		this.CommitteeVote(data)
-
+		//equal return the reduction result
+		this.ctx.setReductionResult(data.Value)
 	}else if step == StepFinal{
 		//when get StepFinal,return the hash
-		this.ctx.writeRet(data)
+		this.ctx.setFinalResult(data.Value)
 	}else{
 		//common step:BBA Step
 		index := step % 3
@@ -234,8 +235,8 @@ func (this *VoteObj)dataDeal(data *VoteData){
 					data.Step = StepFinal
 					this.safetyBbaCommitteeVote(data)
 				}
-				//return ,just write the Ret
-				this.ctx.writeRet(data)
+				//equal return bba
+				this.ctx.setBbaResult(data.Value)
 
 
 			}
@@ -254,8 +255,8 @@ func (this *VoteObj)dataDeal(data *VoteData){
 					copy(dataNew.Value[:] , data.Value[:])
 					this.safetyBbaCommitteeVote(dataNew)
 				}
-
-				this.ctx.writeRet(data)
+				//equal return bba
+				this.ctx.setBbaResult(data.Value)
 			}
 		case 3:
 			if timeout := data.Value.Equal(&TimeOut);timeout{

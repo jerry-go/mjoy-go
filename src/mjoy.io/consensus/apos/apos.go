@@ -275,12 +275,6 @@ func (this *Round) setFinalResult(hash types.Hash) {
 	}
 }
 
-func (this *Round) setSmallestBrM1(bp *BlockProposal) {
-	this.lock.Lock()
-	defer this.lock.Unlock()
-
-	this.smallestLBr = bp
-}
 
 func (this *Round) addStepRoutine(step int, stepObj *stepRoutine) {
 	if _, ok := this.allStepObj[step]; !ok {
@@ -339,10 +333,11 @@ func (this *Round) startStepObjs(wg *sync.WaitGroup) {
 
 	stepCtx := &stepCtx{}
 
-	//pC := credential
-	//stepCtx.getCredential = func() *CredentialSign {
-	//	return pC
-	//}
+	stepCtx.setBpResult = this.setBpResult
+	stepCtx.setReductionResult = this.setReductionResult
+	stepCtx.setBbaResult = this.setBbaResult
+	stepCtx.setFinalResult = this.setFinalResult
+
 
 	stepCtx.esig = this.apos.commonTools.Esig
 	stepCtx.sendInner = this.apos.outMsger.SendInner
@@ -752,10 +747,17 @@ func (this *Apos) SetOutMsger(outMsger OutMsger) {
 
 func SetTestConfig() {
 	//set config
-	Config().maxPotVerifiers = big.NewInt(2)
-	Config().maxBBASteps = 12
-	Config().prLeader = 10000000000
-	Config().prVerifier = 10000000000
+	Config().R = 1000
+	Config().tProposer = 1
+	Config().tStep = 2000
+	Config().tStepThreshold = 1
+	Config().tFinal = 10000
+	Config().tFinalThreshold = 1
+	Config().maxStep = 150
+	Config().delayPriority = 5
+	Config().delayStep = 5
+	Config().delayBlock = 60
+	Config().delayStepVar = 5
 }
 
 //this is the main loop of Apos

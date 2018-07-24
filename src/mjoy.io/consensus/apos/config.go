@@ -87,7 +87,7 @@ func (c *config) setDefault() {
 
 	//new struct
 	c.R = 1000
-	c.tProposer = 1
+	c.tProposer = 26
 	c.tStep = 2000
 	c.tStepThreshold = c.tStep * 685/1000
 	c.tFinal = 10000
