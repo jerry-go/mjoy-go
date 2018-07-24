@@ -71,8 +71,11 @@ func (this *BpObj)addExistBlock(blockHash types.Hash){
 
 func (this *BpObj)makeBlock(){
 	bp := newBlockProposal()
-	bp.Credential = this.ctx.getCredentialByStep(0)
-
+	bp.Credential = this.ctx.getCredentialByStep(StepBp)
+	if nil == bp.Credential {
+		logger.Warn("makeBlock getCredentialByStep--->nil")
+		return
+	}
 	bcd := &block.ConsensusData{}
 	bcd.Id = ConsensusDataId
 	bcd.Para = bp.Credential.Signature.toBytes()

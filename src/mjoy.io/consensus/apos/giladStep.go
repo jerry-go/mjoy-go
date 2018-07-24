@@ -7,10 +7,10 @@ import (
 
 const(
 
-	StepBp          = 0xffff + 0
-	StepReduction1  = 0xffff + 1
-	StepReduction2  = 0xffff + 2
-	StepFinal       = 0xffff + 3
+	StepBp          = STEP_BP
+	StepReduction1  = STEP_REDUCTION_1
+	StepReduction2  = STEP_REDUCTION_2
+	StepFinal       = STEP_FINAL
 
 )
 

@@ -367,8 +367,8 @@ func (this *Round) startStepObjs(wg *sync.WaitGroup) {
 	this.bpObj = makeBpObj(stepCtx)
 	this.voteObj = makeVoteObj(stepCtx)
 
-	this.bpObj.run()
-	this.voteObj.run()
+	go this.bpObj.run()
+	go this.voteObj.run()
 
 }
 
