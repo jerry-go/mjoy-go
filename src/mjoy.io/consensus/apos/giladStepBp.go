@@ -38,6 +38,7 @@ type BpObj struct {
 	msgChan chan *BlockProposal
 	exit    chan interface{}
 	ctx     *stepCtx
+	priorityBp *BlockProposal
 }
 
 func makeBpObj(ctx *stepCtx) *BpObj {
@@ -141,47 +142,48 @@ func (this *BpObj) run() {
 				if this.isExistBlock(bp.Block.Hash()) {
 					continue
 				}
-				//get the priority
-				sender ,err  := bp.Credential.sender()
-				if err != nil{
-					logger.Error("bp")
-					continue
-				}
-				w := this.ctx.getAccountMonney(sender , bp.Credential.Round - 1)
-				W := this.ctx.getTotalMonney(bp.Credential.Round -1 )
-				t := this.ctx.getBpThreshold()
+				////get the priority
+				//sender ,err  := bp.Credential.sender()
+				//if err != nil{
+				//	logger.Error("bp")
+				//	continue
+				//}
+				//w := this.ctx.getAccountMonney(sender , bp.Credential.Round - 1)
+				//W := this.ctx.getTotalMonney(bp.Credential.Round -1 )
+				//t := this.ctx.getBpThreshold()
 
 				//check the node has the right to produce a block
-				pri := this.ctx.verifySort(*bp.Credential , w , W  , t)
-				if pri > 0{
+				pri := bp.Credential.votes
 
-					bpp := new(BpWithPriority)
-					bpp.j = int(pri)
-					bpp.bp = bp
+				bpp := new(BpWithPriority)
+				bpp.j = int(pri)
+				bpp.bp = bp
 
-					this.BpHeap.Push(bpp)
-					this.addExistBlock(bp.Block.Hash())
+				this.BpHeap.Push(bpp)
+				this.addExistBlock(bp.Block.Hash())
+				if this.priorityBp == nil {
 					this.ctx.propagateMsg(bp)
-
-					if this.BpHeap.Len() > tProposer {
-						sort.Sort(&this.BpHeap)
-						//get the bigger one
-						x := this.BpHeap[0]
-						_ = x
-
-						vd := new(VoteData)
-						vd.Round = x.bp.Credential.Round
-						vd.Step = StepBp
-						vd.Value = x.bp.Block.Hash()
-
-						this.ctx.sendInner(vd)
-						this.ctx.startVoteTimer(int(Config().delayStep))
-						//todo:inform the reduction
-
-						return
-					}
+				} else if pri > this.priorityBp.Credential.votes {
+					this.ctx.propagateMsg(bp)
 				}
 
+				if this.BpHeap.Len() > tProposer {
+					sort.Sort(&this.BpHeap)
+					//get the bigger one
+					x := this.BpHeap[0]
+					_ = x
+
+					vd := new(VoteData)
+					vd.Round = x.bp.Credential.Round
+					vd.Step = StepBp
+					vd.Value = x.bp.Block.Hash()
+
+					this.ctx.sendInner(vd)
+					this.ctx.startVoteTimer(int(Config().delayStep))
+					//todo:inform the reduction
+
+					return
+				}
 		}
 	}
 }
