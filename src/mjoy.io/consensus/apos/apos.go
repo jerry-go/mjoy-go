@@ -241,13 +241,6 @@ func (this *Round) init(round int, apos *Apos, roundOverCh chan interface{}) {
 
 	//step ctx init
 	// step context
-
-	sendVoteData := func(step int, hash types.Hash) {
-
-		this.voteObj.SendVoteData(uint64(round), uint64(step), hash)
-	}
-	this.countVote = newCountVote(sendVoteData, emptyBlock.Hash())
-
 }
 
 func (this *Round) setBpResult(hash types.Hash) {
@@ -316,6 +309,17 @@ func (this *Round) generateCredentials() {
 			this.apos.commonTools.CreateTmpPriKey(i)
 		}
 	}
+
+	for i := STEP_BP; i < STEP_IDLE; i++ {
+		credential := this.apos.makeCredential(i)
+		isVerfier := this.apos.judgeVerifier(credential, i)
+		//logger.Info("GenerateCredential step:",i,"  isVerifier:",isVerfier)
+		if isVerfier {
+			logger.Info("GenerateCredential step:", i, "  votes:", credential.votes)
+			this.credentials[i] = credential
+			this.apos.commonTools.CreateTmpPriKey(i)
+		}
+	}
 }
 
 func (this *Round) broadcastCredentials() {
@@ -367,8 +371,15 @@ func (this *Round) startStepObjs(wg *sync.WaitGroup) {
 	this.bpObj = makeBpObj(stepCtx)
 	this.voteObj = makeVoteObj(stepCtx)
 
-	this.bpObj.run()
-	this.voteObj.run()
+	sendVoteData := func(step int, hash types.Hash) {
+
+		this.voteObj.SendVoteData(this.round, uint64(step), hash)
+	}
+	this.countVote = newCountVote(sendVoteData, this.emptyBlock.Hash())
+
+	go this.bpObj.run()
+	go this.voteObj.run()
+	go this.countVote.run()
 
 }
 
