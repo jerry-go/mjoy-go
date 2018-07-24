@@ -75,31 +75,14 @@ func (this *BpObj)CommitteeVote(data *VoteData){
 	if cret == nil {
 		return
 	}
-	who,err := cret.sender()
-	if err != nil {
-		logger.Error("CommitteeVote Sender Err:" , err.Error())
-	}
 
 	//todo :need pack ba msg
-	/*
-	type ByzantineAgreementStar struct {
-	Hash       types.Hash      //voted block's hash.
-	Esig       *EphemeralSign  //the signature of somebody's ephemeral secret key
-	Credential *CredentialSign
-}
-	*/
+
 	msgBa := newByzantineAgreementStar()
 	//hash
 	msgBa.Hash = data.Value
 	//Credential
 	msgBa.Credential = cret
-
-	hash := msgBa.Credential.Signature.Hash()
-	t := uint64(Config().tStepThreshold)
-	w := uint64(this.ctx.getAccountMonney(who , uint64(this.ctx.getRound())))
-	W := uint64(this.ctx.getTotalMonney(uint64(this.ctx.getRound())))
-
-	msgBa.Credential.votes = uint(this.ctx.sortition(hash , t , w , W))
 
 	//Esig
 	msgBa.Esig.round = msgBa.Credential.Round
@@ -107,7 +90,7 @@ func (this *BpObj)CommitteeVote(data *VoteData){
 	msgBa.Esig.val = make([]byte , 0)
 	msgBa.Esig.val = append(msgBa.Esig.val , msgBa.Hash.Bytes()...)
 
-	err = this.ctx.esig(msgBa.Esig)
+	err := this.ctx.esig(msgBa.Esig)
 	if err != nil {
 		logger.Error("CommitteeVote Esig Err:" , err.Error())
 		return

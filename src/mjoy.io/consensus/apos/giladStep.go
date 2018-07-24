@@ -155,7 +155,7 @@ func (this *VoteObj)CommitteeVote(data *VoteData){
 	msgBa.Esig.val = make([]byte , 0)
 	msgBa.Esig.val = append(msgBa.Esig.val , msgBa.Hash.Bytes()...)
 
-	err = this.ctx.esig(msgBa.Esig)
+	err := this.ctx.esig(msgBa.Esig)
 	if err != nil {
 		logger.Error("CommitteeVote Esig Err:" , err.Error())
 		return
