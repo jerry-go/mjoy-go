@@ -140,6 +140,39 @@ func (this *Round)startVoteTimer(delay int){
 	this.countVote.startTimer(delay)
 }
 
+func (this *Round)getCredentialByStep (step uint64)*CredentialSign{
+	this.lock.RLock()
+	defer this.lock.RUnlock()
+
+	if c , ok := this.credentials[int(step)];ok {
+		return c
+	}
+	return nil
+}
+
+func (this *Round)commonCoin (round , step , t uint64)uint64{
+	return (round + step) % 2
+}
+
+func (this *Round)getAccountMonney(address types.Address , round uint64)uint64{
+	monney := new(big.Int).SetBytes(address[2:6])	//4bytes
+	return monney.Uint64() + round
+}
+
+func (this *Round)getTotalMonney(round uint64)uint64{
+	monney := big.NewInt(0xffffffffff)
+	return monney.Uint64() + round
+}
+
+func (this *Round)getBpThreshold()uint64{
+	return uint64(Config().tProposer)
+}
+
+func (this *Round)getVoteThreshold()uint64{
+	return uint64(Config().tStepThreshold)
+}
+
+
 func (this *Round)verifyBlock(b *block.Block)bool{
 	lastHash := this.apos.commonTools.GetNowBlockHash()
 
@@ -218,6 +251,19 @@ func (this *Round) init(round int, apos *Apos, roundOverCh chan interface{}) {
 	stepCtx.sendInner = this.apos.outMsger.SendInner
 	stepCtx.propagateMsg = this.apos.outMsger.PropagateMsg
 	stepCtx.getEmptyBlockHash = this.getEmptyBlockHash
+
+	//ctx for new step obj
+	stepCtx.sortition = this.sortition
+	stepCtx.verifyBlock = this.verifyBlock
+	stepCtx.verifySort = this.verifySort
+	stepCtx.getCredentialByStep = this.getCredentialByStep
+	stepCtx.getAccountMonney = this.getAccountMonney
+	stepCtx.getTotalMonney = this.getTotalMonney
+	stepCtx.getBpThreshold = this.getBpThreshold
+	stepCtx.getVoteThreshold = this.getVoteThreshold
+	stepCtx.startVoteTimer = this.startVoteTimer
+	stepCtx.commonCoin = this.commonCoin
+
 	//stepRt := step
 	//stepCtx.getStep = func() int {
 	//	return stepRt
@@ -662,6 +708,7 @@ type Apos struct {
 
 //Create Apos
 func NewApos(msger OutMsger, cmTools CommonTools) *Apos {
+	logger.Debug("NewApos....................")
 	a := new(Apos)
 	//a.outMsger = msger
 	a.commonTools = cmTools

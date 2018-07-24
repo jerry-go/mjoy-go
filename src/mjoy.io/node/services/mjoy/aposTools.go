@@ -240,7 +240,7 @@ func (this *aposTools)InsertChain(chain block.Blocks) (int, error){
 func (this *aposTools)GetCurrentBlock()*block.Block{
 	return this.blockChainHandler.CurrentBlock()
 }
-func (this *aposTools)GetBlockByNum(num int)*block.Block{
+func (this *aposTools)GetBlockByNum(num uint64)*block.Block{
 	return this.blockChainHandler.GetBlockByNumber(uint64(num))
 }
 

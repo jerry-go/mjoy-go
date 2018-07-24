@@ -152,9 +152,6 @@ func (this *VoteObj)dataDeal(data *VoteData){
 	this.lock.Lock()
 	defer this.lock.Unlock()
 
-	//reset the timer
-	this.ctx.resetTimer()
-
 	step := data.Step
 	//special status,when get data with step == stepBp,mean that the bpStep is over
 	if step == StepBp {

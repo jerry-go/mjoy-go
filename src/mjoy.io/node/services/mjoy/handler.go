@@ -759,7 +759,7 @@ func (pm *ProtocolManager) BroadcastBp(hash types.Hash, bp *apos.BlockProposal) 
 
 func (pm *ProtocolManager) BroadcastBa(hash types.Hash, ba *apos.ByzantineAgreementStar) {
 	// Broadcast BinaryByzantineAgreement to a batch of peers not knowing about it
-	peers := pm.peers.PeersWithoutBbas(hash)
+	peers := pm.peers.PeersWithoutBas(hash)
 
 	for _, peer := range peers {
 		peer.SendByzantineAgreementStar(ba)
