@@ -34,7 +34,7 @@ func (h *BpWithPriorityHeap)Pop()interface{}{
 type BpObj struct {
 	lock    sync.RWMutex
 	BpHeap  BpWithPriorityHeap
-	existMap map[types.Hash]bool	//todo:here should be change to *bp
+	existMap map[types.Hash]*BlockProposal	//todo:here should be change to *bp
 	msgChan chan *BlockProposal
 	exit    chan interface{}
 	ctx     *stepCtx
@@ -46,7 +46,7 @@ func makeBpObj(ctx *stepCtx) *BpObj {
 	s.ctx = ctx
 	s.BpHeap = make(BpWithPriorityHeap , 0)
 	s.msgChan = make(chan *BlockProposal)
-	s.existMap = make(map[types.Hash]bool)
+	s.existMap = make(map[types.Hash]*BlockProposal)
 	s.exit = make(chan interface{})
 
 	return s
@@ -62,11 +62,11 @@ func (this *BpObj)isExistBlock(blockHash types.Hash)bool{
 	return false
 }
 
-func (this *BpObj)addExistBlock(blockHash types.Hash){
+func (this *BpObj)addExistBlock(bp *BlockProposal){
 	this.lock.Lock()
 	defer this.lock.Unlock()
 
-	this.existMap[blockHash] = true
+	this.existMap[bp.Block.Hash()] = bp
 }
 
 func (this *BpObj)CommitteeVote(data *VoteData){
@@ -185,7 +185,7 @@ func (this *BpObj) run() {
 				bpp.bp = bp
 
 				this.BpHeap.Push(bpp)
-				this.addExistBlock(bp.Block.Hash())
+				this.addExistBlock(bp)
 				if this.priorityBp == nil {
 					this.ctx.propagateMsg(bp)
 				} else if pri > this.priorityBp.Credential.votes {
