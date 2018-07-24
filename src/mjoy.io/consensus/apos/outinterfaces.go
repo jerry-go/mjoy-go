@@ -47,6 +47,7 @@ type CommonTools interface {
 	Sig(pCs *CredentialSign) error
 	Esig(pEphemeralSign *EphemeralSign) error
 	SigHash(hash types.Hash) []byte
+	SeedSig(psd *SeedData) error
 
 	SigVerify(hash types.Hash, sig *SignatureVal) error
 	Sender(hash types.Hash, sig *SignatureVal) (types.Address, error)
@@ -70,4 +71,7 @@ type CommonTools interface {
 	InsertChain(chain block.Blocks) (int, error)
 	GetCurrentBlock()*block.Block
 	GetBlockByNum(num uint64)*block.Block
+
+	//version 1.1
+	GetBlockByHash(hash types.Hash) *block.Block
 }

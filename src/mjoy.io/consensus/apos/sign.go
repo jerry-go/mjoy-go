@@ -52,18 +52,71 @@ type signer interface {
 	hash() types.Hash
 }
 
+type SeedDataSigForHash struct {
+	Round    uint64 // round
+	Seed     []byte // quantity(seed, Qr-1)
+}
 // Qr = H(SIGℓr (Qr−1), r),
-type Quantity struct {
-	Signature // SIGℓr (Qr−1) is the signature of leader m1
+type SeedData struct {
+	Signature // SIGℓr (Qr−1) is the signature of leader bp
 	Round     uint64
 }
 
-func (this *Quantity) Hash() types.Hash {
+func (this *SeedData) Hash() types.Hash {
 	h, err := common.MsgpHash(this)
 	if err != nil {
 		return types.Hash{}
 	}
 	return h
+}
+
+func (sd *SeedData) hash() types.Hash {
+	seed_R_1, _, err := generateSeed(sd.Round - 1)
+	if err != nil {
+		logger.Error("get Quantity fail")
+		return types.Hash{}
+	}
+	qdforhash := &SeedDataSigForHash{
+		sd.Round,
+		seed_R_1.Bytes(),
+	}
+	hash, err := common.MsgpHash(qdforhash)
+	if err != nil {
+		return types.Hash{}
+	}
+	return hash
+}
+
+func (sd *SeedData) Sign(prv *ecdsa.PrivateKey) (R *types.BigInt, S *types.BigInt, V *types.BigInt, err error) {
+	return sd.sign(prv)
+}
+
+func (sd *SeedData) sign(prv *ecdsa.PrivateKey) (R *types.BigInt, S *types.BigInt, V *types.BigInt, err error) {
+	if prv == nil {
+		err := errors.New(fmt.Sprintf("private key is empty"))
+		return nil, nil, nil, err
+	}
+
+	hash := sd.hash()
+	if (hash == types.Hash{}) {
+		err := errors.New(fmt.Sprintf("the hash of QuantityData is empty"))
+		return nil, nil, nil, err
+	}
+
+	sig, err := crypto.Sign(hash[:], prv)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	err = sd.get(sig)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	R = sd.R
+	S = sd.S
+	V = sd.V
+
+	return R, S, V, nil
 }
 
 // empty block Qr = H(Qr−1, r)
@@ -291,8 +344,15 @@ func (cret *CredentialSign) sender() (types.Address, error) {
 }
 
 func (cret *CredentialSign) hash() types.Hash {
-	//get Q(r-1)
-	qr_1, err := getQuantity(gCommonTools.GetQrSignature(cret.Round-1), cret.Round-1)
+	R := uint64(Config().R)
+	currentRound := cret.Round
+	seedRound := cret.Round
+	if currentRound < R {
+		seedRound = 0
+	} else {
+		seedRound = currentRound - 1 - (currentRound % R)
+	}
+	seed_r,_, err := generateSeed(seedRound)
 	if err != nil {
 		logger.Error("get Quantity fail")
 		return types.Hash{}
@@ -300,7 +360,7 @@ func (cret *CredentialSign) hash() types.Hash {
 	cretforhash := &CredentialSigForHash{
 		cret.Round,
 		cret.Step,
-		qr_1.Bytes(), // TODO: to get Quantity !!!!!!!!!!!!!!! need to implement a global function(round)
+		seed_r.Bytes(), // TODO: to get Quantity !!!!!!!!!!!!!!! need to implement a global function(round)
 	}
 	hash, err := common.MsgpHash(cretforhash)
 	if err != nil {
