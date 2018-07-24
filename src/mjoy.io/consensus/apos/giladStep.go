@@ -141,9 +141,30 @@ func (this *VoteObj)CommitteeVote(data *VoteData){
 		return
 	}
 
+	//todo :need pack ba msg
+
+	msgBa := newByzantineAgreementStar()
+	//hash
+	msgBa.Hash = data.Value
+	//Credential
+	msgBa.Credential = cret
+
+	//Esig
+	msgBa.Esig.round = msgBa.Credential.Round
+	msgBa.Esig.step = msgBa.Credential.Step
+	msgBa.Esig.val = make([]byte , 0)
+	msgBa.Esig.val = append(msgBa.Esig.val , msgBa.Hash.Bytes()...)
+
+	err = this.ctx.esig(msgBa.Esig)
+	if err != nil {
+		logger.Error("CommitteeVote Esig Err:" , err.Error())
+		return
+	}
+
+
 	if cret.votes > 0{
 		this.markSendData(data)
-		this.ctx.sendInner(data)
+		this.ctx.sendInner(msgBa)
 	}
 }
 //this function just using in

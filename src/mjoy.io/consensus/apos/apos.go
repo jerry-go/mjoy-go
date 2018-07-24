@@ -356,6 +356,8 @@ func (this *Round) startStepObjs(wg *sync.WaitGroup) {
 	stepCtx.getVoteThreshold = this.getVoteThreshold
 	stepCtx.startVoteTimer = this.startVoteTimer
 	stepCtx.commonCoin = this.commonCoin
+	stepCtx.getProducerNewBlock = this.apos.commonTools.GetProducerNewBlock
+
 
 	roundRt := int(this.round)
 	stepCtx.getRound = func() int {

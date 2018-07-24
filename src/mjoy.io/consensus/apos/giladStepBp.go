@@ -69,6 +69,56 @@ func (this *BpObj)addExistBlock(blockHash types.Hash){
 	this.existMap[blockHash] = true
 }
 
+func (this *BpObj)CommitteeVote(data *VoteData){
+
+	cret := this.ctx.getCredentialByStep(uint64(data.Step))
+	if cret == nil {
+		return
+	}
+	who,err := cret.sender()
+	if err != nil {
+		logger.Error("CommitteeVote Sender Err:" , err.Error())
+	}
+
+	//todo :need pack ba msg
+	/*
+	type ByzantineAgreementStar struct {
+	Hash       types.Hash      //voted block's hash.
+	Esig       *EphemeralSign  //the signature of somebody's ephemeral secret key
+	Credential *CredentialSign
+}
+	*/
+	msgBa := newByzantineAgreementStar()
+	//hash
+	msgBa.Hash = data.Value
+	//Credential
+	msgBa.Credential = cret
+
+	hash := msgBa.Credential.Signature.Hash()
+	t := uint64(Config().tStepThreshold)
+	w := uint64(this.ctx.getAccountMonney(who , uint64(this.ctx.getRound())))
+	W := uint64(this.ctx.getTotalMonney(uint64(this.ctx.getRound())))
+
+	msgBa.Credential.votes = uint(this.ctx.sortition(hash , t , w , W))
+
+	//Esig
+	msgBa.Esig.round = msgBa.Credential.Round
+	msgBa.Esig.step = msgBa.Credential.Step
+	msgBa.Esig.val = make([]byte , 0)
+	msgBa.Esig.val = append(msgBa.Esig.val , msgBa.Hash.Bytes()...)
+
+	err = this.ctx.esig(msgBa.Esig)
+	if err != nil {
+		logger.Error("CommitteeVote Esig Err:" , err.Error())
+		return
+	}
+
+
+	if cret.votes > 0{
+		this.ctx.sendInner(msgBa)
+	}
+}
+
 func (this *BpObj)makeBlock(){
 	bp := newBlockProposal()
 	bp.Credential = this.ctx.getCredentialByStep(StepBp)
@@ -124,7 +174,8 @@ func (this *BpObj) run() {
 				vd.Step = StepBp
 				vd.Value = x.bp.Block.Hash()
 
-				this.ctx.sendInner(vd)
+				this.CommitteeVote(vd)
+
 				this.ctx.startVoteTimer(int(Config().delayStep))
 
 				//todo:inform the reduction
@@ -173,8 +224,8 @@ func (this *BpObj) run() {
 						vd.Round = x.bp.Credential.Round
 						vd.Step = StepBp
 						vd.Value = x.bp.Block.Hash()
+						this.CommitteeVote(vd)
 
-						this.ctx.sendInner(vd)
 						this.ctx.startVoteTimer(int(Config().delayStep))
 						//todo:inform the reduction
 
