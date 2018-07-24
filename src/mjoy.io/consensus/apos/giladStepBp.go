@@ -198,6 +198,7 @@ func (this *BpObj) run() {
 				if this.priorityBp == nil {
 					this.ctx.propagateMsg(bp)
 				} else if pri > this.priorityBp.Credential.votes {
+					this.priorityBp = bp
 					this.ctx.propagateMsg(bp)
 				}
 
