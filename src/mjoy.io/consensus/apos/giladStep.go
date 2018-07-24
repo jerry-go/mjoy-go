@@ -50,6 +50,10 @@ func makeVoteObj(ctx *stepCtx)*VoteObj{
 	return v
 }
 
+func (this *VoteObj)stop(){
+	this.exit<-1
+}
+
 func (this *VoteObj)isBbaEmpty()bool{
 	return this.isBbaIsOk
 }
@@ -112,6 +116,7 @@ func (this *VoteObj)SendVoteData(r,s uint64 , hash types.Hash){
 }
 
 func (this *VoteObj)run(){
+
 	for{
 		select {
 		case data := <-this.msgChan:
@@ -119,6 +124,8 @@ func (this *VoteObj)run(){
 			if this.isSendSameStepData(data.Step) == false{
 				this.dataDeal(data)
 			}
+		case <-this.exit:
+			logger.Debug("VoteObj exit")
 
 		}
 	}

@@ -240,47 +240,6 @@ func (this *Round) init(round int, apos *Apos, roundOverCh chan interface{}) {
 
 	//step ctx init
 	// step context
-	stepCtx := &stepCtx{}
-
-	//pC := credential
-	//stepCtx.getCredential = func() *CredentialSign {
-	//	return pC
-	//}
-
-	stepCtx.esig = this.apos.commonTools.Esig
-	stepCtx.sendInner = this.apos.outMsger.SendInner
-	stepCtx.propagateMsg = this.apos.outMsger.PropagateMsg
-	stepCtx.getEmptyBlockHash = this.getEmptyBlockHash
-
-	//ctx for new step obj
-	stepCtx.sortition = this.sortition
-	stepCtx.verifyBlock = this.verifyBlock
-	stepCtx.verifySort = this.verifySort
-	stepCtx.getCredentialByStep = this.getCredentialByStep
-	stepCtx.getAccountMonney = this.getAccountMonney
-	stepCtx.getTotalMonney = this.getTotalMonney
-	stepCtx.getBpThreshold = this.getBpThreshold
-	stepCtx.getVoteThreshold = this.getVoteThreshold
-	stepCtx.startVoteTimer = this.startVoteTimer
-	stepCtx.commonCoin = this.commonCoin
-
-	//stepRt := step
-	//stepCtx.getStep = func() int {
-	//	return stepRt
-	//}
-
-	roundRt := int(this.round)
-	stepCtx.getRound = func() int {
-		return roundRt
-	}
-
-	//stepCtx.stopStep = stepRoutineObj.stop
-	//stepCtx.stopRound = func() {
-	//	this.stopAllStepRoutine()
-	//	// TODO: ......
-	//}
-	this.bpObj = makeBpObj(stepCtx)
-	this.voteObj = makeVoteObj(stepCtx)
 
 	sendVoteData := func(step int, hash types.Hash) {
 
@@ -366,46 +325,50 @@ func (this *Round) broadcastCredentials() {
 	}
 }
 
-func (this *Round) startVerify(wg *sync.WaitGroup) {
-	// create routine obj
-	for step, credential := range this.credentials {
-		stepRoutineObj := newStepRoutine()
-		this.addStepRoutine(step, stepRoutineObj)
+func (this *Round) startStepObjs(wg *sync.WaitGroup) {
 
-		// step context
-		stepCtx := &stepCtx{}
+	stepCtx := &stepCtx{}
 
-		pC := credential
-		stepCtx.getCredential = func() *CredentialSign {
-			return pC
-		}
+	//pC := credential
+	//stepCtx.getCredential = func() *CredentialSign {
+	//	return pC
+	//}
 
-		stepCtx.esig = this.apos.commonTools.Esig
-		stepCtx.sendInner = this.apos.outMsger.SendInner
-		stepCtx.propagateMsg = this.apos.outMsger.PropagateMsg
-		stepCtx.getEmptyBlockHash = this.getEmptyBlockHash
-		stepRt := step
-		stepCtx.getStep = func() int {
-			return stepRt
-		}
+	stepCtx.esig = this.apos.commonTools.Esig
+	stepCtx.sendInner = this.apos.outMsger.SendInner
+	stepCtx.propagateMsg = this.apos.outMsger.PropagateMsg
+	stepCtx.getEmptyBlockHash = this.getEmptyBlockHash
 
-		roundRt := int(this.round)
-		stepCtx.getRound = func() int {
-			return roundRt
-		}
+	//ctx for new step obj
+	stepCtx.getGiladEmptyHash = this.getGiladEmptyHash
+	stepCtx.sortition = this.sortition
+	stepCtx.verifyBlock = this.verifyBlock
+	stepCtx.verifySort = this.verifySort
+	stepCtx.getCredentialByStep = this.getCredentialByStep
+	stepCtx.getAccountMonney = this.getAccountMonney
+	stepCtx.getTotalMonney = this.getTotalMonney
+	stepCtx.getBpThreshold = this.getBpThreshold
+	stepCtx.getVoteThreshold = this.getVoteThreshold
+	stepCtx.startVoteTimer = this.startVoteTimer
+	stepCtx.commonCoin = this.commonCoin
 
-		stepCtx.stopStep = stepRoutineObj.stop
-		stepCtx.stopRound = func() {
-			this.stopAllStepRoutine()
-			// TODO: ......
-		}
-
-		// create step
-		//stepObj := this.apos.stepsFactory(stepCtx)
-
-		// run
-		//stepRoutineObj.run(stepObj)
+	roundRt := int(this.round)
+	stepCtx.getRound = func() int {
+		return roundRt
 	}
+
+	stepCtx.esig = this.apos.commonTools.Esig
+	stepCtx.sendInner = this.apos.outMsger.SendInner
+	stepCtx.propagateMsg = this.apos.outMsger.PropagateMsg
+	stepCtx.getEmptyBlockHash = this.getEmptyBlockHash
+
+
+	this.bpObj = makeBpObj(stepCtx)
+	this.voteObj = makeVoteObj(stepCtx)
+
+	this.bpObj.run()
+	this.voteObj.run()
+
 }
 
 
@@ -681,7 +644,7 @@ func (this *Round) run() {
 	// broadcast Credentials
 	this.broadcastCredentials()
 
-	this.startVerify(&wg)
+	this.startStepObjs(&wg)
 	logger.Debug("run()......step2")
 	this.commonProcess()
 	wg.Wait()
