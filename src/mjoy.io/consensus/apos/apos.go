@@ -377,7 +377,9 @@ func (this *Round) startStepObjs(wg *sync.WaitGroup) {
 		this.voteObj.SendVoteData(this.round, uint64(step), hash)
 	}
 	this.countVote = newCountVote(sendVoteData, this.emptyBlock.Hash())
-
+	if this.countVote == nil {
+		logger.Error("this.countVote == nil...........")
+	}
 	go this.bpObj.run()
 	go this.voteObj.run()
 	go this.countVote.run()
@@ -648,7 +650,6 @@ func (this *Round) commonProcess() {
 
 func (this *Round) run() {
 
-	go this.countVote.run()
 	wg := sync.WaitGroup{}
 	logger.Debug("run()......step1")
 	// make verifiers Credential

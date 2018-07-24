@@ -74,7 +74,16 @@ func (cv *countVote) startTimer(delay int) {
 }
 
 func (cv *countVote) run() {
-	cv.timer = time.NewTimer(0)
+	if cv == nil {
+		logger.Error("cv == nil")
+	}
+	if cv.timer == nil {
+		logger.Debug("time just a nil variable....")
+	}
+
+	t := time.NewTimer(0)
+	cv.timer = t
+	//cv.timer = time.NewTimer(0)
 	cv.timer.Stop()
 	for {
 		select {
