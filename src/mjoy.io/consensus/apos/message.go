@@ -64,7 +64,7 @@ func (cs *CredentialSign) validate() (types.Address, error) {
 		return types.Address{}, errors.New(fmt.Sprintf("verify CredentialSig fail: Round %s is not equal block number", cs.Round))
 	}
 	//todo 2. validate right
-	_ := cs.Signature.Hash()
+	cs.Signature.Hash()
 	cs.votes = 1  //todo here just for compile
 	sender, err := cs.sender()
 	if err != nil {

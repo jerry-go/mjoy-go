@@ -116,7 +116,6 @@ func (cv *countVote) getNextTimerStep(step int) int {
 		}
 		if timeoutStep < int(Config().maxStep) && cv.bbaFinish{
 			timeoutStep = STEP_FINAL
-			break
 		}
 		if sv, ok:= cv.voteRecord[timeoutStep]; ok {
 			if sv.isFinish == true {

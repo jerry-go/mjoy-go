@@ -24,7 +24,6 @@ import (
 	"crypto/ecdsa"
 	"mjoy.io/common/types"
 	"mjoy.io/core/blockchain/block"
-	"mjoy.io/params"
 )
 
 /*
