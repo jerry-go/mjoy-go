@@ -27,7 +27,7 @@ import (
 )
 
 func commitVote(s int , hash types.Hash) {
-	logger.Info("Test commitVote s hash",s, hash.String())
+	logger.Info("Test commitVote [s hash]:",s, hash.String())
 }
 
 func TestCvRun(t *testing.T) {

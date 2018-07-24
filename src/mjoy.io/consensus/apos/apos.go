@@ -210,9 +210,10 @@ func (this *Round)verifySort(cret CredentialSign , w, W,t uint64)uint64{
 
 
 
-func newRound(round int, apos *Apos, roundOverCh chan interface{}) *Round {
+func newRound(round int, parentHash types.Hash,apos *Apos, roundOverCh chan interface{}) *Round {
 	r := new(Round)
 	r.init(round, apos, roundOverCh)
+	r.parentHash = parentHash
 	return r
 }
 
@@ -346,12 +347,12 @@ func (this *Round) broadCastStop() {
 
 // Generate valid Credentials in current round
 func (this *Round) generateCredentials() {
-	for i := 1; i <= Config().maxBBASteps+3; i++ {
+	for i := 1; i < int(Config().maxStep); i++ {
 		credential := this.apos.makeCredential(i)
 		isVerfier := this.apos.judgeVerifier(credential, i)
 		//logger.Info("GenerateCredential step:",i,"  isVerifier:",isVerfier)
 		if isVerfier {
-			logger.Info("GenerateCredential step:", i, "  isVerifier:", isVerfier)
+			logger.Info("GenerateCredential step:", i, "  votes:", credential.votes)
 			this.credentials[i] = credential
 			this.apos.commonTools.CreateTmpPriKey(i)
 		}
@@ -780,7 +781,7 @@ func (this *Apos) Run() {
 	//start round
 	//this.roundOverCh<-1
 	fmt.Println("Apos Run round:", this.commonTools.GetNextRound())
-	this.roundCtx = newRound(this.commonTools.GetNextRound(), this, this.roundOverCh)
+	this.roundCtx = newRound(this.commonTools.GetNextRound(), this.commonTools.GetNowBlockHash(), this, this.roundOverCh)
 
 	go this.roundCtx.run()
 	logger.Info("Apos is running.....")
@@ -791,7 +792,7 @@ func (this *Apos) Run() {
 			//this.aposStopCh<-1
 			//return //if apos deal once ,stop it
 			logger.Debug("Apos New Round Running...............")
-			this.roundCtx = newRound(this.commonTools.GetNextRound(), this, this.roundOverCh)
+			this.roundCtx = newRound(this.commonTools.GetNextRound(), this.commonTools.GetNowBlockHash(), this, this.roundOverCh)
 			go this.roundCtx.run()
 		}
 	}
@@ -813,6 +814,8 @@ func (this *Apos) makeCredential(s int) *CredentialSign {
 	c.Signature.init()
 	c.Round = uint64(r)
 	c.Step = uint64(s)
+	c.ParentHash = this.commonTools.GetNowBlockHash()
+	c.votes = 1
 
 	err := this.commonTools.Sig(c)
 	if err != nil {
@@ -829,12 +832,17 @@ func (this *Apos) StopCh() chan interface{} {
 
 func (this *Apos) judgeVerifier(cs *CredentialSign, setp int) bool {
 
-	h := cs.Signature.Hash()
-	leader := false
-	if 1 == setp {
-		leader = true
+	//h := cs.Signature.Hash()
+	//leader := false
+	//if 1 == setp {
+	//	leader = true
+	//}
+	//return isPotVerifier(h.Bytes(), leader)
+	if cs.votes > 0 {
+		return true
+	} else {
+		return false
 	}
-	return isPotVerifier(h.Bytes(), leader)
 }
 
 /*
