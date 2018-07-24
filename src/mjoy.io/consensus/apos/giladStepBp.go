@@ -34,7 +34,7 @@ func (h *BpWithPriorityHeap)Pop()interface{}{
 type BpObj struct {
 	lock    sync.RWMutex
 	BpHeap  BpWithPriorityHeap
-	existMap map[types.Hash]bool
+	existMap map[types.Hash]bool	//todo:here should be change to *bp
 	msgChan chan *BlockProposal
 	exit    chan interface{}
 	ctx     *stepCtx
@@ -161,7 +161,7 @@ func (this *BpObj) run() {
 				this.CommitteeVote(vd)
 
 				this.ctx.startVoteTimer(int(Config().delayStep))
-
+				this.ctx.setBpResult(x.bp.Block.Hash())
 				//todo:inform the reduction
 				return
 			}
@@ -176,15 +176,6 @@ func (this *BpObj) run() {
 				if this.isExistBlock(bp.Block.Hash()) {
 					continue
 				}
-				////get the priority
-				//sender ,err  := bp.Credential.sender()
-				//if err != nil{
-				//	logger.Error("bp")
-				//	continue
-				//}
-				//w := this.ctx.getAccountMonney(sender , bp.Credential.Round - 1)
-				//W := this.ctx.getTotalMonney(bp.Credential.Round -1 )
-				//t := this.ctx.getBpThreshold()
 
 				//check the node has the right to produce a block
 				pri := bp.Credential.votes
@@ -216,6 +207,7 @@ func (this *BpObj) run() {
 
 					this.CommitteeVote(vd)
 					this.ctx.startVoteTimer(int(Config().delayStep))
+					this.ctx.setBpResult(x.bp.Block.Hash())
 					//todo:inform the reduction
 
 					return

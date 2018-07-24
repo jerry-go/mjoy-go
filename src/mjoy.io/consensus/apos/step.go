@@ -150,4 +150,12 @@ type stepCtx struct {
 
 	startVoteTimer func(delay int)
 	makeBlockConsensusData func(bp *BlockProposal) *block.ConsensusData
+
+	setBpResult func(hash types.Hash)
+	setReductionResult func(hash types.Hash)
+	setBbaResult  func(hash types.Hash)
+	setFinalResult func(hash types.Hash)
+
+
+
 }
