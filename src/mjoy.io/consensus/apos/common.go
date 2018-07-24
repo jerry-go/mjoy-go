@@ -96,28 +96,29 @@ func (pq *priorityQueue) Pop() interface{} {
 	return item
 }
 
-//H(SIGℓr (Qr−1), r)
-func getQuantity(sigByte []byte, round uint64) (types.Hash, error) {
-	q := QuantityData{}
-	q.Signature.init()
-	err := q.Signature.get(sigByte)
+
+func generateSeed(round uint64) (types.Hash, []byte, error) {
+	sigByte := gCommonTools.GetQrSignature(round)
+	sd := SeedData{}
+	sd.Signature.init()
+	err := sd.Signature.get(sigByte)
 	if err != nil {
-		return types.Hash{}, err
+		return types.Hash{}, nil, err
 	}
-	q.Round = round
-	return q.Hash(), nil
+	sd.Round = round
+	return sd.Hash(), sigByte, nil
 }
 
 func makeEmptyBlockConsensusData(round uint64) *block.ConsensusData {
 	bcd := &block.ConsensusData{}
 	bcd.Id = ConsensusDataId
 
-	qd := QuantityData{}
-	qd.init()
-	qd.Round = round
-	qd.sign(params.RewordPrikey)
+	sd := SeedData{}
+	sd.init()
+	sd.Round = round
+	sd.sign(params.RewordPrikey)
 
-	bcd.Para = qd.toBytes()
+	bcd.Para = sd.toBytes()
 	return bcd
 }
 
@@ -125,12 +126,12 @@ func makeBlockConsensusData(bp *BlockProposal, ct CommonTools) *block.ConsensusD
 	bcd := &block.ConsensusData{}
 	bcd.Id = ConsensusDataId
 
-	qd := &QuantityData{}
-	qd.init()
-	qd.Round = bp.Credential.Round
-	ct.SeedSig(qd)
+	sd := &SeedData{}
+	sd.init()
+	sd.Round = bp.Credential.Round
+	ct.SeedSig(sd)
 
-	bcd.Para = qd.toBytes()
+	bcd.Para = sd.toBytes()
 	return bcd
 }
 

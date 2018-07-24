@@ -47,7 +47,7 @@ type CommonTools interface {
 	Sig(pCs *CredentialSign) error
 	Esig(pEphemeralSign *EphemeralSign) error
 	SigHash(hash types.Hash) []byte
-	SeedSig(pQd *QuantityData) error
+	SeedSig(psd *SeedData) error
 
 	SigVerify(hash types.Hash, sig *SignatureVal) error
 	Sender(hash types.Hash, sig *SignatureVal) (types.Address, error)

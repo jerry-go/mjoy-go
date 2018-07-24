@@ -101,11 +101,11 @@ func (this *aposTools)Sig(pCs *apos.CredentialSign)error{
 	return err
 }
 
-func (this *aposTools) SeedSig(pQd *apos.QuantityData) error {
+func (this *aposTools) SeedSig(pSd *apos.SeedData) error {
 	this.lock.RLock()
 	defer this.lock.RUnlock()
 
-	_,_,_,err := pQd.Sign(this.basePriKey)
+	_,_,_,err := pSd.Sign(this.basePriKey)
 	return err
 }
 

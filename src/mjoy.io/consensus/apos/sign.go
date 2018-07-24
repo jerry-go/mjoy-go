@@ -52,17 +52,17 @@ type signer interface {
 	hash() types.Hash
 }
 
-type QuantityDataSigForHash struct {
+type SeedDataSigForHash struct {
 	Round    uint64 // round
-	Quantity []byte // quantity(seed, Qr-1)
+	Seed     []byte // quantity(seed, Qr-1)
 }
 // Qr = H(SIGℓr (Qr−1), r),
-type QuantityData struct {
+type SeedData struct {
 	Signature // SIGℓr (Qr−1) is the signature of leader bp
 	Round     uint64
 }
 
-func (this *QuantityData) Hash() types.Hash {
+func (this *SeedData) Hash() types.Hash {
 	h, err := common.MsgpHash(this)
 	if err != nil {
 		return types.Hash{}
@@ -70,16 +70,15 @@ func (this *QuantityData) Hash() types.Hash {
 	return h
 }
 
-func (qd *QuantityData) hash() types.Hash {
-	//get Q(r-1)
-	qr_1, err := getQuantity(gCommonTools.GetQrSignature(qd.Round-1), qd.Round-1)
+func (sd *SeedData) hash() types.Hash {
+	seed_R_1, _, err := generateSeed(sd.Round - 1)
 	if err != nil {
 		logger.Error("get Quantity fail")
 		return types.Hash{}
 	}
-	qdforhash := &QuantityDataSigForHash{
-		qd.Round,
-		qr_1.Bytes(),
+	qdforhash := &SeedDataSigForHash{
+		sd.Round,
+		seed_R_1.Bytes(),
 	}
 	hash, err := common.MsgpHash(qdforhash)
 	if err != nil {
@@ -88,17 +87,17 @@ func (qd *QuantityData) hash() types.Hash {
 	return hash
 }
 
-func (qd *QuantityData) Sign(prv *ecdsa.PrivateKey) (R *types.BigInt, S *types.BigInt, V *types.BigInt, err error) {
-	return qd.sign(prv)
+func (sd *SeedData) Sign(prv *ecdsa.PrivateKey) (R *types.BigInt, S *types.BigInt, V *types.BigInt, err error) {
+	return sd.sign(prv)
 }
 
-func (qd *QuantityData) sign(prv *ecdsa.PrivateKey) (R *types.BigInt, S *types.BigInt, V *types.BigInt, err error) {
+func (sd *SeedData) sign(prv *ecdsa.PrivateKey) (R *types.BigInt, S *types.BigInt, V *types.BigInt, err error) {
 	if prv == nil {
 		err := errors.New(fmt.Sprintf("private key is empty"))
 		return nil, nil, nil, err
 	}
 
-	hash := qd.hash()
+	hash := sd.hash()
 	if (hash == types.Hash{}) {
 		err := errors.New(fmt.Sprintf("the hash of QuantityData is empty"))
 		return nil, nil, nil, err
@@ -109,13 +108,13 @@ func (qd *QuantityData) sign(prv *ecdsa.PrivateKey) (R *types.BigInt, S *types.B
 		return nil, nil, nil, err
 	}
 
-	err = qd.get(sig)
+	err = sd.get(sig)
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	R = qd.R
-	S = qd.S
-	V = qd.V
+	R = sd.R
+	S = sd.S
+	V = sd.V
 
 	return R, S, V, nil
 }
@@ -345,16 +344,15 @@ func (cret *CredentialSign) sender() (types.Address, error) {
 }
 
 func (cret *CredentialSign) hash() types.Hash {
-	//get Q(r-1)
 	R := uint64(Config().R)
 	currentRound := cret.Round
-	seedR := cret.Round
+	seedRound := cret.Round
 	if currentRound < R {
-		seedR = 0
+		seedRound = 0
 	} else {
-		seedR = currentRound - 1 - (currentRound % R)
+		seedRound = currentRound - 1 - (currentRound % R)
 	}
-	qr_r, err := getQuantity(gCommonTools.GetQrSignature(seedR), seedR)
+	seed_r,_, err := generateSeed(seedRound)
 	if err != nil {
 		logger.Error("get Quantity fail")
 		return types.Hash{}
@@ -362,7 +360,7 @@ func (cret *CredentialSign) hash() types.Hash {
 	cretforhash := &CredentialSigForHash{
 		cret.Round,
 		cret.Step,
-		qr_r.Bytes(), // TODO: to get Quantity !!!!!!!!!!!!!!! need to implement a global function(round)
+		seed_r.Bytes(), // TODO: to get Quantity !!!!!!!!!!!!!!! need to implement a global function(round)
 	}
 	hash, err := common.MsgpHash(cretforhash)
 	if err != nil {
