@@ -101,8 +101,6 @@ type Round struct {
 
 	credentials map[int]*CredentialSign
 
-	allStepObj map[int]*stepRoutine
-
 	smallestLBr *BlockProposal
 	lock        sync.RWMutex
 
@@ -233,7 +231,6 @@ func (this *Round) init(round int, apos *Apos, roundOverCh chan interface{}) {
 
 	// this.maxLeaderNum = this.apos.algoParam.maxLeaderNum
 	this.credentials = make(map[int]*CredentialSign)
-	this.allStepObj = make(map[int]*stepRoutine)
 	emptyBlock := this.apos.commonTools.MakeEmptyBlock(makeEmptyBlockConsensusData(this.round))
 	this.emptyBlock = emptyBlock
 
@@ -282,23 +279,10 @@ func (this *Round) setSmallestBrM1(bp *BlockProposal) {
 	this.smallestLBr = bp
 }
 
-func (this *Round) addStepRoutine(step int, stepObj *stepRoutine) {
-	if _, ok := this.allStepObj[step]; !ok {
-		this.allStepObj[step] = stepObj
-	}
-}
 
-func (this *Round) stopAllStepRoutine() {
-	for _, routine := range this.allStepObj {
-		routine.stop()
-	}
-}
 
 //inform stepObj to stop running
 func (this *Round) broadCastStop() {
-	for _, v := range this.allStepObj {
-		v.stop()
-	}
 	this.countVote.stop()
 }
 
