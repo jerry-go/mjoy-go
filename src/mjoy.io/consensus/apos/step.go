@@ -149,4 +149,5 @@ type stepCtx struct {
 	getVoteThreshold func()uint64
 
 	startVoteTimer func(delay int)
+	makeBlockConsensusData func(bp *BlockProposal) *block.ConsensusData
 }

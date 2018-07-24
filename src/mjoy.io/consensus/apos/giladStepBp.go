@@ -4,7 +4,6 @@ import (
 	"sync"
 	"time"
 	"sort"
-	"mjoy.io/core/blockchain/block"
 	"mjoy.io/common/types"
 )
 
@@ -76,9 +75,10 @@ func (this *BpObj)makeBlock(){
 		logger.Warn("makeBlock getCredentialByStep--->nil")
 		return
 	}
-	bcd := &block.ConsensusData{}
-	bcd.Id = ConsensusDataId
-	bcd.Para = bp.Credential.Signature.toBytes()
+	//bcd := &block.ConsensusData{}
+	//bcd.Id = ConsensusDataId
+	//bcd.Para = bp.Credential.Signature.toBytes()
+	bcd := this.ctx.makeBlockConsensusData(bp)
 
 	bp.Block = this.ctx.getProducerNewBlock(bcd)
 
