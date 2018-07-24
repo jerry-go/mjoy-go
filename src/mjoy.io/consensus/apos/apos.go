@@ -136,8 +136,13 @@ type Round struct {
 func CalculatePriority(hash types.Hash , w , W ,t uint64 )uint64{
 	return 10
 }
+
 func (this *Round)startVoteTimer(delay int){
 	this.countVote.startTimer(delay)
+}
+
+func (this *Round)makeBlockConsensusData(bp *BlockProposal) *block.ConsensusData{
+	return makeBlockConsensusData(bp, this.apos.commonTools)
 }
 
 func (this *Round)getCredentialByStep (step uint64)*CredentialSign{
@@ -357,6 +362,7 @@ func (this *Round) startStepObjs(wg *sync.WaitGroup) {
 	stepCtx.startVoteTimer = this.startVoteTimer
 	stepCtx.commonCoin = this.commonCoin
 	stepCtx.getProducerNewBlock = this.apos.commonTools.GetProducerNewBlock
+	stepCtx.makeBlockConsensusData = this.makeBlockConsensusData
 
 
 	roundRt := int(this.round)
