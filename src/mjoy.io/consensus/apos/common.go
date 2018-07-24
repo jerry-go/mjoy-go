@@ -98,7 +98,7 @@ func (pq *priorityQueue) Pop() interface{} {
 
 //H(SIGℓr (Qr−1), r)
 func getQuantity(sigByte []byte, round uint64) (types.Hash, error) {
-	q := Quantity{}
+	q := QuantityData{}
 	q.Signature.init()
 	err := q.Signature.get(sigByte)
 	if err != nil {
@@ -112,20 +112,25 @@ func makeEmptyBlockConsensusData(round uint64) *block.ConsensusData {
 	bcd := &block.ConsensusData{}
 	bcd.Id = ConsensusDataId
 
-	cs := CredentialSign{}
-	cs.init()
-	cs.Round = round
-	cs.Step = 1
-	cs.sign(params.RewordPrikey)
+	qd := QuantityData{}
+	qd.init()
+	qd.Round = round
+	qd.sign(params.RewordPrikey)
 
-	bcd.Para = cs.toBytes()
+	bcd.Para = qd.toBytes()
 	return bcd
 }
 
-func makeBlockConsensusData(bp *BlockProposal) *block.ConsensusData {
+func makeBlockConsensusData(bp *BlockProposal, ct CommonTools) *block.ConsensusData {
 	bcd := &block.ConsensusData{}
 	bcd.Id = ConsensusDataId
-	bcd.Para = bp.Credential.Signature.toBytes()
+
+	qd := &QuantityData{}
+	qd.init()
+	qd.Round = bp.Credential.Round
+	ct.SeedSig(qd)
+
+	bcd.Para = qd.toBytes()
 	return bcd
 }
 

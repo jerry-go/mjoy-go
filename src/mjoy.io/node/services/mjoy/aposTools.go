@@ -101,6 +101,14 @@ func (this *aposTools)Sig(pCs *apos.CredentialSign)error{
 	return err
 }
 
+func (this *aposTools) SeedSig(pQd *apos.QuantityData) error {
+	this.lock.RLock()
+	defer this.lock.RUnlock()
+
+	_,_,_,err := pQd.Sign(this.basePriKey)
+	return err
+}
+
 func (this *aposTools)Esig(pEphemeralSign *apos.EphemeralSign)error{
 	this.lock.Lock()
 	defer this.lock.Unlock()

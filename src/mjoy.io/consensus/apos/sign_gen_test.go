@@ -463,8 +463,8 @@ func BenchmarkDecodeEphemeralSign(b *testing.B) {
 	}
 }
 
-func TestMarshalUnmarshalQuantity(t *testing.T) {
-	v := Quantity{}
+func TestMarshalUnmarshalQuantityData(t *testing.T) {
+	v := QuantityData{}
 	bts, err := v.MarshalMsg(nil)
 	if err != nil {
 		t.Fatal(err)
@@ -486,8 +486,8 @@ func TestMarshalUnmarshalQuantity(t *testing.T) {
 	}
 }
 
-func BenchmarkMarshalMsgQuantity(b *testing.B) {
-	v := Quantity{}
+func BenchmarkMarshalMsgQuantityData(b *testing.B) {
+	v := QuantityData{}
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -495,8 +495,8 @@ func BenchmarkMarshalMsgQuantity(b *testing.B) {
 	}
 }
 
-func BenchmarkAppendMsgQuantity(b *testing.B) {
-	v := Quantity{}
+func BenchmarkAppendMsgQuantityData(b *testing.B) {
+	v := QuantityData{}
 	bts := make([]byte, 0, v.Msgsize())
 	bts, _ = v.MarshalMsg(bts[0:0])
 	b.SetBytes(int64(len(bts)))
@@ -507,8 +507,8 @@ func BenchmarkAppendMsgQuantity(b *testing.B) {
 	}
 }
 
-func BenchmarkUnmarshalQuantity(b *testing.B) {
-	v := Quantity{}
+func BenchmarkUnmarshalQuantityData(b *testing.B) {
+	v := QuantityData{}
 	bts, _ := v.MarshalMsg(nil)
 	b.ReportAllocs()
 	b.SetBytes(int64(len(bts)))
@@ -521,8 +521,8 @@ func BenchmarkUnmarshalQuantity(b *testing.B) {
 	}
 }
 
-func TestEncodeDecodeQuantity(t *testing.T) {
-	v := Quantity{}
+func TestEncodeDecodeQuantityData(t *testing.T) {
+	v := QuantityData{}
 	var buf bytes.Buffer
 	msgp.Encode(&buf, &v)
 
@@ -531,7 +531,7 @@ func TestEncodeDecodeQuantity(t *testing.T) {
 		t.Logf("WARNING: Msgsize() for %v is inaccurate", v)
 	}
 
-	vn := Quantity{}
+	vn := QuantityData{}
 	err := msgp.Decode(&buf, &vn)
 	if err != nil {
 		t.Error(err)
@@ -545,8 +545,8 @@ func TestEncodeDecodeQuantity(t *testing.T) {
 	}
 }
 
-func BenchmarkEncodeQuantity(b *testing.B) {
-	v := Quantity{}
+func BenchmarkEncodeQuantityData(b *testing.B) {
+	v := QuantityData{}
 	var buf bytes.Buffer
 	msgp.Encode(&buf, &v)
 	b.SetBytes(int64(buf.Len()))
@@ -559,8 +559,121 @@ func BenchmarkEncodeQuantity(b *testing.B) {
 	en.Flush()
 }
 
-func BenchmarkDecodeQuantity(b *testing.B) {
-	v := Quantity{}
+func BenchmarkDecodeQuantityData(b *testing.B) {
+	v := QuantityData{}
+	var buf bytes.Buffer
+	msgp.Encode(&buf, &v)
+	b.SetBytes(int64(buf.Len()))
+	rd := msgp.NewEndlessReader(buf.Bytes(), b)
+	dc := msgp.NewReader(rd)
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		err := v.DecodeMsg(dc)
+		if err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
+func TestMarshalUnmarshalQuantityDataSigForHash(t *testing.T) {
+	v := QuantityDataSigForHash{}
+	bts, err := v.MarshalMsg(nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	left, err := v.UnmarshalMsg(bts)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(left) > 0 {
+		t.Errorf("%d bytes left over after UnmarshalMsg(): %q", len(left), left)
+	}
+
+	left, err = msgp.Skip(bts)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(left) > 0 {
+		t.Errorf("%d bytes left over after Skip(): %q", len(left), left)
+	}
+}
+
+func BenchmarkMarshalMsgQuantityDataSigForHash(b *testing.B) {
+	v := QuantityDataSigForHash{}
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		v.MarshalMsg(nil)
+	}
+}
+
+func BenchmarkAppendMsgQuantityDataSigForHash(b *testing.B) {
+	v := QuantityDataSigForHash{}
+	bts := make([]byte, 0, v.Msgsize())
+	bts, _ = v.MarshalMsg(bts[0:0])
+	b.SetBytes(int64(len(bts)))
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		bts, _ = v.MarshalMsg(bts[0:0])
+	}
+}
+
+func BenchmarkUnmarshalQuantityDataSigForHash(b *testing.B) {
+	v := QuantityDataSigForHash{}
+	bts, _ := v.MarshalMsg(nil)
+	b.ReportAllocs()
+	b.SetBytes(int64(len(bts)))
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, err := v.UnmarshalMsg(bts)
+		if err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
+func TestEncodeDecodeQuantityDataSigForHash(t *testing.T) {
+	v := QuantityDataSigForHash{}
+	var buf bytes.Buffer
+	msgp.Encode(&buf, &v)
+
+	m := v.Msgsize()
+	if buf.Len() > m {
+		t.Logf("WARNING: Msgsize() for %v is inaccurate", v)
+	}
+
+	vn := QuantityDataSigForHash{}
+	err := msgp.Decode(&buf, &vn)
+	if err != nil {
+		t.Error(err)
+	}
+
+	buf.Reset()
+	msgp.Encode(&buf, &v)
+	err = msgp.NewReader(&buf).Skip()
+	if err != nil {
+		t.Error(err)
+	}
+}
+
+func BenchmarkEncodeQuantityDataSigForHash(b *testing.B) {
+	v := QuantityDataSigForHash{}
+	var buf bytes.Buffer
+	msgp.Encode(&buf, &v)
+	b.SetBytes(int64(buf.Len()))
+	en := msgp.NewWriter(msgp.Nowhere)
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		v.EncodeMsg(en)
+	}
+	en.Flush()
+}
+
+func BenchmarkDecodeQuantityDataSigForHash(b *testing.B) {
+	v := QuantityDataSigForHash{}
 	var buf bytes.Buffer
 	msgp.Encode(&buf, &v)
 	b.SetBytes(int64(buf.Len()))

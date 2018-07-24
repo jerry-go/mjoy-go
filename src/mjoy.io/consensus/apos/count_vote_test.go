@@ -84,6 +84,7 @@ func TestVoteSuccess_bba(t *testing.T) {
 	hash[1] = 1
 
 	Config().tStepThreshold = 50
+	time.Sleep(2 * time.Second)
 	for i:=0; i<52; i++ {
 		ba := &ByzantineAgreementStar{hash,nil, &CredentialSign{Step:1,votes:1,}}
 		cv.sendMsg(ba)
@@ -119,7 +120,7 @@ func TestVoteSuccess_reduction_bba(t *testing.T) {
 	}
 
 	time.Sleep(30 * time.Second)
-	cv.stopCh <- 1
+	cv.stop()
 }
 
 func TestVoteSuccess_reduction_bba_final(t *testing.T) {
