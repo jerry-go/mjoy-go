@@ -252,6 +252,7 @@ func (pm *ProtocolManager) Stop() {
 
 	pm.csSub.Unsubscribe()
 	pm.bpSub.Unsubscribe()
+	pm.baSub.Unsubscribe()
 
 	// Quit the sync loop.
 	// After this send has completed, no new peers will be accepted.

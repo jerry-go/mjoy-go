@@ -62,7 +62,7 @@ const (
 
 	CsMsg          = 0x20
 	BpMsg          = 0x21
-	BaMsg          = 0x24
+	BaMsg          = 0x22
 )
 
 type errCode int
