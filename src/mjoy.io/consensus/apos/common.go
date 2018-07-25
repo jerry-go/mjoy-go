@@ -136,16 +136,17 @@ func makeBlockConsensusData(bp *BlockProposal, ct CommonTools) *block.ConsensusD
 }
 
 func SenderFromBlock(header *block.Header) (types.Address, error) {
-	cs := &CredentialSign{}
-	cs.init()
-	err := cs.Signature.get(header.ConsensusData.Para)
+	sd := SeedData{}
+	sd.init()
+	err := sd.Signature.get(header.ConsensusData.Para)
 	if err != nil {
 		return types.Address{}, err
 	}
-	cs.Round = header.Number.IntVal.Uint64()
-	cs.Step = 1
-	return cs.sender()
+	sd.Round = header.Number.IntVal.Uint64()
+	return sd.sender()
+
 }
+
 
 func getThreshold(step int) uint {
 	if step == STEP_FINAL {

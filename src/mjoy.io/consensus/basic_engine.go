@@ -32,7 +32,6 @@ import (
 	"mjoy.io/core/transaction"
 	"mjoy.io/params"
 	"runtime"
-	"fmt"
 )
 
 type Engine_basic struct {
