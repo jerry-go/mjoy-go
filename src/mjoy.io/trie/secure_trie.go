@@ -24,7 +24,6 @@ import (
 	"fmt"
 
 	"mjoy.io/common/types"
-	"mjoy.io/common/types/util"
 )
 
 var secureKeyPrefix = []byte("secure-key-")
@@ -114,7 +113,7 @@ func (t *SecureTrie) TryUpdate(key, value []byte) error {
 	if err != nil {
 		return err
 	}
-	t.getSecKeyCache()[string(hk)] = util.CopyBytes(key)
+	t.getSecKeyCache()[string(hk)] = types.CopyBytes(key)
 	return nil
 }
 

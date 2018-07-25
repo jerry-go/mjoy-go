@@ -40,7 +40,7 @@ func TestHeaderSigantureFixkey(t *testing.T) {
 	BlockProducer := types.Address{}
 	BlockProducer[10] =1
 
-	header := &Header{Number:types.NewBigInt(*big.NewInt(333)), Time:types.NewBigInt(*big.NewInt(1212121)),BlockProducer:BlockProducer,ConsensusData:ConsensusData{"test",conData}}
+	header := &Header{Number:types.NewBigInt(*big.NewInt(333)), Time:types.NewBigInt(*big.NewInt(1212121)),BlockProducer:BlockProducer,Cdata:ConsensusData{"test",conData}}
 	chainId := big.NewInt(101)
 	singner := NewBlockSigner(chainId)
 

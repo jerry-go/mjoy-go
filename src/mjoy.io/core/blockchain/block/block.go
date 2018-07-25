@@ -34,8 +34,13 @@ import (
 	"github.com/tinylib/msgp/msgp"
 	"fmt"
 	"mjoy.io/utils/bloom"
-	"mjoy.io/common/types/util/hex"
 )
+
+//go:generate msgp
+//msgp:ignore Blocks
+//go:generate gencodec -type Header -field-override headerMarshaling -out gen_header_json.go
+//go:generate gencodec -type ConsensusData -field-override consensusDataMarshaling -out gen_consensus_json.go
+//go:generate gofmt -w -s gen_header_json.go
 
 type DerivableList interface {
 	Len() int
@@ -53,39 +58,48 @@ func DeriveSha(list DerivableList) types.Hash {
 	return trie.Hash()
 }
 
-//go:generate msgp
+type ConsensusData struct {
+	Id   string     `json:"consensus_id"         gencodec:"required"`
+	Para []byte     `json:"consensus_param"      gencodec:"required"`
+}
 
-
-type ConsensusData struct{
-	Id     string
-	Para   []byte
+type consensusDataMarshaling struct {
+	Para types.BytesForJson
 }
 
 // block header
 type Header struct {
-	ParentHash  		types.Hash            `json:"parentHash" `
-	StateRootHash   	types.Hash            `json:"stateRoot" `
-	TxRootHash      	types.Hash            `json:"transactionsRoot" `
-	ReceiptRootHash 	types.Hash            `json:"receiptsRoot" `
-	Bloom       		types.Bloom           `json:"logsBloom" `
-	Number      		*types.BigInt         `json:"number" `
-	Time        		*types.BigInt         `json:"timestamp" `
+	ParentHash      types.Hash    `json:"parentHash"         gencodec:"required"`
+	StateRootHash   types.Hash    `json:"stateRoot"          gencodec:"required"`
+	TxRootHash      types.Hash    `json:"transactionsRoot"   gencodec:"required"`
+	ReceiptRootHash types.Hash    `json:"receiptsRoot"       gencodec:"required"`
+	Bloom           types.Bloom   `json:"logsBloom"          gencodec:"required"`
+	Number          *types.BigInt `json:"number"             gencodec:"required"`
+	Time            *types.BigInt `json:"timestamp"          gencodec:"required"`
+	Cdata           ConsensusData `json:"consensusData"      gencodec:"required"`
+	Extra       	[]byte        `json:"extraData"          gencodec:"required"`
 
-	//BlockProducer is not used in protocol.
-	BlockProducer   	types.Address         `json:"blockProducer" msg:"-"`
-	ConsensusData     	ConsensusData         `json:"consensusData" `
 	//Signature values
-	V                 	*types.BigInt         `json:"v"`
-	R                 	*types.BigInt         `json:"r"`
-	S                 	*types.BigInt         `json:"s"`
+	V *types.BigInt `json:"v"`
+	R *types.BigInt `json:"r"`
+	S *types.BigInt `json:"s"`
+
+	//BlockProducer is not used in protocol, get from the signature(v,r,s)
+	BlockProducer 	types.Address `json:"blockProducer"      gencodec:"required"   msg:"-"`
+}
+
+// field type overrides for gencodec
+type headerMarshaling struct {
+	Extra      types.BytesForJson
+	Hash       types.Hash 				`json:"hash"` // adds call to Hash() in MarshalJSON
 }
 
 type Body struct {
 	Transactions []*transaction.Transaction
 }
 type Block struct {
-	B_header      *Header               // block header
-	B_body        Body                  // all transactions in this block
+	B_header *Header // block header
+	B_body   Body    // all transactions in this block
 
 	// caches
 	hash atomic.Value
@@ -93,8 +107,8 @@ type Block struct {
 
 	// These fields are used by package mjoy to track
 	// inter-peer block relay.
-	ReceivedAt   time.Time      `msg:"-"`
-	ReceivedFrom interface{}    `msg:"-"`
+	ReceivedAt   time.Time   `msg:"-"`
+	ReceivedFrom interface{} `msg:"-"`
 }
 
 func (h *Header) Hash() types.Hash {
@@ -106,8 +120,9 @@ func (h *Header) Hash() types.Hash {
 }
 
 var (
-	EmptyRootHash  = DeriveSha(transaction.Transactions{})
+	EmptyRootHash = DeriveSha(transaction.Transactions{})
 )
+
 // NewBlock creates a new block. The input data is copied,
 // changes to header and to the field values will not affect the
 // block.
@@ -143,6 +158,7 @@ func NewBlock(header *Header, txs []*transaction.Transaction, receipts []*transa
 	}
 	return b
 }
+
 // CopyHeader creates a deep copy of a block header to prevent side effects from
 // modifying a header variable.
 func CopyHeader(h *Header) *Header {
@@ -184,7 +200,7 @@ func (header *Header) HashNoSig() types.Hash {
 		header.Number,
 		header.Time,
 		header.BlockProducer,
-		header.ConsensusData,
+		header.Cdata,
 	}
 	return v.Hash()
 }
@@ -201,13 +217,13 @@ func (h *Header) WithSignature(signer Signer, sig []byte) (*Header, error) {
 }
 
 // AddSignature returns modify the  header( R, S, V) with the given signature.
-func (h *Header) AddSignature(signer Signer, sig []byte) ( error) {
+func (h *Header) AddSignature(signer Signer, sig []byte) error {
 	r, s, v, err := signer.SignatureValues(h, sig)
 	if err != nil {
 		return err
 	}
 	h.R, h.S, h.V = &types.BigInt{*r}, &types.BigInt{*s}, &types.BigInt{*v}
-	return  nil
+	return nil
 }
 
 func (b *Block) Transactions() transaction.Transactions { return b.B_body.Transactions }
@@ -238,7 +254,6 @@ func (b *Block) Header() *Header { return CopyHeader(b.B_header) }
 // Body returns the non-header content of the block.
 func (b *Block) Body() *Body { return &Body{b.B_body.Transactions} }
 
-
 func (b *Block) HashNoSig() types.Hash {
 	return b.B_header.HashNoSig()
 }
@@ -255,22 +270,21 @@ func (b *Block) Size() common.StorageSize {
 	return common.StorageSize(c)
 }
 
-
 // WithSeal returns a new block with the data from b but the header replaced with
 // the sealed one.
 func (b *Block) WithSeal(header *Header) *Block {
 	cpy := *header
 
 	return &Block{
-		B_header:       &cpy,
-		B_body:         b.B_body,
+		B_header: &cpy,
+		B_body:   b.B_body,
 	}
 }
 
 // WithBody returns a new block with the given transaction  contents.
 func (b *Block) WithBody(body *Body) *Block {
 	block := &Block{
-		B_header:       CopyHeader(b.B_header),
+		B_header: CopyHeader(b.B_header),
 	}
 	block.B_body.Transactions = make([]*transaction.Transaction, len(body.Transactions))
 	copy(block.B_body.Transactions, body.Transactions)
@@ -314,9 +328,8 @@ func (h *Header) String() string {
 	R:                  %v
 	S:                  %v
     V:                  %v
-]`, h.Hash(), h.ParentHash, h.BlockProducer, h.StateRootHash, h.TxRootHash, h.ReceiptRootHash, h.Bloom, (*hex.Big)(&h.Number.IntVal), (*hex.Big)(&h.Time.IntVal), h.ConsensusData, (*hex.Big)(&h.R.IntVal), (*hex.Big)(&h.S.IntVal), (*hex.Big)(&h.V.IntVal))
+]`, h.Hash(), h.ParentHash, h.BlockProducer, h.StateRootHash, h.TxRootHash, h.ReceiptRootHash, h.Bloom, h.Number, h.Time, h.Cdata, h.R, h.S, h.V)
 }
-
 
 //blocks part
 
@@ -347,18 +360,19 @@ func Number(b1, b2 *Block) bool { return b1.B_header.Number.IntVal.Cmp(&b2.B_hea
 
 // header wihtout signature
 type HeaderNoSig struct {
-	ParentHash  		types.Hash            `json:"parentHash" `
-	StateRootHash   	types.Hash            `json:"stateRoot" `
-	TxRootHash      	types.Hash            `json:"transactionsRoot"`
-	ReceiptRootHash 	types.Hash            `json:"receiptsRoot" `
-	Bloom       		types.Bloom           `json:"logsBloom" `
-	Number      		*types.BigInt         `json:"number" `
-	Time        		*types.BigInt         `json:"timestamp" `
+	ParentHash      types.Hash    `json:"parentHash" `
+	StateRootHash   types.Hash    `json:"stateRoot" `
+	TxRootHash      types.Hash    `json:"transactionsRoot"`
+	ReceiptRootHash types.Hash    `json:"receiptsRoot" `
+	Bloom           types.Bloom   `json:"logsBloom" `
+	Number          *types.BigInt `json:"number" `
+	Time            *types.BigInt `json:"timestamp" `
 
 	//BlockProducer is not used in protocol.
-	BlockProducer   	types.Address         `json:"blockProducer" msg:"-" `
-	ConsensusData     	ConsensusData         `json:"consensusData" `
+	BlockProducer  types.Address  `json:"blockProducer"       msg:"-" `
+	Cdata          ConsensusData  `json:"consensusData" `
 }
+
 func (h *HeaderNoSig) Hash() types.Hash {
 	hash, err := common.MsgpHash(h)
 	if err != nil {

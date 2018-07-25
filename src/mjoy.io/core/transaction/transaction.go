@@ -32,7 +32,6 @@ import (
 	"bytes"
 	"github.com/tinylib/msgp/msgp"
 	"container/heap"
-	"mjoy.io/common/types/util/hex"
 )
 
 //go:generate msgp
@@ -299,9 +298,9 @@ func (tx *Transaction) String() string {
 	from,
 	len(tx.Data.Actions),
 	tx.Nonce(),
-	(*hex.Big)(&tx.Data.V.IntVal),
-	(*hex.Big)(&tx.Data.S.IntVal),
-	(*hex.Big)(&tx.Data.R.IntVal),
+	tx.Data.V,
+	tx.Data.S,
+	tx.Data.R,
 		)
 
 	return rStr

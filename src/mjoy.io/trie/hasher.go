@@ -26,8 +26,8 @@ import (
 	"sync"
 
 	"mjoy.io/utils/crypto/sha3"
-	"mjoy.io/common/types/util"
 	"github.com/tinylib/msgp/msgp"
+	"mjoy.io/common/types"
 )
 
 type hasher struct {
@@ -110,7 +110,7 @@ func (h *hasher) hashChildren(original NodeIntf, db DatabaseWriter) (NodeIntf, N
 		// Hash the short node's child, caching the newly hashed subtree
 		collapsed, cached := n.copy(), n.copy()
 		collapsed.Key = hexToCompact(n.Key)
-		cached.Key = util.CopyBytes(n.Key)
+		cached.Key = types.CopyBytes(n.Key)
 
 		if _, ok := n.Val.Node.(ValueNode); !ok {
 			collapsed.Val, cached.Val, err = h.hash(n.Val, db, false)

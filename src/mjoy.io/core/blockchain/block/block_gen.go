@@ -289,123 +289,6 @@ func (z *Block) Msgsize() (s int) {
 }
 
 // DecodeMsg implements msgp.Decodable
-func (z *Blocks) DecodeMsg(dc *msgp.Reader) (err error) {
-	var zb0002 uint32
-	zb0002, err = dc.ReadArrayHeader()
-	if err != nil {
-		return
-	}
-	if cap((*z)) >= int(zb0002) {
-		(*z) = (*z)[:zb0002]
-	} else {
-		(*z) = make(Blocks, zb0002)
-	}
-	for zb0001 := range *z {
-		if dc.IsNil() {
-			err = dc.ReadNil()
-			if err != nil {
-				return
-			}
-			(*z)[zb0001] = nil
-		} else {
-			if (*z)[zb0001] == nil {
-				(*z)[zb0001] = new(Block)
-			}
-			err = (*z)[zb0001].DecodeMsg(dc)
-			if err != nil {
-				return
-			}
-		}
-	}
-	return
-}
-
-// EncodeMsg implements msgp.Encodable
-func (z Blocks) EncodeMsg(en *msgp.Writer) (err error) {
-	err = en.WriteArrayHeader(uint32(len(z)))
-	if err != nil {
-		return
-	}
-	for zb0003 := range z {
-		if z[zb0003] == nil {
-			err = en.WriteNil()
-			if err != nil {
-				return
-			}
-		} else {
-			err = z[zb0003].EncodeMsg(en)
-			if err != nil {
-				return
-			}
-		}
-	}
-	return
-}
-
-// MarshalMsg implements msgp.Marshaler
-func (z Blocks) MarshalMsg(b []byte) (o []byte, err error) {
-	o = msgp.Require(b, z.Msgsize())
-	o = msgp.AppendArrayHeader(o, uint32(len(z)))
-	for zb0003 := range z {
-		if z[zb0003] == nil {
-			o = msgp.AppendNil(o)
-		} else {
-			o, err = z[zb0003].MarshalMsg(o)
-			if err != nil {
-				return
-			}
-		}
-	}
-	return
-}
-
-// UnmarshalMsg implements msgp.Unmarshaler
-func (z *Blocks) UnmarshalMsg(bts []byte) (o []byte, err error) {
-	var zb0002 uint32
-	zb0002, bts, err = msgp.ReadArrayHeaderBytes(bts)
-	if err != nil {
-		return
-	}
-	if cap((*z)) >= int(zb0002) {
-		(*z) = (*z)[:zb0002]
-	} else {
-		(*z) = make(Blocks, zb0002)
-	}
-	for zb0001 := range *z {
-		if msgp.IsNil(bts) {
-			bts, err = msgp.ReadNilBytes(bts)
-			if err != nil {
-				return
-			}
-			(*z)[zb0001] = nil
-		} else {
-			if (*z)[zb0001] == nil {
-				(*z)[zb0001] = new(Block)
-			}
-			bts, err = (*z)[zb0001].UnmarshalMsg(bts)
-			if err != nil {
-				return
-			}
-		}
-	}
-	o = bts
-	return
-}
-
-// Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
-func (z Blocks) Msgsize() (s int) {
-	s = msgp.ArrayHeaderSize
-	for zb0003 := range z {
-		if z[zb0003] == nil {
-			s += msgp.NilSize
-		} else {
-			s += z[zb0003].Msgsize()
-		}
-	}
-	return
-}
-
-// DecodeMsg implements msgp.Decodable
 func (z *Body) DecodeMsg(dc *msgp.Reader) (err error) {
 	var field []byte
 	_ = field
@@ -764,7 +647,7 @@ func (z *Header) DecodeMsg(dc *msgp.Reader) (err error) {
 					return
 				}
 			}
-		case "ConsensusData":
+		case "Cdata":
 			var zb0002 uint32
 			zb0002, err = dc.ReadMapHeader()
 			if err != nil {
@@ -778,12 +661,12 @@ func (z *Header) DecodeMsg(dc *msgp.Reader) (err error) {
 				}
 				switch msgp.UnsafeString(field) {
 				case "Id":
-					z.ConsensusData.Id, err = dc.ReadString()
+					z.Cdata.Id, err = dc.ReadString()
 					if err != nil {
 						return
 					}
 				case "Para":
-					z.ConsensusData.Para, err = dc.ReadBytes(z.ConsensusData.Para)
+					z.Cdata.Para, err = dc.ReadBytes(z.Cdata.Para)
 					if err != nil {
 						return
 					}
@@ -793,6 +676,11 @@ func (z *Header) DecodeMsg(dc *msgp.Reader) (err error) {
 						return
 					}
 				}
+			}
+		case "Extra":
+			z.Extra, err = dc.ReadBytes(z.Extra)
+			if err != nil {
+				return
 			}
 		case "V":
 			if dc.IsNil() {
@@ -854,9 +742,9 @@ func (z *Header) DecodeMsg(dc *msgp.Reader) (err error) {
 
 // EncodeMsg implements msgp.Encodable
 func (z *Header) EncodeMsg(en *msgp.Writer) (err error) {
-	// map header, size 11
+	// map header, size 12
 	// write "ParentHash"
-	err = en.Append(0x8b, 0xaa, 0x50, 0x61, 0x72, 0x65, 0x6e, 0x74, 0x48, 0x61, 0x73, 0x68)
+	err = en.Append(0x8c, 0xaa, 0x50, 0x61, 0x72, 0x65, 0x6e, 0x74, 0x48, 0x61, 0x73, 0x68)
 	if err != nil {
 		return
 	}
@@ -932,14 +820,14 @@ func (z *Header) EncodeMsg(en *msgp.Writer) (err error) {
 			return
 		}
 	}
-	// write "ConsensusData"
+	// write "Cdata"
 	// map header, size 2
 	// write "Id"
-	err = en.Append(0xad, 0x43, 0x6f, 0x6e, 0x73, 0x65, 0x6e, 0x73, 0x75, 0x73, 0x44, 0x61, 0x74, 0x61, 0x82, 0xa2, 0x49, 0x64)
+	err = en.Append(0xa5, 0x43, 0x64, 0x61, 0x74, 0x61, 0x82, 0xa2, 0x49, 0x64)
 	if err != nil {
 		return
 	}
-	err = en.WriteString(z.ConsensusData.Id)
+	err = en.WriteString(z.Cdata.Id)
 	if err != nil {
 		return
 	}
@@ -948,7 +836,16 @@ func (z *Header) EncodeMsg(en *msgp.Writer) (err error) {
 	if err != nil {
 		return
 	}
-	err = en.WriteBytes(z.ConsensusData.Para)
+	err = en.WriteBytes(z.Cdata.Para)
+	if err != nil {
+		return
+	}
+	// write "Extra"
+	err = en.Append(0xa5, 0x45, 0x78, 0x74, 0x72, 0x61)
+	if err != nil {
+		return
+	}
+	err = en.WriteBytes(z.Extra)
 	if err != nil {
 		return
 	}
@@ -1006,9 +903,9 @@ func (z *Header) EncodeMsg(en *msgp.Writer) (err error) {
 // MarshalMsg implements msgp.Marshaler
 func (z *Header) MarshalMsg(b []byte) (o []byte, err error) {
 	o = msgp.Require(b, z.Msgsize())
-	// map header, size 11
+	// map header, size 12
 	// string "ParentHash"
-	o = append(o, 0x8b, 0xaa, 0x50, 0x61, 0x72, 0x65, 0x6e, 0x74, 0x48, 0x61, 0x73, 0x68)
+	o = append(o, 0x8c, 0xaa, 0x50, 0x61, 0x72, 0x65, 0x6e, 0x74, 0x48, 0x61, 0x73, 0x68)
 	o, err = z.ParentHash.MarshalMsg(o)
 	if err != nil {
 		return
@@ -1057,14 +954,17 @@ func (z *Header) MarshalMsg(b []byte) (o []byte, err error) {
 			return
 		}
 	}
-	// string "ConsensusData"
+	// string "Cdata"
 	// map header, size 2
 	// string "Id"
-	o = append(o, 0xad, 0x43, 0x6f, 0x6e, 0x73, 0x65, 0x6e, 0x73, 0x75, 0x73, 0x44, 0x61, 0x74, 0x61, 0x82, 0xa2, 0x49, 0x64)
-	o = msgp.AppendString(o, z.ConsensusData.Id)
+	o = append(o, 0xa5, 0x43, 0x64, 0x61, 0x74, 0x61, 0x82, 0xa2, 0x49, 0x64)
+	o = msgp.AppendString(o, z.Cdata.Id)
 	// string "Para"
 	o = append(o, 0xa4, 0x50, 0x61, 0x72, 0x61)
-	o = msgp.AppendBytes(o, z.ConsensusData.Para)
+	o = msgp.AppendBytes(o, z.Cdata.Para)
+	// string "Extra"
+	o = append(o, 0xa5, 0x45, 0x78, 0x74, 0x72, 0x61)
+	o = msgp.AppendBytes(o, z.Extra)
 	// string "V"
 	o = append(o, 0xa1, 0x56)
 	if z.V == nil {
@@ -1171,7 +1071,7 @@ func (z *Header) UnmarshalMsg(bts []byte) (o []byte, err error) {
 					return
 				}
 			}
-		case "ConsensusData":
+		case "Cdata":
 			var zb0002 uint32
 			zb0002, bts, err = msgp.ReadMapHeaderBytes(bts)
 			if err != nil {
@@ -1185,12 +1085,12 @@ func (z *Header) UnmarshalMsg(bts []byte) (o []byte, err error) {
 				}
 				switch msgp.UnsafeString(field) {
 				case "Id":
-					z.ConsensusData.Id, bts, err = msgp.ReadStringBytes(bts)
+					z.Cdata.Id, bts, err = msgp.ReadStringBytes(bts)
 					if err != nil {
 						return
 					}
 				case "Para":
-					z.ConsensusData.Para, bts, err = msgp.ReadBytesBytes(bts, z.ConsensusData.Para)
+					z.Cdata.Para, bts, err = msgp.ReadBytesBytes(bts, z.Cdata.Para)
 					if err != nil {
 						return
 					}
@@ -1200,6 +1100,11 @@ func (z *Header) UnmarshalMsg(bts []byte) (o []byte, err error) {
 						return
 					}
 				}
+			}
+		case "Extra":
+			z.Extra, bts, err = msgp.ReadBytesBytes(bts, z.Extra)
+			if err != nil {
+				return
 			}
 		case "V":
 			if msgp.IsNil(bts) {
@@ -1274,7 +1179,7 @@ func (z *Header) Msgsize() (s int) {
 	} else {
 		s += z.Time.Msgsize()
 	}
-	s += 14 + 1 + 3 + msgp.StringPrefixSize + len(z.ConsensusData.Id) + 5 + msgp.BytesPrefixSize + len(z.ConsensusData.Para) + 2
+	s += 6 + 1 + 3 + msgp.StringPrefixSize + len(z.Cdata.Id) + 5 + msgp.BytesPrefixSize + len(z.Cdata.Para) + 6 + msgp.BytesPrefixSize + len(z.Extra) + 2
 	if z.V == nil {
 		s += msgp.NilSize
 	} else {
@@ -1368,7 +1273,7 @@ func (z *HeaderNoSig) DecodeMsg(dc *msgp.Reader) (err error) {
 					return
 				}
 			}
-		case "ConsensusData":
+		case "Cdata":
 			var zb0002 uint32
 			zb0002, err = dc.ReadMapHeader()
 			if err != nil {
@@ -1382,12 +1287,12 @@ func (z *HeaderNoSig) DecodeMsg(dc *msgp.Reader) (err error) {
 				}
 				switch msgp.UnsafeString(field) {
 				case "Id":
-					z.ConsensusData.Id, err = dc.ReadString()
+					z.Cdata.Id, err = dc.ReadString()
 					if err != nil {
 						return
 					}
 				case "Para":
-					z.ConsensusData.Para, err = dc.ReadBytes(z.ConsensusData.Para)
+					z.Cdata.Para, err = dc.ReadBytes(z.Cdata.Para)
 					if err != nil {
 						return
 					}
@@ -1488,14 +1393,14 @@ func (z *HeaderNoSig) EncodeMsg(en *msgp.Writer) (err error) {
 			return
 		}
 	}
-	// write "ConsensusData"
+	// write "Cdata"
 	// map header, size 2
 	// write "Id"
-	err = en.Append(0xad, 0x43, 0x6f, 0x6e, 0x73, 0x65, 0x6e, 0x73, 0x75, 0x73, 0x44, 0x61, 0x74, 0x61, 0x82, 0xa2, 0x49, 0x64)
+	err = en.Append(0xa5, 0x43, 0x64, 0x61, 0x74, 0x61, 0x82, 0xa2, 0x49, 0x64)
 	if err != nil {
 		return
 	}
-	err = en.WriteString(z.ConsensusData.Id)
+	err = en.WriteString(z.Cdata.Id)
 	if err != nil {
 		return
 	}
@@ -1504,7 +1409,7 @@ func (z *HeaderNoSig) EncodeMsg(en *msgp.Writer) (err error) {
 	if err != nil {
 		return
 	}
-	err = en.WriteBytes(z.ConsensusData.Para)
+	err = en.WriteBytes(z.Cdata.Para)
 	if err != nil {
 		return
 	}
@@ -1565,14 +1470,14 @@ func (z *HeaderNoSig) MarshalMsg(b []byte) (o []byte, err error) {
 			return
 		}
 	}
-	// string "ConsensusData"
+	// string "Cdata"
 	// map header, size 2
 	// string "Id"
-	o = append(o, 0xad, 0x43, 0x6f, 0x6e, 0x73, 0x65, 0x6e, 0x73, 0x75, 0x73, 0x44, 0x61, 0x74, 0x61, 0x82, 0xa2, 0x49, 0x64)
-	o = msgp.AppendString(o, z.ConsensusData.Id)
+	o = append(o, 0xa5, 0x43, 0x64, 0x61, 0x74, 0x61, 0x82, 0xa2, 0x49, 0x64)
+	o = msgp.AppendString(o, z.Cdata.Id)
 	// string "Para"
 	o = append(o, 0xa4, 0x50, 0x61, 0x72, 0x61)
-	o = msgp.AppendBytes(o, z.ConsensusData.Para)
+	o = msgp.AppendBytes(o, z.Cdata.Para)
 	return
 }
 
@@ -1649,7 +1554,7 @@ func (z *HeaderNoSig) UnmarshalMsg(bts []byte) (o []byte, err error) {
 					return
 				}
 			}
-		case "ConsensusData":
+		case "Cdata":
 			var zb0002 uint32
 			zb0002, bts, err = msgp.ReadMapHeaderBytes(bts)
 			if err != nil {
@@ -1663,12 +1568,12 @@ func (z *HeaderNoSig) UnmarshalMsg(bts []byte) (o []byte, err error) {
 				}
 				switch msgp.UnsafeString(field) {
 				case "Id":
-					z.ConsensusData.Id, bts, err = msgp.ReadStringBytes(bts)
+					z.Cdata.Id, bts, err = msgp.ReadStringBytes(bts)
 					if err != nil {
 						return
 					}
 				case "Para":
-					z.ConsensusData.Para, bts, err = msgp.ReadBytesBytes(bts, z.ConsensusData.Para)
+					z.Cdata.Para, bts, err = msgp.ReadBytesBytes(bts, z.Cdata.Para)
 					if err != nil {
 						return
 					}
@@ -1704,7 +1609,7 @@ func (z *HeaderNoSig) Msgsize() (s int) {
 	} else {
 		s += z.Time.Msgsize()
 	}
-	s += 14 + 1 + 3 + msgp.StringPrefixSize + len(z.ConsensusData.Id) + 5 + msgp.BytesPrefixSize + len(z.ConsensusData.Para)
+	s += 6 + 1 + 3 + msgp.StringPrefixSize + len(z.Cdata.Id) + 5 + msgp.BytesPrefixSize + len(z.Cdata.Para)
 	return
 }
 
