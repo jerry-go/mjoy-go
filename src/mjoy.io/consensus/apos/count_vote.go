@@ -90,6 +90,7 @@ func (cv *countVote) run() {
 		// receive message
 		case voteMsg := <-cv.msgCh:
 			step, hash, complete := cv.processMsg(voteMsg)
+			logger.Debug(COLOR_PREFIX+COLOR_FRONT_RED+COLOR_SUFFIX  , "CountVote Get Msg:" , "step:" , step , "  hash:" , hash.Hex())
 			if complete {
 				logger.Debug(COLOR_PREFIX+COLOR_FRONT_RED+COLOR_SUFFIX , "CountVote Complete Step:" , step , COLOR_SHORT_RESET)
 				cv.countSuccess(step, hash)

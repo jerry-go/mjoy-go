@@ -217,7 +217,7 @@ func (this *BpObj) run() {
 					vd.Round = x.bp.Credential.Round
 					vd.Step = StepReduction1
 					vd.Value = x.bp.Block.Hash()
-					logger.Debug(COLOR_PREFIX+COLOR_FRONT_PINK+COLOR_SUFFIX , "BpObj >tProposer dataOutput hash:" , vd.Value.Hex() , COLOR_SHORT_RESET)
+						logger.Debug(COLOR_PREFIX+COLOR_FRONT_PINK+COLOR_SUFFIX , "BpObj >tProposer dataOutput hash:" , vd.Value.Hex() , COLOR_SHORT_RESET)
 					this.CommitteeVote(vd)
 					this.ctx.startVoteTimer(int(Config().delayStep))
 					this.ctx.setBpResult(x.bp.Block.Hash())

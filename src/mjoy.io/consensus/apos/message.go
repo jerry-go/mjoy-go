@@ -189,8 +189,10 @@ func newByzantineAgreementStar() *ByzantineAgreementStar {
 	return b
 }
 
+
 func (ba *ByzantineAgreementStar) validate() error {
 	//verify step
+
 	if ba.Credential.Step < 1 || uint(ba.Credential.Step) > Config().maxStep{
 		return errors.New(fmt.Sprintf("Byzantine Agreement Star step is not right: %d", ba.Credential.Step))
 	}
