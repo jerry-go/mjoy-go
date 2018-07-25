@@ -119,6 +119,25 @@ func (sd *SeedData) sign(prv *ecdsa.PrivateKey) (R *types.BigInt, S *types.BigIn
 	return R, S, V, nil
 }
 
+func (sd *SeedData) sender() (types.Address, error) {
+	sd.checkObj()
+	if Config().chainId != nil && deriveChainId(&sd.V.IntVal).Cmp(Config().chainId) != 0 {
+		return types.Address{}, ErrInvalidChainId
+	}
+	if Config().chainId == nil {
+		panic("Config().chainId == nil")
+	}
+	V := &big.Int{}
+	if Config().chainId.Sign() != 0 {
+		V = V.Sub(&sd.V.IntVal, Config().chainIdMul)
+		V.Sub(V, common.Big35)
+	} else {
+		V = V.Sub(&sd.V.IntVal, common.Big27)
+	}
+	address, err := recoverPlain(sd.hash(), &sd.R.IntVal, &sd.S.IntVal, V, true)
+	return address, err
+}
+
 // empty block Qr = H(Qr−1, r)
 type QuantityEmpty struct {
 	LstQuantity types.Hash
