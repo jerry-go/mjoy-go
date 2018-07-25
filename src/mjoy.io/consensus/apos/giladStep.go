@@ -56,6 +56,7 @@ func makeVoteObj(ctx *stepCtx)*VoteObj{
 }
 
 func (this *VoteObj)stop(){
+	logger.Debug(COLOR_PREFIX+COLOR_FRONT_PINK+COLOR_SUFFIX , "In VoteObj stop()....", COLOR_SHORT_RESET)
 	this.exit<-1
 }
 
@@ -68,7 +69,7 @@ func (this *VoteObj)setBbaBlockHash(bHash types.Hash){
 	this.listLock.Lock()
 	defer this.listLock.Unlock()
 
-	
+
 	if this.isBbaEmpty(){
 
 		copy(this.bbaBlockHash[:] , bHash[:])

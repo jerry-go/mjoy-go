@@ -246,16 +246,16 @@ func (this *Round) init(round int, apos *Apos, roundOverCh chan interface{}) {
 }
 
 func (this *Round) setBpResult(hash types.Hash) {
-	logger.Info("round", this.round,this,"setBpResult", hash)
+	logger.Info("round", this.round,"setBpResult", hash)
 	this.mainStepRlt.setBpResult(hash)
 }
 func (this *Round) setReductionResult(hash types.Hash) {
-	logger.Info("round", this.round,this,"setReductionResult", hash)
+	logger.Info("round", this.round,"setReductionResult", hash)
 	this.mainStepRlt.setReductionResult(hash)
 }
 
 func (this *Round) setBbaResult(hash types.Hash) {
-	logger.Info("round", this.round,this,"setBbaResult", hash)
+	logger.Info("round", this.round,"setBbaResult", hash)
 	complete := this.mainStepRlt.setBbaResult(hash)
 	if complete {
 		consensusBlock := this.bpObj.getExistBlock(hash)
@@ -269,7 +269,7 @@ func (this *Round) setBbaResult(hash types.Hash) {
 }
 
 func (this *Round) setFinalResult(hash types.Hash) {
-	logger.Info("round", this.round,this,"setFinalResult", hash)
+	logger.Info("round", this.round,"setFinalResult", hash)
 	complete :=this.mainStepRlt.setFinalResult(hash)
 	if complete {
 		consensusBlock := this.bpObj.getExistBlock(hash)
@@ -287,6 +287,7 @@ func (this *Round) setFinalResult(hash types.Hash) {
 
 //inform stepObj to stop running
 func (this *Round) broadCastStop() {
+	logger.Debug(COLOR_PREFIX+COLOR_FRONT_RED+COLOR_SUFFIX , "In BroadCastStop...", COLOR_SHORT_RESET)
 	this.bpObj.stop()
 	this.voteObj.stop()
 	this.countVote.stop()
