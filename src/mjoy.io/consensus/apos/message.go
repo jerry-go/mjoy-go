@@ -60,8 +60,10 @@ func (cs *CredentialSign) validate() (types.Address, error) {
 		return types.Address{}, errors.New(fmt.Sprintf("verify CredentialSig fail: can't get block form hash %s", cs.ParentHash))
 	}
 
-	if parentBlock.B_header.Number.IntVal.Uint64() != cs.Round {
-		return types.Address{}, errors.New(fmt.Sprintf("verify CredentialSig fail: Round %s is not equal block number:%d", cs.Round , parentBlock.B_header.Number.IntVal.Uint64()))
+
+	if parentBlock.B_header.Number.IntVal.Uint64() + 1 != cs.Round {
+		return types.Address{}, errors.New(fmt.Sprintf("verify CredentialSig fail: Round %s is not equal block number", cs.Round))
+
 	}
 	//todo 2. validate right
 	cs.Signature.Hash()
@@ -117,7 +119,7 @@ func newBlockProposal() *BlockProposal {
 
 func (bp *BlockProposal) validate() error {
 	//verify step
-	if bp.Credential.Step != 1 {
+	if bp.Credential.Step != STEP_BP {
 		return errors.New(fmt.Sprintf("Block Proposal step is not 1: %d", bp.Credential.Step))
 	}
 
