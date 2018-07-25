@@ -244,16 +244,16 @@ func (this *Round) init(round int, apos *Apos, roundOverCh chan interface{}) {
 }
 
 func (this *Round) setBpResult(hash types.Hash) {
-	logger.Info("round", this.round,this,"setBpResult", hash)
+	logger.Info("round", this.round ,"setBpResult", hash.String())
 	this.mainStepRlt.setBpResult(hash)
 }
 func (this *Round) setReductionResult(hash types.Hash) {
-	logger.Info("round", this.round, "setReductionResult", hash)
+	logger.Info("round", this.round, "setReductionResult", hash.String())
 	this.mainStepRlt.setReductionResult(hash)
 }
 
 func (this *Round) setBbaResult(hash types.Hash) {
-	logger.Info("round", this.round, "setBbaResult", hash)
+	logger.Info("round", this.round, "setBbaResult", hash.String())
 	complete := this.mainStepRlt.setBbaResult(hash)
 	if complete {
 		consensusBlock := this.bpObj.getExistBlock(hash)
@@ -267,7 +267,7 @@ func (this *Round) setBbaResult(hash types.Hash) {
 }
 
 func (this *Round) setFinalResult(hash types.Hash) {
-	logger.Info("round", this.round, "setFinalResult", hash)
+	logger.Info("round", this.round, "setFinalResult", hash.String())
 	complete :=this.mainStepRlt.setFinalResult(hash)
 	if complete {
 		consensusBlock := this.bpObj.getExistBlock(hash)
@@ -630,13 +630,13 @@ func SetTestConfig() {
 	Config().R = 1000
 	Config().tProposer = 1
 	Config().tStep = 2000
-	Config().tStepThreshold = 0
+	Config().tStepThreshold = 1
 	Config().tFinal = 10000
-	Config().tFinalThreshold = 0
-	Config().maxStep = 150
+	Config().tFinalThreshold = 1
+	Config().maxStep = 15
 	Config().delayPriority = 5
 	Config().delayStep = 5
-	Config().delayBlock = 60
+	Config().delayBlock = 10
 	Config().delayStepVar = 5
 }
 
