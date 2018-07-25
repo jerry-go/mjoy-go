@@ -258,7 +258,12 @@ func (this *Round) setBbaResult(hash types.Hash) {
 	logger.Info("round", this.round,this,"setBbaResult", hash)
 	complete := this.mainStepRlt.setBbaResult(hash)
 	if complete {
-		//todo this.quitCh <- consensusBlock
+		consensusBlock := this.bpObj.getExistBlock(hash)
+		if consensusBlock != nil {
+			this.quitCh <- consensusBlock
+		} else {
+			//todo need download this block based on hash
+		}
 		this.broadCastStop()
 	}
 }
@@ -267,7 +272,12 @@ func (this *Round) setFinalResult(hash types.Hash) {
 	logger.Info("round", this.round,this,"setFinalResult", hash)
 	complete :=this.mainStepRlt.setFinalResult(hash)
 	if complete {
-		// todo this.quitCh <- consensusBlock
+		consensusBlock := this.bpObj.getExistBlock(hash)
+		if consensusBlock != nil {
+			this.quitCh <- consensusBlock
+		} else {
+			//todo need download this block based on hash
+		}
 		this.broadCastStop()
 	}
 }
@@ -277,6 +287,8 @@ func (this *Round) setFinalResult(hash types.Hash) {
 
 //inform stepObj to stop running
 func (this *Round) broadCastStop() {
+	this.bpObj.stop()
+	this.voteObj.stop()
 	this.countVote.stop()
 }
 

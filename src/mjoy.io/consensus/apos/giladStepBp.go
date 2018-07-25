@@ -5,6 +5,7 @@ import (
 	"time"
 	"sort"
 	"mjoy.io/common/types"
+	"mjoy.io/core/blockchain/block"
 )
 
 type BpWithPriority struct {
@@ -69,6 +70,15 @@ func (this *BpObj)addExistBlock(bp *BlockProposal){
 	this.existMap[bp.Block.Hash()] = bp
 }
 
+func (this *BpObj)getExistBlock(blockHash types.Hash) *block.Block {
+	this.lock.RLock()
+	defer this.lock.RUnlock()
+
+	if bp, ok := this.existMap[blockHash];ok{
+		return bp.Block
+	}
+	return nil
+}
 func (this *BpObj)CommitteeVote(data *VoteData){
 
 	cret := this.ctx.getCredentialByStep(uint64(data.Step))
