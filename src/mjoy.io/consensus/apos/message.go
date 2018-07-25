@@ -61,7 +61,7 @@ func (cs *CredentialSign) validate() (types.Address, error) {
 	}
 
 	if parentBlock.B_header.Number.IntVal.Uint64() != cs.Round {
-		return types.Address{}, errors.New(fmt.Sprintf("verify CredentialSig fail: Round %s is not equal block number", cs.Round))
+		return types.Address{}, errors.New(fmt.Sprintf("verify CredentialSig fail: Round %s is not equal block number:%d", cs.Round , parentBlock.B_header.Number.IntVal.Uint64()))
 	}
 	//todo 2. validate right
 	cs.Signature.Hash()

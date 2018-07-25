@@ -149,7 +149,7 @@ func (this *BpObj) run() {
 	//make block and send out
 	go this.makeBlock()
 	tProposer := int(Config().tProposer)
-	timer := time.Tick(10 * time.Second)
+	timer := time.Tick(20 * time.Second)
 
 	for {
 		select {
@@ -206,7 +206,7 @@ func (this *BpObj) run() {
 					this.ctx.propagateMsg(bp)
 				}
 
-				if this.BpHeap.Len() >= tProposer {
+				if this.BpHeap.Len() > tProposer {
 					sort.Sort(&this.BpHeap)
 					//get the bigger one
 					x := this.BpHeap[0]

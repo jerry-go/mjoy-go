@@ -631,9 +631,9 @@ func SetTestConfig() {
 	Config().R = 1000
 	Config().tProposer = 1
 	Config().tStep = 2000
-	Config().tStepThreshold = 0
+	Config().tStepThreshold = 1
 	Config().tFinal = 10000
-	Config().tFinalThreshold = 0
+	Config().tFinalThreshold = 1
 	Config().maxStep = 150
 	Config().delayPriority = 5
 	Config().delayStep = 5
