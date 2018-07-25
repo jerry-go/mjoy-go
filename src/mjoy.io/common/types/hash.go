@@ -22,8 +22,6 @@ package types
 
 import (
 	"fmt"
-	"mjoy.io/common/types/util"
-	"mjoy.io/common/types/util/hex"
 	"math/big"
 	"reflect"
 )
@@ -48,13 +46,13 @@ func BytesToHash(b []byte) Hash {
 }
 func StringToHash(s string) Hash { return BytesToHash([]byte(s)) }
 func BigToHash(b *big.Int) Hash  { return BytesToHash(b.Bytes()) }
-func HexToHash(s string) Hash    { return BytesToHash(util.FromHex(s)) }
+func HexToHash(s string) Hash    { return BytesToHash(FromHex(s)) }
 
 // Get the string representation of the underlying hash
 func (h Hash) Str() string   { return string(h[:]) }
 func (h Hash) Bytes() []byte { return h[:] }
 func (h Hash) Big() *big.Int { return new(big.Int).SetBytes(h[:]) }
-func (h Hash) Hex() string   { return hex.Encode(h[:]) }
+func (h Hash) Hex() string   { return EncodeHex(h[:]) }
 
 // Here, we'll pick an arbitrary number between
 // 0 and 127 that isn't already in use
@@ -99,18 +97,18 @@ func (h *Hash) UnmarshalBinary(b []byte) error {
 // for json marshal
 func (h Hash) MarshalText() ([]byte, error) {
 	// TODO:
-	return hex.Bytes(h[:]).MarshalText()
+	return BytesForJson(h[:]).MarshalText()
 }
 
 // for json unmarshal
 func (h *Hash) UnmarshalJSON(b []byte) error {
-	return hex.UnmarshalFixedJSON(reflect.TypeOf(Hash{}), b, h[:])
+	return unmarshalFixedJSON(reflect.TypeOf(Hash{}), b, h[:])
 }
 
 // for json unmarshal
 func (h *Hash) UnmarshalText(b []byte) error {
 	// TODO:
-	return hex.UnmarshalFixedText("Hash", b, h[:])
+	return unmarshalFixedText("Hash", b, h[:])
 }
 
 // for format print
@@ -131,7 +129,6 @@ func (h *Hash) SetBytes(b []byte) {
 
 	copy(h[HashLength-len(b):], b)
 }
-//type Hashs []*Hash
 
 type Hashs struct {
 	Hashs []*Hash

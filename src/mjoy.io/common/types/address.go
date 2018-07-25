@@ -23,8 +23,6 @@ package types
 import (
 	"encoding/hex"
 	"fmt"
-	"mjoy.io/common/types/util"
-	mjoyhex "mjoy.io/common/types/util/hex"
 	"mjoy.io/utils/crypto/sha3"
 	"math/big"
 	"reflect"
@@ -50,15 +48,15 @@ func BytesToAddress(b []byte) Address {
 }
 func StringToAddress(s string) Address { return BytesToAddress([]byte(s)) }
 func BigToAddress(b *big.Int) Address  { return BytesToAddress(b.Bytes()) }
-func HexToAddress(s string) Address    { return BytesToAddress(util.FromHex(s)) }
+func HexToAddress(s string) Address    { return BytesToAddress(FromHex(s)) }
 
 // IsHexAddress verifies whether a string can represent a valid hex-encoded
 // Mjoy address or not.
 func IsHexAddress(s string) bool {
-	if util.HasHexPrefix(s) {
+	if HasHexPrefix(s) {
 		s = s[2:]
 	}
-	return len(s) == 2*AddressLength && util.IsHex(s)
+	return len(s) == 2*AddressLength && IsHex(s)
 }
 
 // Get the string representation of the underlying address
@@ -123,18 +121,18 @@ func (a *Address) UnmarshalBinary(b []byte) error {
 // for json marshal
 func (a Address) MarshalText() ([]byte, error) {
 	// TODO:
-	return mjoyhex.Bytes(a[:]).MarshalText()
+	return BytesForJson(a[:]).MarshalText()
 }
 
 // UnmarshalText parses a hash in hex syntax.
 func (a *Address) UnmarshalText(input []byte) error {
-	return mjoyhex.UnmarshalFixedText("Address", input, a[:])
+	return unmarshalFixedText("Address", input, a[:])
 }
 
 // for json unmarshal
 func (a *Address) UnmarshalJSON(b []byte) error {
 	// TODO:
-	return mjoyhex.UnmarshalFixedJSON(reflect.TypeOf(Address{}), b, a[:])
+	return unmarshalFixedJSON(reflect.TypeOf(Address{}), b, a[:])
 }
 
 // for format print

@@ -22,12 +22,18 @@ package types
 
 import (
 	"math/big"
+	"reflect"
 )
+
 //go:generate msgp
 //msgp:shim big.Int as:interface{} using:bigToBytes/bigFromBytes
+
 var (
 	bigIntType int8
+
+	bigT    = reflect.TypeOf((*BigInt)(nil))
 )
+
 func bigToBytes(v big.Int) (interface{}) {
 	neg := v.Sign()
 	b := make([]byte, 1 + len(v.Bytes()))
@@ -104,4 +110,59 @@ func (bigInt *BigInt) UnmarshalBinary(b []byte) error {
 		bigInt.IntVal.Neg(&bigInt.IntVal)
 	}
 	return nil
+}
+
+// MarshalText implements encoding.TextMarshaler
+func (b BigInt) MarshalText() ([]byte, error) {
+	return []byte(EncodeHexBig(b.ToInt())), nil
+}
+
+// UnmarshalJSON implements json.Unmarshaler.
+func (b *BigInt) UnmarshalJSON(input []byte) error {
+	if !isString(input) {
+		return errNonString(bigT)
+	}
+	return wrapTypeError(b.UnmarshalText(input[1:len(input)-1]), bigT)
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler
+func (b *BigInt) UnmarshalText(input []byte) error {
+	raw, err := checkNumberText(input)
+	if err != nil {
+		return err
+	}
+	if len(raw) > 64 {
+		return ErrBig256Range
+	}
+	words := make([]big.Word, len(raw)/bigWordNibbles+1)
+	end := len(raw)
+	for i := range words {
+		start := end - bigWordNibbles
+		if start < 0 {
+			start = 0
+		}
+		for ri := start; ri < end; ri++ {
+			nib := decodeNibble(raw[ri])
+			if nib == badNibble {
+				return ErrSyntax
+			}
+			words[i] *= 16
+			words[i] += big.Word(nib)
+		}
+		end = start
+	}
+	var dec big.Int
+	dec.SetBits(words)
+	b.IntVal = dec
+	return nil
+}
+
+// ToInt converts b to a big.Int.
+func (b *BigInt) ToInt() *big.Int {
+	return &b.IntVal
+}
+
+// String returns the hex encoding of b.
+func (b *BigInt) String() string {
+	return EncodeHexBig(b.ToInt())
 }

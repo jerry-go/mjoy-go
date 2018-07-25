@@ -18,7 +18,7 @@
 // @Date: 2018/05/08 17:26:08
 ////////////////////////////////////////////////////////////////////////////////
 
-package hex
+package types
 
 import (
 	"bytes"
@@ -142,7 +142,7 @@ var (
 
 func TestEncode(t *testing.T) {
 	for _, test := range encodeBytesTests {
-		enc := Encode(test.input.([]byte))
+		enc := EncodeHex(test.input.([]byte))
 		if enc != test.want {
 			t.Errorf("input %x: wrong encoding %s", test.input, enc)
 		}
@@ -151,7 +151,7 @@ func TestEncode(t *testing.T) {
 
 func TestDecode(t *testing.T) {
 	for _, test := range decodeBytesTests {
-		dec, err := Decode(test.input)
+		dec, err := DecodeHex(test.input)
 		if !checkError(t, test.input, err, test.wantErr) {
 			continue
 		}
@@ -164,7 +164,7 @@ func TestDecode(t *testing.T) {
 
 func TestEncodeBig(t *testing.T) {
 	for _, test := range encodeBigTests {
-		enc := EncodeBig(test.input.(*big.Int))
+		enc := EncodeHexBig(test.input.(*big.Int))
 		if enc != test.want {
 			t.Errorf("input %x: wrong encoding %s", test.input, enc)
 		}
@@ -173,7 +173,7 @@ func TestEncodeBig(t *testing.T) {
 
 func TestDecodeBig(t *testing.T) {
 	for _, test := range decodeBigTests {
-		dec, err := DecodeBig(test.input)
+		dec, err := DecodeHexBig(test.input)
 		if !checkError(t, test.input, err, test.wantErr) {
 			continue
 		}
@@ -186,7 +186,7 @@ func TestDecodeBig(t *testing.T) {
 
 func TestEncodeUint64(t *testing.T) {
 	for _, test := range encodeUint64Tests {
-		enc := EncodeUint64(test.input.(uint64))
+		enc := EncodeHexUint64(test.input.(uint64))
 		if enc != test.want {
 			t.Errorf("input %x: wrong encoding %s", test.input, enc)
 		}
@@ -195,7 +195,7 @@ func TestEncodeUint64(t *testing.T) {
 
 func TestDecodeUint64(t *testing.T) {
 	for _, test := range decodeUint64Tests {
-		dec, err := DecodeUint64(test.input)
+		dec, err := DecodeHexUint64(test.input)
 		if !checkError(t, test.input, err, test.wantErr) {
 			continue
 		}

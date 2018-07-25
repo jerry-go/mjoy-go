@@ -18,7 +18,7 @@
 // @Date: 2018/05/08 17:26:08
 ////////////////////////////////////////////////////////////////////////////////
 
-package hex
+package types
 
 import (
 	"bytes"
@@ -87,7 +87,7 @@ var unmarshalBytesTests = []unmarshalTest{
 
 func TestUnmarshalBytes(t *testing.T) {
 	for _, test := range unmarshalBytesTests {
-		var v Bytes
+		var v BytesForJson
 		err := json.Unmarshal([]byte(test.input), &v)
 		if !checkError(t, test.input, err, test.wantErr) {
 			continue
@@ -102,7 +102,7 @@ func TestUnmarshalBytes(t *testing.T) {
 func BenchmarkUnmarshalBytes(b *testing.B) {
 	input := []byte(`"0x123456789abcdef123456789abcdef"`)
 	for i := 0; i < b.N; i++ {
-		var v Bytes
+		var v BytesForJson
 		if err := v.UnmarshalJSON(input); err != nil {
 			b.Fatal(err)
 		}
@@ -112,7 +112,7 @@ func BenchmarkUnmarshalBytes(b *testing.B) {
 func TestMarshalBytes(t *testing.T) {
 	for _, test := range encodeBytesTests {
 		in := test.input.([]byte)
-		out, err := json.Marshal(Bytes(in))
+		out, err := json.Marshal(BytesForJson(in))
 		if err != nil {
 			t.Errorf("%x: %v", in, err)
 			continue
@@ -121,7 +121,7 @@ func TestMarshalBytes(t *testing.T) {
 			t.Errorf("%x: MarshalJSON output mismatch: got %q, want %q", in, out, want)
 			continue
 		}
-		if out := Bytes(in).String(); out != test.want {
+		if out := BytesForJson(in).String(); out != test.want {
 			t.Errorf("%x: String mismatch: got %q, want %q", in, out, test.want)
 			continue
 		}
@@ -168,13 +168,13 @@ var unmarshalBigTests = []unmarshalTest{
 
 func TestUnmarshalBig(t *testing.T) {
 	for _, test := range unmarshalBigTests {
-		var v Big
+		var v BigInt
 		err := json.Unmarshal([]byte(test.input), &v)
 		if !checkError(t, test.input, err, test.wantErr) {
 			continue
 		}
-		if test.want != nil && test.want.(*big.Int).Cmp((*big.Int)(&v)) != 0 {
-			t.Errorf("input %s: value mismatch: got %x, want %x", test.input, (*big.Int)(&v), test.want)
+		if test.want != nil && test.want.(*big.Int).Cmp(v.ToInt()) != 0 {
+			t.Errorf("input %s: value mismatch: got %x, want %x", test.input, v.ToInt(), test.want)
 			continue
 		}
 	}
@@ -183,7 +183,7 @@ func TestUnmarshalBig(t *testing.T) {
 func BenchmarkUnmarshalBig(b *testing.B) {
 	input := []byte(`"0x123456789abcdef123456789abcdef"`)
 	for i := 0; i < b.N; i++ {
-		var v Big
+		var v BigInt
 		if err := v.UnmarshalJSON(input); err != nil {
 			b.Fatal(err)
 		}
@@ -192,18 +192,18 @@ func BenchmarkUnmarshalBig(b *testing.B) {
 
 func TestMarshalBig(t *testing.T) {
 	for _, test := range encodeBigTests {
-		in := test.input.(*big.Int)
-		out, err := json.Marshal((*Big)(in))
+		in := BigInt{*test.input.(*big.Int)}
+		out, err := json.Marshal((*BigInt)(&in))
 		if err != nil {
-			t.Errorf("%d: %v", in, err)
+			t.Errorf("%d: %v", in.ToInt(), err)
 			continue
 		}
 		if want := `"` + test.want + `"`; string(out) != want {
-			t.Errorf("%d: MarshalJSON output mismatch: got %q, want %q", in, out, want)
+			t.Errorf("%d: MarshalJSON output mismatch: got %q, want %q", in.ToInt(), out, want)
 			continue
 		}
-		if out := (*Big)(in).String(); out != test.want {
-			t.Errorf("%x: String mismatch: got %q, want %q", in, out, test.want)
+		if out := (*BigInt)(&in).String(); out != test.want {
+			t.Errorf("%x: String mismatch: got %q, want %q", in.ToInt(), out, test.want)
 			continue
 		}
 	}
@@ -234,7 +234,7 @@ var unmarshalUint64Tests = []unmarshalTest{
 
 func TestUnmarshalUint64(t *testing.T) {
 	for _, test := range unmarshalUint64Tests {
-		var v Uint64
+		var v Uint64ForJson
 		err := json.Unmarshal([]byte(test.input), &v)
 		if !checkError(t, test.input, err, test.wantErr) {
 			continue
@@ -249,7 +249,7 @@ func TestUnmarshalUint64(t *testing.T) {
 func BenchmarkUnmarshalUint64(b *testing.B) {
 	input := []byte(`"0x123456789abcdf"`)
 	for i := 0; i < b.N; i++ {
-		var v Uint64
+		var v Uint64ForJson
 		v.UnmarshalJSON(input)
 	}
 }
@@ -257,7 +257,7 @@ func BenchmarkUnmarshalUint64(b *testing.B) {
 func TestMarshalUint64(t *testing.T) {
 	for _, test := range encodeUint64Tests {
 		in := test.input.(uint64)
-		out, err := json.Marshal(Uint64(in))
+		out, err := json.Marshal(Uint64ForJson(in))
 		if err != nil {
 			t.Errorf("%d: %v", in, err)
 			continue
@@ -266,7 +266,7 @@ func TestMarshalUint64(t *testing.T) {
 			t.Errorf("%d: MarshalJSON output mismatch: got %q, want %q", in, out, want)
 			continue
 		}
-		if out := (Uint64)(in).String(); out != test.want {
+		if out := (Uint64ForJson)(in).String(); out != test.want {
 			t.Errorf("%x: String mismatch: got %q, want %q", in, out, test.want)
 			continue
 		}
@@ -276,7 +276,7 @@ func TestMarshalUint64(t *testing.T) {
 func TestMarshalUint(t *testing.T) {
 	for _, test := range encodeUintTests {
 		in := test.input.(uint)
-		out, err := json.Marshal(Uint(in))
+		out, err := json.Marshal(UintForJson(in))
 		if err != nil {
 			t.Errorf("%d: %v", in, err)
 			continue
@@ -285,7 +285,7 @@ func TestMarshalUint(t *testing.T) {
 			t.Errorf("%d: MarshalJSON output mismatch: got %q, want %q", in, out, want)
 			continue
 		}
-		if out := (Uint)(in).String(); out != test.want {
+		if out := (UintForJson)(in).String(); out != test.want {
 			t.Errorf("%x: String mismatch: got %q, want %q", in, out, test.want)
 			continue
 		}
@@ -326,7 +326,7 @@ var unmarshalUintTests = []unmarshalTest{
 
 func TestUnmarshalUint(t *testing.T) {
 	for _, test := range unmarshalUintTests {
-		var v Uint
+		var v UintForJson
 		err := json.Unmarshal([]byte(test.input), &v)
 		if uintBits == 32 && test.wantErr32bit != nil {
 			checkError(t, test.input, err, test.wantErr32bit)
@@ -362,7 +362,7 @@ func TestUnmarshalFixedUnprefixedText(t *testing.T) {
 
 	for _, test := range tests {
 		out := make([]byte, 4)
-		err := UnmarshalFixedUnprefixedText("x", []byte(test.input), out)
+		err := unmarshalFixedUnprefixedText("x", []byte(test.input), out)
 		switch {
 		case err == nil && test.wantErr != nil:
 			t.Errorf("%q: got no error, expected %q", test.input, test.wantErr)

@@ -23,7 +23,6 @@ package types
 import (
 	"fmt"
 	"math/big"
-	"mjoy.io/common/types/util/hex"
 )
 
 //go:generate msgp
@@ -71,12 +70,12 @@ func (b Bloom) Bytes() []byte {
 
 // MarshalText encodes b as a hex string with 0x prefix.
 func (b Bloom) MarshalText() ([]byte, error) {
-	return hex.Bytes(b[:]).MarshalText()
+	return BytesForJson(b[:]).MarshalText()
 }
 
 // UnmarshalText b as a hex string with 0x prefix.
 func (b *Bloom) UnmarshalText(input []byte) error {
-	return hex.UnmarshalFixedText("Bloom", input, b[:])
+	return unmarshalFixedText("Bloom", input, b[:])
 }
 
 // Here, we'll pick an arbitrary number between

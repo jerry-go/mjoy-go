@@ -18,7 +18,7 @@
 // @Date: 2018/05/08 17:26:08
 ////////////////////////////////////////////////////////////////////////////////
 
-package hex
+package types
 
 import (
 	"encoding/json"
@@ -29,11 +29,11 @@ type MyType [5]byte
 
 func (v *MyType) UnmarshalText(input []byte) error {
 
-	return UnmarshalFixedText("MyType", input, v[:])
+	return unmarshalFixedText("MyType", input, v[:])
 }
 
 func (v MyType) String() string {
-	return Bytes(v[:]).String()
+	return BytesForJson(v[:]).String()
 }
 
 func ExampleUnmarshalFixedText() {
