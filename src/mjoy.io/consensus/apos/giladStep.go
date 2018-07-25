@@ -224,7 +224,13 @@ func (this *VoteObj)dataDeal(data *VoteData){
 		//equal return the reduction result
 		this.ctx.setReductionResult(data.Value)
 	}else if step == StepFinal{
+
 		//when get StepFinal,return the hash
+		if timeout := data.Value.Equal(&TimeOut);timeout{
+			//set data.value to the bbaBlockHash
+			copy(data.Value[:] , this.emptyHash[:])
+		}
+
 		this.ctx.setFinalResult(data.Value)
 	}else{
 		//common step:BBA Step
@@ -259,6 +265,10 @@ func (this *VoteObj)dataDeal(data *VoteData){
 				this.ctx.setBbaResult(data.Value)
 
 
+			}else{
+				logger.Debug(COLOR_PREFIX+COLOR_FRONT_PINK+COLOR_SUFFIX , "Step 1. other case" , COLOR_SHORT_RESET)
+				data.Step += 1
+				this.safetyBbaCommitteeVote(data)
 			}
 		case 2:
 			if timeout := data.Value.Equal(&TimeOut);timeout{
@@ -277,6 +287,10 @@ func (this *VoteObj)dataDeal(data *VoteData){
 				}
 				//equal return bba
 				this.ctx.setBbaResult(data.Value)
+			}else{
+				data.Step += 1
+				this.safetyBbaCommitteeVote(data)
+				logger.Debug(COLOR_PREFIX+COLOR_FRONT_PINK+COLOR_SUFFIX , "Step 2. other case" , COLOR_SHORT_RESET)
 			}
 		case 3:
 			if timeout := data.Value.Equal(&TimeOut);timeout{
