@@ -47,6 +47,7 @@ func makeVoteObj(ctx *stepCtx)*VoteObj{
 	v.ctx = ctx
 	v.SendStatus = make(map[uint64]*VoteData)
 	v.msgChan = make(chan *VoteData , 1000)
+	v.exit = make(chan interface{} )
 	v.emptyHash = v.ctx.getGiladEmptyHash(uint64(ctx.getRound()))
 	logger.Debug(COLOR_PREFIX+COLOR_FRONT_PINK+COLOR_SUFFIX,"This Round EmptyHash:" , v.emptyHash.Hex(),COLOR_SHORT_RESET)
 	logger.Debug("***********Print StepBp:" , StepBp)
@@ -132,6 +133,7 @@ func (this *VoteObj)run(){
 	for{
 		select {
 		case data := <-this.msgChan:
+
 			logger.Debug(COLOR_PREFIX+COLOR_FRONT_PINK+COLOR_SUFFIX , "VoteObj RecvData Step:" , data.Step , "   VoteHash:" , data.Value.Hex() , COLOR_SHORT_RESET)
 			//data deal
 

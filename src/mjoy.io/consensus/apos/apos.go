@@ -131,6 +131,7 @@ type Round struct {
 
 func CalculatePriority(hash types.Hash , w , W ,t uint64 )uint64{
 	pri := new(big.Int).SetBytes(hash[0:6]).Int64() % 13
+
 	return uint64(pri)
 }
 
@@ -693,6 +694,7 @@ func (this *Apos) makeCredential(s int) *CredentialSign {
 		return nil
 	}
 	c.votes = uint(CalculatePriority(c.Signature.Hash() , 0,0,0))
+	logger.Debug(COLOR_PREFIX+COLOR_FRONT_GREEN+COLOR_SUFFIX , "***Credential Votes Show:  Round:",c.Round , " Step:" , c.Step , "  Votes:" , c.votes , COLOR_SHORT_RESET)
 
 	return c
 }
