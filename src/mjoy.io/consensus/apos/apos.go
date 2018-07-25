@@ -130,7 +130,7 @@ type Round struct {
 
 
 func CalculatePriority(hash types.Hash , w , W ,t uint64 )uint64{
-	pri := big.Int{}.SetBytes(hash[0:6]).Int64() % 13
+	pri := new(big.Int).SetBytes(hash[0:6]).Int64() % 13
 	return uint64(pri)
 }
 
@@ -685,13 +685,14 @@ func (this *Apos) makeCredential(s int) *CredentialSign {
 	c.Round = uint64(r)
 	c.Step = uint64(s)
 	c.ParentHash = this.commonTools.GetNowBlockHash()
-	c.votes = 1
+
 
 	err := this.commonTools.Sig(c)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil
 	}
+	c.votes = uint(CalculatePriority(c.Signature.Hash() , 0,0,0))
 
 	return c
 }

@@ -66,8 +66,9 @@ func (cs *CredentialSign) validate() (types.Address, error) {
 
 	}
 	//todo 2. validate right
-	cs.Signature.Hash()
-	cs.votes = 1  //todo here just for compile
+	sigHash := cs.Signature.Hash()
+	//cs.votes = 1  //todo here just for compile
+	cs.votes = uint(CalculatePriority(sigHash , 0,0,0))
 	sender, err := cs.sender()
 	if err != nil {
 		return types.Address{}, errors.New(fmt.Sprintf("verify CredentialSig fail: %s", err))
