@@ -260,8 +260,10 @@ func (this *Round) setBbaResult(hash types.Hash) {
 			logger.Info("Tentative consensus!!!")
 		}
 		consensusBlock := this.bpObj.getExistBlock(hash)
+		if hash == this.getEmptyBlockHash() {
+			consensusBlock = this.emptyBlock
+		}
 		if consensusBlock != nil {
-
 			this.quitCh <- consensusBlock
 		} else {
 			//todo need download this block based on hash
@@ -280,6 +282,9 @@ func (this *Round) setFinalResult(hash types.Hash) {
 			logger.Info("Tentative consensus!!!")
 		}
 		consensusBlock := this.bpObj.getExistBlock(this.mainStepRlt.bba)
+		if this.mainStepRlt.bba == this.getEmptyBlockHash() {
+			consensusBlock = this.emptyBlock
+		}
 		if consensusBlock != nil {
 			this.quitCh <- consensusBlock
 		} else {
