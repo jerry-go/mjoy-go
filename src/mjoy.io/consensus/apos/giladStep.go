@@ -68,6 +68,7 @@ func (this *VoteObj)setBbaBlockHash(bHash types.Hash){
 	this.listLock.Lock()
 	defer this.listLock.Unlock()
 
+	
 	if this.isBbaEmpty(){
 
 		copy(this.bbaBlockHash[:] , bHash[:])
