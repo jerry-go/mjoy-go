@@ -48,7 +48,7 @@ func makeBpObj(ctx *stepCtx) *BpObj {
 	s.BpHeap = make(BpWithPriorityHeap , 0)
 	s.msgChan = make(chan *BlockProposal)
 	s.existMap = make(map[types.Hash]*BlockProposal)
-	s.exit = make(chan interface{})
+	s.exit = make(chan interface{},1)
 	logger.Debug(COLOR_PREFIX+COLOR_FRONT_PINK+COLOR_SUFFIX, "makeBpObj" , COLOR_SHORT_RESET)
 	return s
 }
