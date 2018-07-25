@@ -91,14 +91,16 @@ func (cv *countVote) run() {
 		case voteMsg := <-cv.msgCh:
 			step, hash, complete := cv.processMsg(voteMsg)
 			if complete {
+				logger.Debug(COLOR_PREFIX+COLOR_FRONT_RED+COLOR_SUFFIX , "CountVote Complete Step:" , step , COLOR_SHORT_RESET)
 				cv.countSuccess(step, hash)
 			}
 		//timeout message
 		case <-cv.timer.C:
 			logger.Debug("countVote timeout, step", cv.timerStep)
+			logger.Debug(COLOR_PREFIX+COLOR_FRONT_RED+COLOR_SUFFIX , "countVote timeout, step", cv.timerStep , COLOR_SHORT_RESET)
 			cv.timeoutHandle()
 		case <-cv.stopCh:
-			logger.Info("countVote run exit", cv.timerStep)
+			logger.Debug(COLOR_PREFIX+COLOR_FRONT_RED+COLOR_SUFFIX , "countVote run exit", cv.timerStep, COLOR_SHORT_RESET)
 			return
 		}
 	}
@@ -141,10 +143,12 @@ func (cv *countVote) timeoutHandle() {
 	timeoutStep := int(cv.timerStep)
 
 	if timeoutStep == STEP_IDLE {
+		logger.Debug(COLOR_PREFIX+COLOR_FRONT_RED+COLOR_SUFFIX , "timeoutHandle timeoutStep == STEP_IDLE , Step", timeoutStep, COLOR_SHORT_RESET)
 		//ignore
 		return
 	}
 
+	logger.Debug(COLOR_PREFIX+COLOR_FRONT_RED+COLOR_SUFFIX , "timeoutHandle  Step:", timeoutStep, COLOR_SHORT_RESET)
 	//fill results in voteRecord
 	if sv, ok:= cv.voteRecord[timeoutStep]; !ok {
 		svNew := newStepVotes()

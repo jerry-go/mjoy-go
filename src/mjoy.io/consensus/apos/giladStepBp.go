@@ -48,7 +48,7 @@ func makeBpObj(ctx *stepCtx) *BpObj {
 	s.msgChan = make(chan *BlockProposal)
 	s.existMap = make(map[types.Hash]*BlockProposal)
 	s.exit = make(chan interface{})
-
+	logger.Debug(COLOR_PREFIX+COLOR_FRONT_PINK+COLOR_SUFFIX, "makeBpObj" , COLOR_SHORT_RESET)
 	return s
 }
 
@@ -132,12 +132,14 @@ func (this *BpObj)makeBlock(){
 
 	logger.Debug(COLOR_PREFIX+COLOR_FRONT_PINK+COLOR_SUFFIX, "***[A]Out M1 CreHash:", bp.Credential.Signature.Hash().String(), " BlockHash", bp.Block.B_header.Hash().String(), COLOR_SHORT_RESET)
 }
-
+func (this *BpObj)stop(){
+	this.exit <- 1
+}
 func (this *BpObj) run() {
 	//make block and send out
 	go this.makeBlock()
 	tProposer := int(Config().tProposer)
-	timer := time.Tick(60 * time.Second)
+	timer := time.Tick(10 * time.Second)
 
 	for {
 		select {
@@ -157,7 +159,7 @@ func (this *BpObj) run() {
 				vd.Round = x.bp.Credential.Round
 				vd.Step = StepReduction1
 				vd.Value = x.bp.Block.Hash()
-
+				logger.Debug(COLOR_PREFIX+COLOR_FRONT_PINK+COLOR_SUFFIX , "BpObj timeOut dataOutput hash:" , vd.Value.Hex() , COLOR_SHORT_RESET)
 				this.CommitteeVote(vd)
 
 				this.ctx.startVoteTimer(int(Config().delayStep))
@@ -204,7 +206,7 @@ func (this *BpObj) run() {
 					vd.Round = x.bp.Credential.Round
 					vd.Step = StepReduction1
 					vd.Value = x.bp.Block.Hash()
-
+					logger.Debug(COLOR_PREFIX+COLOR_FRONT_PINK+COLOR_SUFFIX , "BpObj >tProposer dataOutput hash:" , vd.Value.Hex() , COLOR_SHORT_RESET)
 					this.CommitteeVote(vd)
 					this.ctx.startVoteTimer(int(Config().delayStep))
 					this.ctx.setBpResult(x.bp.Block.Hash())

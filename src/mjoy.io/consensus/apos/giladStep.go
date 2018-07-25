@@ -3,6 +3,8 @@ package apos
 import (
 	"mjoy.io/common/types"
 	"sync"
+	"time"
+	"fmt"
 )
 
 const(
@@ -46,7 +48,10 @@ func makeVoteObj(ctx *stepCtx)*VoteObj{
 	v.SendStatus = make(map[uint64]*VoteData)
 	v.msgChan = make(chan *VoteData , 1000)
 	v.emptyHash = v.ctx.getGiladEmptyHash(uint64(ctx.getRound()))
-
+	logger.Debug("***********Print StepBp:" , StepBp)
+	logger.Debug("***********Print Reduction1:" , StepReduction1)
+	logger.Debug("***********Print Reduction2:" , StepReduction2)
+	logger.Debug("***********Print StepFinal :" , StepFinal)
 	return v
 }
 
@@ -107,25 +112,36 @@ func (this *VoteObj)markSendData(data *VoteData){
 }
 
 func (this *VoteObj)SendVoteData(r,s uint64 , hash types.Hash){
+
+	logger.Debug(COLOR_PREFIX+COLOR_FRONT_PINK+COLOR_SUFFIX , "SendVoteData Step:" , s , "   Hash:",hash.Hex(), COLOR_SHORT_RESET)
 	v := new(VoteData)
 	v.Round = r
 	v.Step = s
 	v.Value = hash
 
 	this.msgChan <- v
+	logger.Debug(COLOR_PREFIX+COLOR_FRONT_PINK+COLOR_SUFFIX , "SendVoteData Ok" , COLOR_SHORT_RESET)
 }
 
 func (this *VoteObj)run(){
-
+	tick := time.Tick(3*time.Second)
 	for{
 		select {
 		case data := <-this.msgChan:
+			logger.Debug(COLOR_PREFIX+COLOR_FRONT_PINK+COLOR_SUFFIX , "VoteObj RecvData Step:" , data.Step , "   VoteHash:" , data.Value.Hex() , COLOR_SHORT_RESET)
 			//data deal
 			if this.isSendSameStepData(data.Step) == false{
+				logger.Debug(COLOR_PREFIX+COLOR_FRONT_PINK+COLOR_SUFFIX , "isSendSameStepData == false , call dataDeal"  , COLOR_SHORT_RESET)
 				this.dataDeal(data)
+			}else{
+				logger.Debug(COLOR_PREFIX+COLOR_FRONT_PINK+COLOR_SUFFIX , "isSendSameStepData == true" , COLOR_SHORT_RESET)
 			}
-		case <-this.exit:
-			logger.Debug("VoteObj exit")
+
+
+		//case <-this.exit:
+		//	logger.Debug(COLOR_PREFIX+COLOR_FRONT_PINK+COLOR_SUFFIX ,"VoteObj exit" , COLOR_SHORT_RESET)
+		case <-tick:
+			fmt.Println("VoteObj is running...................")
 
 		}
 	}
@@ -177,8 +193,6 @@ func (this *VoteObj)safetyBbaCommitteeVote(data *VoteData){
 }
 
 func (this *VoteObj)dataDeal(data *VoteData){
-	this.lock.Lock()
-	defer this.lock.Unlock()
 
 	step := data.Step
 	if step == StepReduction1{
