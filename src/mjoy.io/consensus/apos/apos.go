@@ -281,6 +281,8 @@ func (this *Round) setFinalResult(hash types.Hash) {
 			//todo need download this block based on hash
 		}
 		this.broadCastStop()
+	}else{
+		logger.Debug(COLOR_PREFIX+COLOR_FRONT_RED+COLOR_SUFFIX , "setFinalResult,but not complete......", COLOR_SHORT_RESET)
 	}
 }
 
