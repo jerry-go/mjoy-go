@@ -124,24 +124,22 @@ func (this *VoteObj)SendVoteData(r,s uint64 , hash types.Hash){
 }
 
 func (this *VoteObj)run(){
+	round := this.ctx.getRound()
 	tick := time.Tick(3*time.Second)
 	for{
 		select {
 		case data := <-this.msgChan:
 			logger.Debug(COLOR_PREFIX+COLOR_FRONT_PINK+COLOR_SUFFIX , "VoteObj RecvData Step:" , data.Step , "   VoteHash:" , data.Value.Hex() , COLOR_SHORT_RESET)
 			//data deal
-			if this.isSendSameStepData(data.Step) == false{
-				logger.Debug(COLOR_PREFIX+COLOR_FRONT_PINK+COLOR_SUFFIX , "isSendSameStepData == false , call dataDeal"  , COLOR_SHORT_RESET)
-				this.dataDeal(data)
-			}else{
-				logger.Debug(COLOR_PREFIX+COLOR_FRONT_PINK+COLOR_SUFFIX , "isSendSameStepData == true" , COLOR_SHORT_RESET)
-			}
 
+			logger.Debug(COLOR_PREFIX+COLOR_FRONT_PINK+COLOR_SUFFIX , "isSendSameStepData == false , call dataDeal"  , COLOR_SHORT_RESET)
+			this.dataDeal(data)
 
-		//case <-this.exit:
-		//	logger.Debug(COLOR_PREFIX+COLOR_FRONT_PINK+COLOR_SUFFIX ,"VoteObj exit" , COLOR_SHORT_RESET)
+		case <-this.exit:
+			logger.Debug(COLOR_PREFIX+COLOR_FRONT_PINK+COLOR_SUFFIX ,"VoteObj exit" , COLOR_SHORT_RESET)
+			return
 		case <-tick:
-			fmt.Println("VoteObj is running...................")
+			fmt.Println("Round:",round , "  VoteObj is running............" )
 
 		}
 	}
@@ -152,6 +150,9 @@ func (this *VoteObj)run(){
 
 func (this *VoteObj)CommitteeVote(data *VoteData){
 
+	if this.isSendSameStepData(data.Step){
+		return
+	}
 	cret := this.ctx.getCredentialByStep(uint64(data.Step))
 	if cret == nil {
 		return

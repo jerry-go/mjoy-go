@@ -160,6 +160,7 @@ func (this *BpObj) run() {
 				vd.Step = StepReduction1
 				vd.Value = x.bp.Block.Hash()
 				logger.Debug(COLOR_PREFIX+COLOR_FRONT_PINK+COLOR_SUFFIX , "BpObj timeOut dataOutput hash:" , vd.Value.Hex() , COLOR_SHORT_RESET)
+
 				this.CommitteeVote(vd)
 
 				this.ctx.startVoteTimer(int(Config().delayStep))
@@ -195,7 +196,7 @@ func (this *BpObj) run() {
 					this.ctx.propagateMsg(bp)
 				}
 
-				if this.BpHeap.Len() > tProposer {
+				if this.BpHeap.Len() >= tProposer {
 					sort.Sort(&this.BpHeap)
 					//get the bigger one
 					x := this.BpHeap[0]
