@@ -21,8 +21,6 @@
 package apos
 
 import (
-
-	"container/heap"
 	"crypto/ecdsa"
 	"errors"
 	"fmt"
@@ -417,66 +415,12 @@ func (this *Round) filterMsgCs(msg *CredentialSign) error {
 	return nil
 }
 
-/*
-1.sort Credential
-2.pop when len(q) > maxNum
-*/
-func (this *Round) verifyCredentialRight(msg *CredentialSign) error {
-	step := int(msg.Step)
-	maxNum := Config().maxPotVerifiers
-	if step == 1 {
-		maxNum = Config().maxPotLeaders
-	}
-	msgPri := msg.sigHashBig()
-
-	logger.Debug("verifyRight. message hash :", msg.Signature.Hash().String(), "round:", msg.Round, "step", msg.Step)
-
-	if pqMsg, ok := this.csPq[step]; !ok {
-		pqcs := &pqCredential{make(priorityQueue, 0), make(map[string]*CredentialSign)}
-
-		this.csPq[step] = pqcs
-		heap.Init(&pqcs.pq)
-
-		pqitem := &pqItem{msg, msgPri}
-		heap.Push(&pqcs.pq, pqitem)
-		pqcs.credentials[msgPri.String()] = msg
-	} else {
-		pqitem := &pqItem{msg, msgPri}
-
-		if _, ok := pqMsg.credentials[msgPri.String()]; ok {
-			return errors.New("duplicate message Credential Signature")
-		}
-		heap.Push(&pqMsg.pq, pqitem)
-
-		if len(pqMsg.pq) > int(maxNum.Uint64()) {
-			itemPop := heap.Pop(&pqMsg.pq).(*pqItem)
-			if itemPop == pqitem {
-				logger.Debug("message is not have leader right, ignore. hash:", msg.Signature.Hash().String())
-				return errors.New("message have no right")
-			} else {
-				cs := itemPop.value.(*CredentialSign)
-				csPri := cs.sigHashBig()
-				logger.Debug("verifyRight. pop bigger hash :", cs.Signature.Hash().String())
-				delete(pqMsg.credentials, csPri.String())
-			}
-		}
-
-		pqMsg.credentials[msgPri.String()] = msg
-	}
-	return nil
-}
 
 // process the Credential message
 func (this *Round) receiveMsgCs(msg *CredentialSign) {
 	logger.Info("Receive message CredentialSign")
 	if msg.Round != this.round {
 		logger.Warn("verify fail, Credential msg is not in current round,want:", msg.Round, "  but:",this.round)
-		return
-	}
-
-	//priority check
-	if err := this.verifyCredentialRight(msg); err != nil {
-		logger.Info("verify Credential Right fail:", err)
 		return
 	}
 
@@ -501,66 +445,6 @@ func (this *Round) receiveMsgBp(msg *BlockProposal) {
 	// for BP Propagate process will in stepObj
 
 }
-
-/*
-func (this *Round) receiveMsgBba(msg *BinaryByzantineAgreement) {
-	//verify msg
-	if msg.Credential.Round != this.round {
-		logger.Warn("verify fail, bba msg is not in current round", msg.Credential.Round, this.round)
-		return
-	}
-
-	step := int(msg.Credential.Step)
-	if pqcs, ok := this.csPq[step]; !ok {
-		logger.Debug("BinaryByzantineAgreement message have not corresponding Credential 0, ignore. Credential hash:", msg.Credential.Signature.Hash().String())
-		return
-	} else {
-		msgPri := msg.Credential.sigHashBig()
-		if _, ok := pqcs.credentials[msgPri.String()]; !ok {
-			logger.Debug("BinaryByzantineAgreement message have not corresponding Credential 1, ignore. Credential hash:", msg.Credential.Signature.Hash().String())
-			return
-		}
-	}
-
-	if err := this.filterMsgBba(msg); err != nil {
-		logger.Info("filter bba message fail:", err)
-		return
-	}
-
-	//send this msg to step other goroutine
-	if stepObj, ok := this.allStepObj[step+1]; ok {
-		go stepObj.sendMsg(msg)
-	}
-	//Propagate message via p2p
-	this.apos.outMsger.PropagateMsg(msg)
-
-	//condition 0 and condition 1
-	ret := this.saveMsgBba(msg)
-
-	if ret != IDLE {
-
-		//end condition 0, 1 or maxstep
-		this.broadCastStop()
-		//todo need import block to block chain
-
-		logger.Info("OK Consensus....ret:", ret)
-		var consensusBlock *block.Block
-
-		switch ret {
-		case ENDCONDITION0:
-			logger.Debug(">>>>>>>>>>>>>>>>>Endcondition0's Block")
-			potLeader := this.leaders[msg.Hash]
-			consensusBlock = potLeader.bp.Block
-		default:
-			logger.Debug(">>>>>>>>>>>>>>>>>Endcondition default's Block")
-			consensusBlock = this.emptyBlock
-		}
-
-		this.quitCh <- consensusBlock
-
-	}
-}
-*/
 
 func (this *Round) filterMsgBa(msg *ByzantineAgreementStar) error {
 	address, err := msg.Credential.sender()
@@ -826,46 +710,3 @@ func (this *Apos) judgeVerifier(cs *CredentialSign, setp int) bool {
 		return false
 	}
 }
-
-/*
-func (this *Apos) stepsFactory(ctx *stepCtx) (stepObj step) {
-	switch ctx.getStep() {
-	case 1:
-		ctx.makeEmptyBlockForTest = this.makeEmptyBlockForTest
-		ctx.getProducerNewBlock = this.commonTools.GetProducerNewBlock
-
-		stepObj = makeStepObj1()
-		stepObj.setCtx(ctx)
-
-	case 2:
-
-		stepObj = makeStepObj2()
-		stepObj.setCtx(ctx)
-
-	case 3:
-
-		stepObj = makeStepObj3()
-		stepObj.setCtx(ctx)
-
-	case 4:
-
-		stepObj = makeStepObj4()
-		stepObj.setCtx(ctx)
-
-	default:
-		step := ctx.getStep()
-		if step >= 5 && step <= (Config().maxBBASteps+2) {
-
-			stepObj = makeStepObj567()
-			stepObj.setCtx(ctx)
-		} else if step == (Config().maxBBASteps + 3) {
-
-			stepObj = makeStepObjm3()
-			stepObj.setCtx(ctx)
-		} else {
-			stepObj = nil
-		}
-	}
-	return
-}
-*/
