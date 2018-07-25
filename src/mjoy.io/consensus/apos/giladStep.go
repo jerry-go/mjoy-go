@@ -48,7 +48,7 @@ func makeVoteObj(ctx *stepCtx)*VoteObj{
 	v.SendStatus = make(map[uint64]*VoteData)
 	v.msgChan = make(chan *VoteData , 1000)
 	v.exit = make(chan interface{}, 1)
-	v.emptyHash = v.ctx.getGiladEmptyHash(uint64(ctx.getRound()))
+	v.emptyHash = v.ctx.getEmptyBlockHash()
 	logger.Debug(COLOR_PREFIX+COLOR_FRONT_PINK+COLOR_SUFFIX,"This Round EmptyHash:" , v.emptyHash.Hex(),COLOR_SHORT_RESET)
 	logger.Debug("***********Print StepBp:" , StepBp)
 	logger.Debug("***********Print Reduction1:" , StepReduction1)

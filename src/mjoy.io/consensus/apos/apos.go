@@ -186,12 +186,6 @@ func (this *Round)verifyBlock(b *block.Block)bool{
 	return false
 }
 
-func (this *Round)getGiladEmptyHash (round uint64)types.Hash{
-	lastHash := this.apos.commonTools.GetNowBlockHash()
-	empty := makeEmptyHash(round , lastHash)
-	return empty.hash()
-}
-
 
 func (this *Round)sortition (hash types.Hash , t,w,W uint64 )uint64{
 	//no need take VRFsk
@@ -357,7 +351,7 @@ func (this *Round) startStepObjs(wg *sync.WaitGroup) {
 	stepCtx.getEmptyBlockHash = this.getEmptyBlockHash
 
 	//ctx for new step obj
-	stepCtx.getGiladEmptyHash = this.getGiladEmptyHash
+
 	stepCtx.sortition = this.sortition
 	stepCtx.verifyBlock = this.verifyBlock
 	stepCtx.verifySort = this.verifySort

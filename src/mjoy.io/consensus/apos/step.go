@@ -138,7 +138,6 @@ type stepCtx struct {
 	//gilad
 	commonCoin func(round , step , t uint64)uint64  //x
 	writeRet func(data *VoteData)                   //x
-	getGiladEmptyHash func(round uint64)types.Hash
 	sortition func(hash types.Hash , t,w,W uint64)uint64
 	verifyBlock func(b *block.Block)bool
 	verifySort func(cret CredentialSign , w, W,t uint64)uint64
