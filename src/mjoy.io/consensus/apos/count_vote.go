@@ -90,7 +90,7 @@ func (cv *countVote) run() {
 		// receive message
 		case voteMsg := <-cv.msgCh:
 			step, hash, complete := cv.processMsg(voteMsg)
-			logger.Debug(COLOR_PREFIX+COLOR_FRONT_RED+COLOR_SUFFIX  , "CountVote Get Msg:" , "step:" , step , "  hash:" , hash.Hex())
+			logger.Debug(COLOR_PREFIX+COLOR_FRONT_RED+COLOR_SUFFIX  , "CountVote Get Msg:" , "step:" , step , "  hash:" , hash.Hex() , COLOR_SHORT_RESET)
 			if complete {
 				logger.Debug(COLOR_PREFIX+COLOR_FRONT_RED+COLOR_SUFFIX , "CountVote Complete Step:" , step , COLOR_SHORT_RESET)
 				cv.countSuccess(step, hash)
@@ -259,6 +259,7 @@ func (cv *countVote) processMsg(ba *ByzantineAgreementStar) (int, types.Hash, bo
 	hash, votes := cv.addVotes(ba)
 
 	sv = cv.voteRecord[step]
+	logger.Debug(COLOR_PREFIX+COLOR_FRONT_PINK+COLOR_SUFFIX ,"ProcessMsg getThreshold:" , getThreshold(step) , "  Now Votes:",votes)
 	if votes > getThreshold(step) {
 		sv.isFinish = true
 		return step, hash, true

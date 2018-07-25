@@ -130,7 +130,8 @@ type Round struct {
 
 
 func CalculatePriority(hash types.Hash , w , W ,t uint64 )uint64{
-	return 10
+	pri := big.Int{}.SetBytes(hash[0:6]).Int64() % 13
+	return uint64(pri)
 }
 
 func (this *Round)startVoteTimer(delay int){
