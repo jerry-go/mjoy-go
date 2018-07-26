@@ -93,8 +93,6 @@ func (journal *txJournal) load(add func(*transaction.Transaction) error) error {
 
 		// Import the transaction and bump the appropriate progress counters
 		total++
-		tx.PrintDataInfo()
-
 		if err = add(tx); err != nil {
 			logger.Debug("Failed to add journaled transaction", "err", err)
 			dropped++
