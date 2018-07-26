@@ -28,6 +28,7 @@ import (
 	"mjoy.io/common"
 	"mjoy.io/common/types"
 	"mjoy.io/utils/crypto"
+	"mjoy.io/core/blockchain/block"
 )
 
 //go:generate msgp
@@ -119,7 +120,7 @@ func (sd *SeedData) sign(prv *ecdsa.PrivateKey) (R *types.BigInt, S *types.BigIn
 	return R, S, V, nil
 }
 
-func (sd *SeedData) sender() (types.Address, error) {
+func (sd *SeedData) sender(parent *block.Header) (types.Address, error) {
 	sd.checkObj()
 	if Config().chainId != nil && deriveChainId(&sd.V.IntVal).Cmp(Config().chainId) != 0 {
 		return types.Address{}, ErrInvalidChainId
@@ -134,7 +135,22 @@ func (sd *SeedData) sender() (types.Address, error) {
 	} else {
 		V = V.Sub(&sd.V.IntVal, common.Big27)
 	}
-	address, err := recoverPlain(sd.hash(), &sd.R.IntVal, &sd.S.IntVal, V, true)
+
+	seed_R_1, _, err := generateSeedByParentHeader(parent)
+	if err != nil {
+		return types.Address{}, err
+	}
+
+	qdforhash := &SeedDataSigForHash{
+		sd.Round,
+		seed_R_1.Bytes(),
+	}
+	hash, err := common.MsgpHash(qdforhash)
+	if err != nil {
+		return types.Address{}, err
+	}
+
+	address, err := recoverPlain(hash, &sd.R.IntVal, &sd.S.IntVal, V, true)
 	return address, err
 }
 

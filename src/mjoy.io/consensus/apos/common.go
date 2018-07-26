@@ -109,6 +109,18 @@ func generateSeed(round uint64) (types.Hash, []byte, error) {
 	return sd.Hash(), sigByte, nil
 }
 
+func generateSeedByParentHeader(parent *block.Header) (types.Hash, []byte, error) {
+	sigByte := parent.ConsensusData.Para
+	sd := SeedData{}
+	sd.Signature.init()
+	err := sd.Signature.get(sigByte)
+	if err != nil {
+		return types.Hash{}, nil, err
+	}
+	sd.Round = parent.Number.IntVal.Uint64()
+	return sd.Hash(), sigByte, nil
+}
+
 func makeEmptyBlockConsensusData(round uint64) *block.ConsensusData {
 	bcd := &block.ConsensusData{}
 	bcd.Id = ConsensusDataId
@@ -135,7 +147,7 @@ func makeBlockConsensusData(bp *BlockProposal, ct CommonTools) *block.ConsensusD
 	return bcd
 }
 
-func SenderFromBlock(header *block.Header) (types.Address, error) {
+func SenderFromBlock(header *block.Header, parent *block.Header) (types.Address, error) {
 	sd := SeedData{}
 	sd.init()
 	err := sd.Signature.get(header.ConsensusData.Para)
@@ -143,7 +155,7 @@ func SenderFromBlock(header *block.Header) (types.Address, error) {
 		return types.Address{}, err
 	}
 	sd.Round = header.Number.IntVal.Uint64()
-	return sd.sender()
+	return sd.sender(parent)
 
 }
 

@@ -92,7 +92,7 @@ func (basic *Engine_basic) VerifyHeader(chain ChainReader, header *block.Header,
 		return ErrAposID
 	}
 	//apos
-	senderApos, err := apos.SenderFromBlock(header)
+	senderApos, err := apos.SenderFromBlock(header, parent)
 	if err != nil {
 		return ErrAposData
 	}
@@ -147,7 +147,7 @@ func (basic *Engine_basic) verifyHeader(chain ChainReader, header, parent *block
 		return ErrAposID
 	}
 	//apos
-	senderApos, err := apos.SenderFromBlock(header)
+	senderApos, err := apos.SenderFromBlock(header, parent)
 	if err != nil {
 		return ErrAposData
 	}
