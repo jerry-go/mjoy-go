@@ -57,6 +57,17 @@ type Log struct {
 	Removed bool `json:"removed"  msg:"-"`
 }
 
+type logMarshaling struct {
+	Data        []types.BytesForJson
+	BlockNumber types.Uint64ForJson
+	TxIndex     types.UintForJson
+	Index       types.UintForJson
+}
+
+func (l *Log) String() string {
+	return fmt.Sprintf(`log: %x %x %x %x %d %x %d`, l.Address, l.Topics, l.Data, l.TxHash, l.TxIndex, l.BlockHash, l.Index)
+}
+
 // LogProtocol is the consensus encoding of a Log.
 type LogProtocol struct {
 	Address types.Address
@@ -65,18 +76,3 @@ type LogProtocol struct {
 	// supplied by the contract, usually ABI-encoded
 	Data [][]byte
 }
-
-type logMarshaling struct {
-	Data        types.BytesForJson
-	BlockNumber types.Uint64ForJson
-	TxIndex     types.UintForJson
-	Index       types.UintForJson
-}
-
-
-func (l *Log) String() string {
-	return fmt.Sprintf(`log: %x %x %x %x %d %x %d`, l.Address, l.Topics, l.Data, l.TxHash, l.TxIndex, l.BlockHash, l.Index)
-}
-
-
-

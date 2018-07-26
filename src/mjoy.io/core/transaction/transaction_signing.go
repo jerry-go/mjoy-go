@@ -25,12 +25,12 @@ import (
 	"errors"
 
 	"math/big"
-	"mjoy.io/utils/crypto"
 	"mjoy.io/params"
+	"mjoy.io/utils/crypto"
 
-	"mjoy.io/common/types"
 	"fmt"
 	"mjoy.io/common"
+	"mjoy.io/common/types"
 )
 
 var (
@@ -46,6 +46,7 @@ type sigCache struct {
 
 // MakeSigner returns a Signer based on the given chain config and block number.
 func MakeSigner(config *params.ChainConfig, blockNumber *big.Int) Signer {
+	_ = blockNumber // blockNumber is reserve field
 	var signer Signer
 	//use latest Signer
 	signer = NewMSigner(config.ChainId)
@@ -138,9 +139,9 @@ func (s MSigner) Sender(tx *Transaction) (types.Address, error) {
 func (s MSigner) SignatureValues(tx *Transaction, sig []byte) (R, S, V *big.Int, err error) {
 	//here use Frontier SignatureValues Function directly
 	if len(sig) != 65 {
-		errStr:=fmt.Sprintf("wrong size for signature: got %d, want 65", len(sig))
+		errStr := fmt.Sprintf("wrong size for signature: got %d, want 65", len(sig))
 		err = errors.New(errStr)
-	}else{
+	} else {
 		R = new(big.Int).SetBytes(sig[:32])
 		S = new(big.Int).SetBytes(sig[32:64])
 		V = new(big.Int).SetBytes([]byte{sig[64] + 27})
@@ -159,18 +160,14 @@ func (s MSigner) SignatureValues(tx *Transaction, sig []byte) (R, S, V *big.Int,
 // Hash returns the hash to be signed by the sender.
 // It does not uniquely identify the transaction.
 func (s MSigner) Hash(tx *Transaction) types.Hash {
-
-	for i ,action := range tx.Data.Actions {
-		if nil == action.Address{
-			tx.Data.Actions[i].Address = &types.Address{}
-		}
-	}
-
 	h, err := common.MsgpHash([]interface{}{
-		tx.Data.AccountNonce,
-		tx.Data.Actions,
-		types.BigInt{*s.chainId}, uint(0), uint(0),
+		tx.Data.H,
+		tx.Actions(),
+		types.BigInt{*s.chainId},
+		uint(0),
+		uint(0),
 	})
+
 	if err != nil {
 		panic(err)
 	}

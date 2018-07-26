@@ -10,16 +10,16 @@ import (
 
 func (t Txdata) MarshalJSON() ([]byte, error) {
 	type Txdata struct {
-		AccountNonce	uint64		`json:"nonce"   gencodec:"required"`
-		Actions		ActionSlice	`json:"actions" gencodec:"required"`
-		V		*types.BigInt	`json:"v"       gencodec:"required"`
-		R		*types.BigInt	`json:"r"       gencodec:"required"`
-		S		*types.BigInt	`json:"s"       gencodec:"required"`
-		Hash		*types.Hash	`json:"hash"    msg:"-"`
+		H    TxHeader      `json:"header"  gencodec:"required"`
+		Acts Actions       `json:"actions" gencodec:"required"`
+		V    *types.BigInt `json:"v"       gencodec:"required"`
+		R    *types.BigInt `json:"r"       gencodec:"required"`
+		S    *types.BigInt `json:"s"       gencodec:"required"`
+		Hash *types.Hash   `json:"hash"    msg:"-"`
 	}
 	var enc Txdata
-	enc.AccountNonce = t.AccountNonce
-	enc.Actions = t.Actions
+	enc.H = t.H
+	enc.Acts = t.Acts
 	enc.V = t.V
 	enc.R = t.R
 	enc.S = t.S
@@ -29,25 +29,25 @@ func (t Txdata) MarshalJSON() ([]byte, error) {
 
 func (t *Txdata) UnmarshalJSON(input []byte) error {
 	type Txdata struct {
-		AccountNonce	*uint64		`json:"nonce"   gencodec:"required"`
-		Actions		ActionSlice	`json:"actions" gencodec:"required"`
-		V		*types.BigInt	`json:"v"       gencodec:"required"`
-		R		*types.BigInt	`json:"r"       gencodec:"required"`
-		S		*types.BigInt	`json:"s"       gencodec:"required"`
-		Hash		*types.Hash	`json:"hash"    msg:"-"`
+		H    *TxHeader     `json:"header"  gencodec:"required"`
+		Acts Actions       `json:"actions" gencodec:"required"`
+		V    *types.BigInt `json:"v"       gencodec:"required"`
+		R    *types.BigInt `json:"r"       gencodec:"required"`
+		S    *types.BigInt `json:"s"       gencodec:"required"`
+		Hash *types.Hash   `json:"hash"    msg:"-"`
 	}
 	var dec Txdata
 	if err := json.Unmarshal(input, &dec); err != nil {
 		return err
 	}
-	if dec.AccountNonce == nil {
-		return errors.New("missing required field 'nonce' for Txdata")
+	if dec.H == nil {
+		return errors.New("missing required field 'header' for Txdata")
 	}
-	t.AccountNonce = *dec.AccountNonce
-	if dec.Actions == nil {
+	t.H = *dec.H
+	if dec.Acts == nil {
 		return errors.New("missing required field 'actions' for Txdata")
 	}
-	t.Actions = dec.Actions
+	t.Acts = dec.Acts
 	if dec.V == nil {
 		return errors.New("missing required field 'v' for Txdata")
 	}
@@ -65,4 +65,3 @@ func (t *Txdata) UnmarshalJSON(input []byte) error {
 	}
 	return nil
 }
-

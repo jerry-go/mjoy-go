@@ -23,9 +23,9 @@ package transaction
 import (
 	"bytes"
 	"fmt"
+	"github.com/tinylib/msgp/msgp"
 	"mjoy.io/common/types"
 	"mjoy.io/utils/bloom"
-	"github.com/tinylib/msgp/msgp"
 )
 
 //go:generate msgp
@@ -41,9 +41,9 @@ const (
 // Receipt represents the results of a transaction.
 type Receipt struct {
 	// Consensus fields
-	Status            uint        `json:"status"`
-	Bloom             types.Bloom `json:"logsBloom"         gencodec:"required"`
-	Logs              []*Log      `json:"logs"              gencodec:"required"`
+	Status uint        `json:"status"`
+	Bloom  types.Bloom `json:"logsBloom"         gencodec:"required"`
+	Logs   []*Log      `json:"logs"              gencodec:"required"`
 
 	// Implementation fields (don't reorder!)
 	TxHash          types.Hash    `json:"transactionHash"   gencodec:"required"`
@@ -52,11 +52,10 @@ type Receipt struct {
 
 //ReceiptProtocol is the consensus encoding of a receipt
 type ReceiptProtocol struct {
-	Status            uint
-	Bloom             types.Bloom
-	Logs              []*LogProtocol
+	Status uint
+	Bloom  types.Bloom
+	Logs   []*LogProtocol
 }
-
 
 // NewReceipt creates a barebone transaction receipt, copying the init fields.
 func NewReceipt(failed bool) *Receipt {
@@ -71,7 +70,7 @@ func NewReceipt(failed bool) *Receipt {
 
 // String implements the Stringer interface.
 func (r *Receipt) String() string {
-	return fmt.Sprintf("receipt{status=%d   bloom=%x logs=%v}", r.Status,  r.Bloom, r.Logs)
+	return fmt.Sprintf("receipt{status=%d   bloom=%x logs=%v}", r.Status, r.Bloom, r.Logs)
 }
 
 // Receipts is a wrapper around a Receipt array to implement DerivableList.
@@ -80,16 +79,16 @@ type Receipts []*Receipt
 // Len returns the number of receipts in this list.
 func (r Receipts) Len() int { return len(r) }
 
-func (r Receipts)GetMsgp(i int)[]byte{
+func (r Receipts) GetMsgp(i int) []byte {
 	var buf bytes.Buffer
 	logPs := []*LogProtocol{}
 	for _, log := range r[i].Logs {
-		logP := &LogProtocol{log.Address,log.Topics, log.Data}
+		logP := &LogProtocol{log.Address, log.Topics, log.Data}
 		logPs = append(logPs, logP)
 	}
-	input := &ReceiptProtocol{r[i].Status, r[i].Bloom,logPs}
+	input := &ReceiptProtocol{r[i].Status, r[i].Bloom, logPs}
 	err := msgp.Encode(&buf, input)
-	if err != nil{
+	if err != nil {
 		return nil
 	}
 	return buf.Bytes()
@@ -110,6 +109,6 @@ func CreateBloom(receipts Receipts) types.Bloom {
 
 //type Receipts_s [][]*Receipt
 type ReceiptProtocols []*ReceiptProtocol
-type Receipts_s struct{
-	Receipts_s [] ReceiptProtocols
+type Receipts_s struct {
+	Receipts_s []ReceiptProtocols
 }

@@ -20,7 +20,6 @@
 
 package transaction
 
-
 import (
 	"fmt"
 	"mjoy.io/log"
