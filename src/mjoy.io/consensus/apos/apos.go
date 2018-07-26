@@ -355,12 +355,6 @@ func (this *Round) startStepObjs(wg *sync.WaitGroup) {
 	stepCtx.setBbaResult = this.setBbaResult
 	stepCtx.setFinalResult = this.setFinalResult
 
-
-	stepCtx.esig = this.apos.commonTools.Esig
-	stepCtx.sendInner = this.apos.outMsger.SendInner
-	stepCtx.propagateMsg = this.apos.outMsger.PropagateMsg
-	stepCtx.getEmptyBlockHash = this.getEmptyBlockHash
-
 	//ctx for new step obj
 
 	stepCtx.sortition = this.sortition
@@ -441,7 +435,7 @@ func (this *Round) filterMsgCs(msg *CredentialSign) error {
 
 // process the Credential message
 func (this *Round) receiveMsgCs(msg *CredentialSign) {
-	logger.Info("Receive message CredentialSign")
+	logger.Debug("Receive message CredentialSign [r:s]:", msg.Round, msg.Step)
 	if msg.Round != this.round {
 		logger.Warn("verify fail, Credential msg is not in current round,want:", msg.Round, "  but:",this.round)
 		return
