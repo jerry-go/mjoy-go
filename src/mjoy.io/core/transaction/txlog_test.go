@@ -131,3 +131,27 @@ func checkError(t *testing.T, testname string, got, want error) bool {
 	}
 	return false
 }
+
+func TestLogPrintJSON(t *testing.T) {
+	l := Log{
+		Address: types.HexToAddress("0xecf8f87f810ecf450940c9f60066b4a7a501d6a7"),
+		BlockHash: types.HexToHash("0x656c34545f90a730a19008c0e7a7cd4fb3895064b48d6d69761bd5abad681056"),
+		BlockNumber: 2019236,
+		Data: [][]byte{
+			types.MustDecodeHex("0x000000000000000000000000000000000000000000000001a055690d9db80000"),
+			types.MustDecodeHex("0x1100")},
+		Index: 2,
+		TxIndex: 3,
+		TxHash: types.HexToHash("0x3b198bfd5d2907285af009e9ae84a0ecd63677110d89d7e030251acb87f6487e"),
+		Topics: []types.Hash{
+			types.HexToHash("0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"),
+			types.HexToHash("0x00000000000000000000000080b2c9d7cbbf30a1b0fc8983c647d754c6525615"),
+		},
+	}
+
+	data, _ := json.Marshal(l)
+	fmt.Printf("%s\n", string(data))
+
+	data, _ = json.MarshalIndent(l, "", "    ")
+	fmt.Printf("%s\n", string(data))
+}

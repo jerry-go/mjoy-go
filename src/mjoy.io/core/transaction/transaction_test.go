@@ -193,3 +193,27 @@ func TestTransactionJSON(t *testing.T) {
 		}
 	}
 }
+
+func TestTransactionPrintJSON(t *testing.T) {
+	key, err := crypto.GenerateKey()
+	if err != nil {
+		t.Fatalf("could not generate key: %v", err)
+	}
+	signer := mSigner
+	actions := Actions{{
+		Contract: types.HexToAddress("0x5aaeb6053f3e94c9b9a09f33669435e7ef1beaed"),
+		Params:   []byte{1, 2, 3, 4},
+	}, {
+		Contract: types.HexToAddress("0x888eb6053f3e94c9b9a09f33669435e7ef1beaed"),
+		Params:   []byte{5, 6, 7, 8},
+	}}
+
+	tx := NewTransaction(0, actions)
+	tx, _ = SignTx(tx, signer, key)
+
+	data, err := json.Marshal(tx)
+	fmt.Printf("%s\n", string(data))
+
+	data, err = json.MarshalIndent(tx, "", "    ")
+	fmt.Printf("%s\n", string(data))
+}
