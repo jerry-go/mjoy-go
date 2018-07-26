@@ -62,7 +62,7 @@ func (this *VoteObj)stop(){
 	this.exit<-1
 }
 
-func (this *VoteObj)isBbaEmpty()bool{
+func (this *VoteObj)isBbaOk()bool{
 	return this.isBbaIsOk
 }
 
@@ -72,7 +72,7 @@ func (this *VoteObj)setBbaBlockHash(bHash types.Hash){
 	defer this.listLock.Unlock()
 
 
-	if this.isBbaEmpty(){
+	if !this.isBbaOk(){
 
 		copy(this.bbaBlockHash[:] , bHash[:])
 		//set isBbaIsOk
@@ -191,7 +191,7 @@ func (this *VoteObj)CommitteeVote(data *VoteData){
 }
 //this function just using in
 func (this *VoteObj)safetyBbaCommitteeVote(data *VoteData){
-	if this.isBbaEmpty(){
+	if !this.isBbaOk(){
 		this.addStayBbaData(data)
 	}else{
 		this.CommitteeVote(data)
