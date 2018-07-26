@@ -260,12 +260,16 @@ func (this *Round) setBbaResult(hash types.Hash) {
 			logger.Info("Tentative consensus!!!")
 		}
 		consensusBlock := this.bpObj.getExistBlock(hash)
+		if consensusBlock == nil {
+			logger.Error(COLOR_PREFIX+COLOR_FRONT_RED+COLOR_SUFFIX , "SetFianl getExistBlock == nil , hash=" , this.mainStepRlt.bba.Hex(), COLOR_SHORT_RESET)
+		}
 		if hash == this.getEmptyBlockHash() {
 			consensusBlock = this.emptyBlock
 		}
 		if consensusBlock != nil {
 			this.quitCh <- consensusBlock
 		} else {
+			logger.Error(COLOR_PREFIX+COLOR_FRONT_RED+COLOR_SUFFIX , "SetFinalResult Get a nil block" , this.mainStepRlt.bba.Hex(), COLOR_SHORT_RESET)
 			//todo need download this block based on hash
 		}
 		this.broadCastStop()
@@ -282,12 +286,16 @@ func (this *Round) setFinalResult(hash types.Hash) {
 			logger.Info("Tentative consensus!!!")
 		}
 		consensusBlock := this.bpObj.getExistBlock(this.mainStepRlt.bba)
+		if consensusBlock == nil {
+			logger.Error(COLOR_PREFIX+COLOR_FRONT_RED+COLOR_SUFFIX , "SetFianl getExistBlock == nil , hash=" , this.mainStepRlt.bba.Hex(), COLOR_SHORT_RESET)
+		}
 		if this.mainStepRlt.bba == this.getEmptyBlockHash() {
 			consensusBlock = this.emptyBlock
 		}
 		if consensusBlock != nil {
 			this.quitCh <- consensusBlock
 		} else {
+			logger.Error(COLOR_PREFIX+COLOR_FRONT_RED+COLOR_SUFFIX , "SetFinalResult Get a nil block" , this.mainStepRlt.bba.Hex(), COLOR_SHORT_RESET)
 			//todo need download this block based on hash
 		}
 		this.broadCastStop()

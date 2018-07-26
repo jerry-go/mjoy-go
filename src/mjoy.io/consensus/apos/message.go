@@ -57,7 +57,7 @@ func (cs *CredentialSign) validate() (types.Address, error) {
 	//1. validate parentHash
 	parentBlock := gCommonTools.GetBlockByHash(cs.ParentHash)
 	if parentBlock == nil {
-		return types.Address{}, errors.New(fmt.Sprintf("verify CredentialSig fail: can't get block form hash %s", cs.ParentHash))
+		return types.Address{}, errors.New(fmt.Sprintf("verify CredentialSig fail: can't get block form:Round %d  hash %s",cs.Round ,  cs.ParentHash.Hex()))
 	}
 
 

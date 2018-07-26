@@ -47,7 +47,7 @@ func makeVoteObj(ctx *stepCtx)*VoteObj{
 	v.ctx = ctx
 	v.SendStatus = make(map[uint64]*VoteData)
 	v.msgChan = make(chan *VoteData , 1000)
-	v.exit = make(chan interface{}, 1)
+	v.exit = make(chan interface{}, 2)
 	v.emptyHash = v.ctx.getEmptyBlockHash()
 	logger.Debug(COLOR_PREFIX+COLOR_FRONT_PINK+COLOR_SUFFIX,"This Round EmptyHash:" , v.emptyHash.Hex(),COLOR_SHORT_RESET)
 	logger.Debug("***********Print StepBp:" , StepBp)
@@ -136,12 +136,10 @@ func (this *VoteObj)run(){
 
 			logger.Debug(COLOR_PREFIX+COLOR_FRONT_PINK+COLOR_SUFFIX , "VoteObj RecvData Step:" , data.Step , "   VoteHash:" , data.Value.Hex() , COLOR_SHORT_RESET)
 			//data deal
-
-			logger.Debug(COLOR_PREFIX+COLOR_FRONT_PINK+COLOR_SUFFIX , "isSendSameStepData == false , call dataDeal"  , COLOR_SHORT_RESET)
 			this.dataDeal(data)
 
 		case <-this.exit:
-			logger.Debug(COLOR_PREFIX+COLOR_FRONT_PINK+COLOR_SUFFIX ,"VoteObj exit" , COLOR_SHORT_RESET)
+			logger.Debug(COLOR_PREFIX+COLOR_FRONT_PINK+COLOR_SUFFIX ,"VoteObj exit..." , COLOR_SHORT_RESET)
 			return
 		case <-tick:
 			fmt.Println("Round:",round , "  VoteObj is running............" )
@@ -199,6 +197,11 @@ func (this *VoteObj)safetyBbaCommitteeVote(data *VoteData){
 }
 
 func (this *VoteObj)dataDeal(data *VoteData){
+	logger.Debug(COLOR_PREFIX+COLOR_FRONT_PINK+COLOR_SUFFIX , "***In VoteObj" , COLOR_SHORT_RESET)
+	defer func() {
+		logger.Debug(COLOR_PREFIX+COLOR_FRONT_PINK+COLOR_SUFFIX , "***Out VoteObj" , COLOR_SHORT_RESET)
+	}()
+
 
 	step := data.Step
 	if step == StepReduction1{

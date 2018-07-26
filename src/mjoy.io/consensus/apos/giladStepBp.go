@@ -40,6 +40,7 @@ type BpObj struct {
 	exit    chan interface{}
 	ctx     *stepCtx
 	priorityBp *BlockProposal
+	nothingTodo bool
 }
 
 func makeBpObj(ctx *stepCtx) *BpObj {
@@ -48,7 +49,7 @@ func makeBpObj(ctx *stepCtx) *BpObj {
 	s.BpHeap = make(BpWithPriorityHeap , 0)
 	s.msgChan = make(chan *BlockProposal)
 	s.existMap = make(map[types.Hash]*BlockProposal)
-	s.exit = make(chan interface{},1)
+	s.exit = make(chan interface{},2)
 	logger.Debug(COLOR_PREFIX+COLOR_FRONT_PINK+COLOR_SUFFIX, "makeBpObj" , COLOR_SHORT_RESET)
 	return s
 }
@@ -143,19 +144,28 @@ func (this *BpObj)makeBlock(){
 	logger.Debug(COLOR_PREFIX+COLOR_FRONT_PINK+COLOR_SUFFIX, "***[A]Out M1 CreHash:", bp.Credential.Signature.Hash().String(), " BlockHash", bp.Block.B_header.Hash().String(), COLOR_SHORT_RESET)
 }
 func (this *BpObj)stop(){
+	logger.Debug(COLOR_PREFIX+COLOR_FRONT_PINK+COLOR_SUFFIX , "Call BpObj Exit....:"  , COLOR_SHORT_RESET)
 	this.exit <- 1
 }
 func (this *BpObj) run() {
+	rd := this.ctx.getRound()
 	//make block and send out
 	go this.makeBlock()
 	tProposer := int(Config().tProposer)
 	timer := time.Tick(20 * time.Second)
-
+	logger.Debug(COLOR_PREFIX+COLOR_FRONT_PINK+COLOR_SUFFIX , "#########In BpObj-",rd , COLOR_SHORT_RESET)
+	defer func() {
+		logger.Debug(COLOR_PREFIX+COLOR_FRONT_PINK+COLOR_SUFFIX , "#######Out BpObj",rd , COLOR_SHORT_RESET)
+	}()
 	for {
 		select {
 		case <-this.exit:
+			logger.Debug(COLOR_PREFIX+COLOR_FRONT_PINK+COLOR_SUFFIX , "BpObj Exit....:return"  , COLOR_SHORT_RESET)
 			return
 		case <-timer:
+			if this.nothingTodo {
+				continue
+			}
 			value := types.Hash{}
 			if this.BpHeap.Len() == 0 {
 				//output empty hash
@@ -174,16 +184,20 @@ func (this *BpObj) run() {
 
 			this.ctx.setBpResult(value)
 			this.ctx.startVoteTimer(int(Config().delayStep))
-			return
+			this.nothingTodo = true
 		case bp := <-this.msgChan:
-
+				if this.nothingTodo {
+					continue
+				}
 				//logic do
 				//verify the block
 				if !this.ctx.verifyBlock(bp.Block){
+					logger.Debug(COLOR_PREFIX+COLOR_FRONT_PINK+COLOR_SUFFIX , "!this.ctx.verifyBlock(bp.Block) Wrong:hash:" , bp.Block.Hash().Hex(), COLOR_SHORT_RESET)
 					continue
 				}
 				//check is exist a same block
 				if this.isExistBlock(bp.Block.Hash()) {
+					logger.Debug(COLOR_PREFIX+COLOR_FRONT_PINK+COLOR_SUFFIX , "this.isExistBlock(bp.Block.Hash()) Wrong:hash:" , bp.Block.Hash().Hex(), COLOR_SHORT_RESET)
 					continue
 				}
 
@@ -220,7 +234,7 @@ func (this *BpObj) run() {
 					this.ctx.setBpResult(x.bp.Block.Hash())
 					//todo:inform the reduction
 
-					return
+					this.nothingTodo = true
 				}
 		}
 	}
