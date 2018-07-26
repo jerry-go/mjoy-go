@@ -272,7 +272,6 @@ func (this *Round) setBbaResult(hash types.Hash) {
 			logger.Error(COLOR_PREFIX+COLOR_FRONT_RED+COLOR_SUFFIX , "SetFinalResult Get a nil block" , this.mainStepRlt.bba.Hex(), COLOR_SHORT_RESET)
 			//todo need download this block based on hash
 		}
-		this.broadCastStop()
 	}
 }
 
@@ -298,7 +297,6 @@ func (this *Round) setFinalResult(hash types.Hash) {
 			logger.Error(COLOR_PREFIX+COLOR_FRONT_RED+COLOR_SUFFIX , "SetFinalResult Get a nil block" , this.mainStepRlt.bba.Hex(), COLOR_SHORT_RESET)
 			//todo need download this block based on hash
 		}
-		this.broadCastStop()
 	}else{
 		logger.Debug(COLOR_PREFIX+COLOR_FRONT_RED+COLOR_SUFFIX , "setFinalResult,but not complete......", COLOR_SHORT_RESET)
 	}
@@ -551,6 +549,7 @@ func (this *Round) commonProcess() {
 			fmt.Println("InsertOneBlock    ErrStatus:", err)
 
 			logger.Info("round exit ")
+			this.broadCastStop()
 			return
 		}
 	}
