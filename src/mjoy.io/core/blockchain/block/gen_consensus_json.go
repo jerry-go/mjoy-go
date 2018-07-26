@@ -9,10 +9,11 @@ import (
 )
 
 var _ = (*consensusDataMarshaling)(nil)
+
 func (c ConsensusData) MarshalJSON() ([]byte, error) {
 	type ConsensusData struct {
-		Id	string			`json:"consensus_id"         gencodec:"required"`
-		Para	types.BytesForJson	`json:"consensus_param"      gencodec:"required"`
+		Id   string             `json:"consensus_id"         gencodec:"required"`
+		Para types.BytesForJson `json:"consensus_param"      gencodec:"required"`
 	}
 	var enc ConsensusData
 	enc.Id = c.Id
@@ -22,8 +23,8 @@ func (c ConsensusData) MarshalJSON() ([]byte, error) {
 
 func (c *ConsensusData) UnmarshalJSON(input []byte) error {
 	type ConsensusData struct {
-		Id	*string			`json:"consensus_id"         gencodec:"required"`
-		Para	types.BytesForJson	`json:"consensus_param"      gencodec:"required"`
+		Id   *string            `json:"consensus_id"         gencodec:"required"`
+		Para types.BytesForJson `json:"consensus_param"      gencodec:"required"`
 	}
 	var dec ConsensusData
 	if err := json.Unmarshal(input, &dec); err != nil {
@@ -39,4 +40,3 @@ func (c *ConsensusData) UnmarshalJSON(input []byte) error {
 	c.Para = dec.Para
 	return nil
 }
-

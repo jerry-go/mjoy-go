@@ -21,17 +21,17 @@
 package block
 
 import (
-	"math/big"
-	"mjoy.io/common/types"
-	"mjoy.io/utils/crypto"
+	"crypto/ecdsa"
 	"errors"
 	"fmt"
+	"math/big"
 	"mjoy.io/common"
-	"crypto/ecdsa"
+	"mjoy.io/common/types"
+	"mjoy.io/utils/crypto"
 )
 
 var (
-	ErrInvalidSig = errors.New("invalid block v, r, s values")
+	ErrInvalidSig     = errors.New("invalid block v, r, s values")
 	ErrInvalidChainId = errors.New("invalid chain id for block signer")
 )
 
@@ -46,7 +46,7 @@ func SignHeader(h *Header, s Signer, prv *ecdsa.PrivateKey) (*Header, error) {
 }
 
 // SignHeaderInner signs the header(modify R S V) using the given signer and private key
-func SignHeaderInner(h *Header, s Signer, prv *ecdsa.PrivateKey) (error) {
+func SignHeaderInner(h *Header, s Signer, prv *ecdsa.PrivateKey) error {
 	hash := s.Hash(h)
 	sig, err := crypto.Sign(hash[:], prv)
 	if err != nil {
@@ -69,7 +69,6 @@ type Signer interface {
 
 	// Equal returns true if the given signer is the same as the receiver.
 	Equal(Signer) bool
-
 }
 
 type BlockSigner struct {
@@ -102,19 +101,19 @@ func (s BlockSigner) Sender(h *Header) (types.Address, error) {
 	//	return h.BlockProducer, nil
 	//}
 
-    V := &big.Int{}
+	V := &big.Int{}
 	if s.chainId.Sign() != 0 {
 		V = V.Sub(&h.V.IntVal, s.chainIdMul)
 		V.Sub(V, common.Big35)
-	} else{
+	} else {
 		V = V.Sub(&h.V.IntVal, common.Big27)
 	}
-	address, err :=  recoverPlain(h.HashNoSig(), &h.R.IntVal, &h.S.IntVal, V, true)
-	h.BlockProducer = address
+	address, err := recoverPlain(h.HashNoSig(), &h.R.IntVal, &h.S.IntVal, V, true)
+	h.Producer = address
 	return address, err
 }
 
-func (s BlockSigner) VerifySignature(h *Header) (bool,error) {
+func (s BlockSigner) VerifySignature(h *Header) (bool, error) {
 	//chain id check
 	if deriveChainId(&h.V.IntVal).Cmp(s.chainId) != 0 {
 		return false, ErrInvalidChainId
@@ -124,7 +123,7 @@ func (s BlockSigner) VerifySignature(h *Header) (bool,error) {
 	var V uint64
 	if s.chainId.Sign() != 0 {
 		V = h.V.IntVal.Uint64() - s.chainIdMul.Uint64() - 35
-	} else{
+	} else {
 		V = h.V.IntVal.Uint64() - 27
 	}
 
@@ -158,10 +157,10 @@ func (s BlockSigner) VerifySignature(h *Header) (bool,error) {
 // needs to be in the [R || S || V] format where V is 0 or 1.
 func (s BlockSigner) SignatureValues(h *Header, sig []byte) (R, S, V *big.Int, err error) {
 	if len(sig) != 65 {
-		errStr:=fmt.Sprintf("wrong size for signature: got %d, want 65", len(sig))
+		errStr := fmt.Sprintf("wrong size for signature: got %d, want 65", len(sig))
 		err = errors.New(errStr)
 		return nil, nil, nil, err
-	}else{
+	} else {
 		R = new(big.Int).SetBytes(sig[:32])
 		S = new(big.Int).SetBytes(sig[32:64])
 

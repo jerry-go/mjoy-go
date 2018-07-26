@@ -24,7 +24,7 @@ func (h Header) MarshalJSON() ([]byte, error) {
 		V               *types.BigInt      `json:"v"`
 		R               *types.BigInt      `json:"r"`
 		S               *types.BigInt      `json:"s"`
-		BlockProducer   types.Address      `json:"blockProducer"      gencodec:"required"   msg:"-"`
+		Producer        types.Address      `json:"blockProducer"      gencodec:"required"   msg:"-"`
 		Hash            types.Hash         `json:"hash"`
 	}
 	var enc Header
@@ -40,7 +40,7 @@ func (h Header) MarshalJSON() ([]byte, error) {
 	enc.V = h.V
 	enc.R = h.R
 	enc.S = h.S
-	enc.BlockProducer = h.BlockProducer
+	enc.Producer = h.Producer
 	enc.Hash = h.Hash()
 	return json.Marshal(&enc)
 }
@@ -59,7 +59,7 @@ func (h *Header) UnmarshalJSON(input []byte) error {
 		V               *types.BigInt      `json:"v"`
 		R               *types.BigInt      `json:"r"`
 		S               *types.BigInt      `json:"s"`
-		BlockProducer   *types.Address     `json:"blockProducer"      gencodec:"required"   msg:"-"`
+		Producer        *types.Address     `json:"blockProducer"      gencodec:"required"   msg:"-"`
 	}
 	var dec Header
 	if err := json.Unmarshal(input, &dec); err != nil {
@@ -110,9 +110,9 @@ func (h *Header) UnmarshalJSON(input []byte) error {
 	if dec.S != nil {
 		h.S = dec.S
 	}
-	if dec.BlockProducer == nil {
+	if dec.Producer == nil {
 		return errors.New("missing required field 'blockProducer' for Header")
 	}
-	h.BlockProducer = *dec.BlockProducer
+	h.Producer = *dec.Producer
 	return nil
 }

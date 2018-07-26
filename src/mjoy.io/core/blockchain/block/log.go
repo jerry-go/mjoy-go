@@ -22,16 +22,14 @@ package block
 
 import (
 	"fmt"
-	"os"
 	"mjoy.io/log"
+	"os"
 )
 
 var (
 	logTag = "core.blockchain.block"
 	logger log.Logger
 )
-
-
 
 func init() {
 	logger = log.GetLogger(logTag)
