@@ -156,28 +156,25 @@ func (this *BpObj) run() {
 		case <-this.exit:
 			return
 		case <-timer:
-
+			value := types.Hash{}
 			if this.BpHeap.Len() == 0 {
-				//specialdo
+				//output empty hash
+				value = this.ctx.getEmptyBlockHash()
 			}else{
-
 				sort.Sort(&this.BpHeap)
-				x := this.BpHeap[0]
-
+				value = this.BpHeap[0].bp.Block.Hash()
 				//make reduction input data
-				vd := new(VoteData)
-				vd.Round = x.bp.Credential.Round
-				vd.Step = StepReduction1
-				vd.Value = x.bp.Block.Hash()
-				logger.Debug(COLOR_PREFIX+COLOR_FRONT_PINK+COLOR_SUFFIX , "BpObj timeOut dataOutput hash:" , vd.Value.Hex() , COLOR_SHORT_RESET)
-
-				this.CommitteeVote(vd)
-
-				this.ctx.startVoteTimer(int(Config().delayStep))
-				this.ctx.setBpResult(x.bp.Block.Hash())
-				//todo:inform the reduction
-				return
 			}
+			vd := new(VoteData)
+			vd.Round = this.ctx.getRound()
+			vd.Step = StepReduction1
+			vd.Value = value
+			logger.Debug(COLOR_PREFIX+COLOR_FRONT_PINK+COLOR_SUFFIX , "BpObj timeOut dataOutput hash:" , vd.Value.Hex() , COLOR_SHORT_RESET)
+			this.CommitteeVote(vd)
+
+			this.ctx.setBpResult(value)
+			this.ctx.startVoteTimer(int(Config().delayStep))
+			return
 		case bp := <-this.msgChan:
 
 				//logic do

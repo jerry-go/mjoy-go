@@ -118,7 +118,7 @@ func (sr *stepRoutine) stop() {
 //stepCtx contains all functions the stepObj will use
 type stepCtx struct {
 	getStep   func() int // get the number of step in the round
-	getRound  func() int
+	getRound  func() uint64
 	stopStep  func() // stop the step
 	stopRound func() // stop all the step in the round, and end the round
 

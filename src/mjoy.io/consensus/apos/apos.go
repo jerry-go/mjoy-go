@@ -371,8 +371,8 @@ func (this *Round) startStepObjs(wg *sync.WaitGroup) {
 	stepCtx.makeBlockConsensusData = this.makeBlockConsensusData
 
 
-	roundRt := int(this.round)
-	stepCtx.getRound = func() int {
+	roundRt := this.round
+	stepCtx.getRound = func() uint64 {
 		return roundRt
 	}
 
