@@ -15,6 +15,8 @@ import (
 	"mjoy.io/core/blockchain/block"
 	"reflect"
 	"mjoy.io/params"
+	"mjoy.io/core"
+	"mjoy.io/utils/event"
 )
 
 type PriKeyHandler interface {
@@ -28,6 +30,7 @@ type BlockChainHandler interface {
 	InsertChain(chain block.Blocks) (int, error)
 	GetBlockByNumber(number uint64) *block.Block
 	GetBlockByHash(hash types.Hash) *block.Block
+	SubscribeChainEvent(ch chan<- core.ChainEvent) event.Subscription
 }
 
 type BlockProducerHandler interface {
@@ -202,8 +205,8 @@ func (this *aposTools) GetQrSignature(round uint64) []byte {
 	return blk.B_header.ConsensusData.Para
 }
 
-func (this *aposTools)GetNowBlockNum()int{
-	return int(this.blockChainHandler.CurrentBlockNum())
+func (this *aposTools)GetNowBlockNum() uint64{
+	return this.blockChainHandler.CurrentBlockNum()
 }
 
 func (this *aposTools)GetNextRound()int{
@@ -254,6 +257,9 @@ func (this *aposTools)GetBlockByNum(num uint64)*block.Block{
 }
 func (this *aposTools) GetBlockByHash(hash types.Hash) *block.Block {
 	return this.blockChainHandler.GetBlockByHash(hash)
+}
+func (this *aposTools) SubscribeChainEvent(ch chan<- core.ChainEvent) event.Subscription{
+	return this.blockChainHandler.SubscribeChainEvent(ch)
 }
 
 

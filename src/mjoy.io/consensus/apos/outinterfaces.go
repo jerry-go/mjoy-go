@@ -24,6 +24,8 @@ import (
 	"crypto/ecdsa"
 	"mjoy.io/common/types"
 	"mjoy.io/core/blockchain/block"
+	"mjoy.io/core"
+	"mjoy.io/utils/event"
 )
 
 /*
@@ -57,7 +59,7 @@ type CommonTools interface {
 
 	GetLastQrSignature() []byte
 	GetQrSignature(round uint64) []byte
-	GetNowBlockNum() int
+	GetNowBlockNum() uint64
 	GetNextRound() int
 	GetNowBlockHash() types.Hash
 
@@ -74,4 +76,5 @@ type CommonTools interface {
 
 	//version 1.1
 	GetBlockByHash(hash types.Hash) *block.Block
+	SubscribeChainEvent(ch chan<- core.ChainEvent) event.Subscription
 }

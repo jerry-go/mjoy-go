@@ -30,6 +30,8 @@ import (
 	"reflect"
 	"sync"
 	"mjoy.io/core/blockchain/block"
+	"mjoy.io/core"
+	"time"
 )
 
 const (
@@ -41,6 +43,33 @@ const (
 )
 
 //go:generate msgp
+
+func bufferMsg(peerNumber uint64, chainSub event.Subscription, chainChan chan core.ChainEvent)  {
+	currentBumber := gCommonTools.GetNowBlockNum()
+	timer := time.NewTimer(60 * time.Second)
+	defer timer.Stop()
+	if peerNumber > currentBumber {
+		logger.Debug("need buffer msg", peerNumber, currentBumber)
+		//future msg, need buffer
+		chainSub = gCommonTools.SubscribeChainEvent(chainChan)
+		defer chainSub.Unsubscribe()
+		for {
+			select {
+			case event := <-chainChan:
+				if peerNumber <= event.Block.NumberU64() {
+					return
+				}
+				// Err() channel will be closed when unsubscribing.
+			case <-chainSub.Err():
+				return
+			case <-timer.C:
+				logger.Debug("msg wait too long, ignore", peerNumber, currentBumber)
+				return
+			}
+		}
+	}
+}
+
 func (cs *CredentialSign) validate() (types.Address, error) {
 	//leader := false
 	//if 1 == cs.Step{
@@ -57,7 +86,7 @@ func (cs *CredentialSign) validate() (types.Address, error) {
 	//1. validate parentHash
 	parentBlock := gCommonTools.GetBlockByHash(cs.ParentHash)
 	if parentBlock == nil {
-		return types.Address{}, errors.New(fmt.Sprintf("verify CredentialSig fail: can't get block form:Round %d  hash %s",cs.Round ,  cs.ParentHash.Hex()))
+		return types.Address{}, errors.New(fmt.Sprintf("verify CredentialSig fail: Round %d can't get block form hash %s",cs.Round ,  cs.ParentHash.Hex()))
 	}
 
 
@@ -85,19 +114,25 @@ func (cs *CredentialSign) validate() (types.Address, error) {
 type msgCredentialSig struct {
 	cs *CredentialSign
 	*message.MsgPriv
+	chainChan chan core.ChainEvent
+	chainSub event.Subscription
 }
 
 func NewMsgCredential(c *CredentialSign) *msgCredentialSig {
 	msgCs := &msgCredentialSig{
 		cs:      c,
 		MsgPriv: message.NewMsgPriv(),
+		chainChan: make(chan core.ChainEvent, 10),
 	}
 	message.Msgcore().Handle(msgCs)
 	return msgCs
 }
 
+
+
 func (c *msgCredentialSig) DataHandle(data interface{}) {
 	logger.Debug("msgCredentialSig data handle")
+	bufferMsg(c.cs.Round - 1, c.chainSub, c.chainChan)
 	if _, err := c.cs.validate(); err != nil {
 		logger.Info("message CredentialSig validate error:", err)
 		return
@@ -156,6 +191,8 @@ func (bp *BlockProposal) validate() error {
 type msgBlockProposal struct {
 	bp *BlockProposal
 	*message.MsgPriv
+	chainChan chan core.ChainEvent
+	chainSub event.Subscription
 }
 
 // new a message
@@ -163,6 +200,7 @@ func NewMsgBlockProposal(bp *BlockProposal) *msgBlockProposal {
 	msgBp := &msgBlockProposal{
 		bp:      bp,
 		MsgPriv: message.NewMsgPriv(),
+		chainChan: make(chan core.ChainEvent, 10),
 	}
 	message.Msgcore().Handle(msgBp)
 	return msgBp
@@ -170,6 +208,7 @@ func NewMsgBlockProposal(bp *BlockProposal) *msgBlockProposal {
 
 func (bp *msgBlockProposal) DataHandle(data interface{}) {
 	logger.Debug("msgBlockProposal data handle")
+	bufferMsg(bp.bp.Credential.Round - 1, bp.chainSub, bp.chainChan)
 	if err := bp.bp.validate(); err != nil {
 		logger.Info("message BlockProposal validate error:", err)
 		return
@@ -237,12 +276,15 @@ func (ba *ByzantineAgreementStar) BaHash() types.Hash {
 type msgByzantineAgreementStar struct {
 	ba *ByzantineAgreementStar
 	*message.MsgPriv
+	chainChan chan core.ChainEvent
+	chainSub event.Subscription
 }
 
 func NewMsgByzantineAgreementStar(ba *ByzantineAgreementStar) *msgByzantineAgreementStar {
 	msgBba := &msgByzantineAgreementStar{
 		ba:     ba,
 		MsgPriv: message.NewMsgPriv(),
+		chainChan: make(chan core.ChainEvent, 10),
 	}
 	message.Msgcore().Handle(msgBba)
 	return msgBba
@@ -250,6 +292,7 @@ func NewMsgByzantineAgreementStar(ba *ByzantineAgreementStar) *msgByzantineAgree
 
 func (ba *msgByzantineAgreementStar) DataHandle(data interface{}) {
 	logger.Debug("msgByzantineAgreementStar data handle", ba.ba.Credential.Round, ba.ba.Credential.Step)
+	bufferMsg(ba.ba.Credential.Round - 1, ba.chainSub, ba.chainChan)
 	if err := ba.ba.validate(); err != nil {
 		logger.Info("message ByzantineAgreementStar validate error:", err)
 		return
