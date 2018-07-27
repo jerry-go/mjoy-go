@@ -647,7 +647,7 @@ func SetTestConfig() {
 	//set config
 	Config().R = 1000
 	Config().tProposer = 1
-	Config().tStep = 2000
+	Config().tStep = 3
 	Config().tStepThreshold = 1
 	Config().tFinal = 10000
 	Config().tFinalThreshold = 1
@@ -706,7 +706,12 @@ func (this *Apos) makeCredential(s int) *CredentialSign {
 		logger.Error(err.Error())
 		return nil
 	}
-	c.votes = uint(CalculatePriority(c.Signature.Hash() , 0,0,0))
+	//c.votes = uint(CalculatePriority(c.Signature.Hash() , 0,0,0))
+	//todo：just for test
+	if Config().tStep > 50 {
+		Config().tStep = 10
+	}
+	c.votes = uint(getSortitionPriorityByHash(c.Signature.Hash(), 50, Config().tStep, 100))
 	logger.Debug(COLOR_PREFIX+COLOR_FRONT_GREEN+COLOR_SUFFIX , "***Credential Votes Show:  Round:",c.Round , " Step:" , c.Step , "  Votes:" , c.votes , COLOR_SHORT_RESET)
 
 	return c

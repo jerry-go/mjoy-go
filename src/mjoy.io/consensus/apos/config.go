@@ -58,11 +58,11 @@ type config struct {
 
 	//new struct
 	R                uint     `json:"r"`                // seed refresh interval (# of rounds)
-	tProposer        uint     `json:"tProposer"`        // expected # of block proposers
-	tStep            uint     `json:"tStep"`            // expected # of committee members
-	tStepThreshold   uint     `json:"tStepThreshold"`   // threshold # of τstep for BA⋆
-	tFinal           uint     `json:"tFinal"`           // expected # of final committee members
-	tFinalThreshold  uint     `json:"tFinalThreshold"`  // threshold # of τfinal for BA⋆
+	tProposer        int64    `json:"tProposer"`        // expected # of block proposers
+	tStep            int64    `json:"tStep"`            // expected # of committee members
+	tStepThreshold   int64    `json:"tStepThreshold"`   // threshold # of τstep for BA⋆
+	tFinal           int64    `json:"tFinal"`           // expected # of final committee members
+	tFinalThreshold  int64    `json:"tFinalThreshold"`  // threshold # of τfinal for BA⋆
 	maxStep          uint     `json:"maxStep"`          // maximum number of steps in BinaryBA⋆
 	delayPriority    uint     `json:"delayPriority"`    // time to gossip sortition proofs
 	delayStep        uint     `json:"delayStep"`        // timeout for receiving a block

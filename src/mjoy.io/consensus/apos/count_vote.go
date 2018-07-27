@@ -260,7 +260,7 @@ func (cv *countVote) processMsg(ba *ByzantineAgreementStar) (int, types.Hash, bo
 
 	sv = cv.voteRecord[step]
 	logger.Debug(COLOR_PREFIX+COLOR_FRONT_PINK+COLOR_SUFFIX ,"ProcessMsg getThreshold:" , getThreshold(step) , "  Now Votes:",votes)
-	if votes > getThreshold(step) {
+	if int64(votes) > getThreshold(step) {
 		sv.isFinish = true
 		return step, hash, true
 	}

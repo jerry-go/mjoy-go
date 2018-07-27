@@ -160,7 +160,7 @@ func SenderFromBlock(header *block.Header, parent *block.Header) (types.Address,
 }
 
 
-func getThreshold(step int) uint {
+func getThreshold(step int) int64 {
 	if step == STEP_FINAL {
 		return Config().tFinalThreshold
 	} else {
