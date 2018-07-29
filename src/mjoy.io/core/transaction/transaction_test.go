@@ -162,12 +162,7 @@ func TestTransactionJSON(t *testing.T) {
 
 	for i := uint64(0); i < 25; i++ {
 		var tx *Transaction
-		switch i % 2 {
-		case 0:
-			tx = NewTransaction(i, Actions{})
-		case 1:
-			tx = NewContractCreation(i, Actions{})
-		}
+		tx = NewTransaction(i, Actions{})
 
 		tx, err := SignTx(tx, signer, key)
 		if err != nil {

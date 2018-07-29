@@ -31,10 +31,11 @@ import (
 	"mjoy.io/common"
 	"mjoy.io/common/types"
 	"mjoy.io/utils/crypto"
+	"container/heap"
 )
 
 //go:generate msgp
-//msgp:ignore Message
+//msgp:ignore Message TransactionsByPriorityAndNonce
 //go:generate gencodec -type TxHeader -field-override txHeaderMarshaling -out gen_txheader_json.go
 //go:generate gencodec -type Action -field-override actionMarshaling -out gen_action_json.go
 //go:generate gencodec -type Txdata  -out gen_tx_json.go
@@ -125,11 +126,6 @@ type Txdata struct {
 
 //All actions is made by interpreter
 func NewTransaction(nonce uint64, actions Actions) *Transaction {
-	return newTransaction(nonce, actions)
-}
-
-//All acions is made by interpreter
-func NewContractCreation(nonce uint64, actions Actions) *Transaction {
 	return newTransaction(nonce, actions)
 }
 
@@ -385,17 +381,23 @@ func (s *TxByPriority) Pop() interface{} {
 	return x
 }
 
-/*type TransactionsByPriorityAndNonce struct {
-	txs 	map[types.Address]Transactions
-	heads 	TxByPriority
-	signer 	Signer
+// TransactionsByPriorityAndNonce represents a set of transactions that can return
+// transactions in a priority sorted order, while supporting removing
+// entire batches of transactions for non-executable accounts.
+type TransactionsByPriorityAndNonce struct {
+	txs 	map[types.Address]Transactions // Per account nonce-sorted list of transactions
+	heads 	TxByPriority                   // Next transaction for each unique account (priority heap)
+	signer 	Signer                         // Signer for the set of transactions
+}
 
-}*/
-
-/*func NewTransactionsByPriorityAndNonce(signer Signer , txs map[types.Address]Transactions, txReword *Transaction)*TransactionsByPriorityAndNonce {
-	// Initialize a price based heap with the head transactions
-	heads := make(TxByPriority, 0, len(txs) + 1)
-	heads = append(heads, txReword)
+// NewTransactionsByPriorityAndNonce creates a transaction set that can retrieve
+// priority sorted transactions in a nonce-honouring way.
+//
+// Note, the input map is reowned so the caller should not interact any more with
+// if after providing it to the constructor.
+func NewTransactionsByPriorityAndNonce(signer Signer , txs map[types.Address]Transactions)*TransactionsByPriorityAndNonce {
+	// Initialize a priority based heap with the head transactions
+	heads := make(TxByPriority, 0, len(txs))
 	for _, accTxs := range txs {
 		heads = append(heads, accTxs[0])
 		// Ensure the sender address is from the signer
@@ -412,7 +414,7 @@ func (s *TxByPriority) Pop() interface{} {
 	}
 }
 
-// Peek returns the next transaction by price.
+// Peek returns the next transaction by priority.
 func (t *TransactionsByPriorityAndNonce) Peek() *Transaction {
 	if len(t.heads) == 0 {
 		return nil
@@ -436,7 +438,7 @@ func (t *TransactionsByPriorityAndNonce) Shift() {
 // and hence all subsequent ones should be discarded from the same account.
 func (t *TransactionsByPriorityAndNonce) Pop() {
 	heap.Pop(&t.heads)
-}*/
+}
 
 // TxByNonce implements the sort interface to allow sorting a list of transactions
 // by their nonces. This is usually only useful for sorting transactions from a
