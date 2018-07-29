@@ -21,10 +21,10 @@
 package common
 
 import (
-	"testing"
-	"mjoy.io/common/types"
 	"math/big"
+	"mjoy.io/common/types"
 	"reflect"
+	"testing"
 )
 
 type testst struct {
@@ -40,7 +40,6 @@ func TestMsgpHash(t *testing.T) {
 		uint(0),
 		types.NewBigInt(*big.NewInt(123)),
 		[]testst{{"abc"}, {"111"}},
-
 	})
 
 	if err != nil {

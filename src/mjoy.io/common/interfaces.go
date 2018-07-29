@@ -24,7 +24,6 @@ import (
 	"context"
 	"math/big"
 	"mjoy.io/common/types"
-
 )
 
 type Subscription interface {
@@ -36,9 +35,7 @@ type Subscription interface {
 	// delivering the events has been closed). Only one value will ever be sent.
 	// The error channel is closed by Unsubscribe.
 	Err() <-chan error
-
 }
-
 
 // ChainStateReader wraps access to the state trie of the canonical blockchain. Note that
 // implementations of the interface may be unable to return state values for old blocks.
@@ -49,7 +46,6 @@ type ChainStateReader interface {
 	CodeAt(ctx context.Context, account types.Address, blockNumber *big.Int) ([]byte, error)
 	NonceAt(ctx context.Context, account types.Address, blockNumber *big.Int) (uint64, error)
 }
-
 
 // SyncProgress gives progress indications when the node is synchronising with
 // the Mjoy network.

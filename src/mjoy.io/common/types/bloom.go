@@ -101,4 +101,3 @@ func (bloom *Bloom) UnmarshalBinary(b []byte) error {
 	copy(bloom[BloomByteLength-len(bloom):], b)
 	return nil
 }
-

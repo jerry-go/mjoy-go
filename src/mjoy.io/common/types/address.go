@@ -23,8 +23,8 @@ package types
 import (
 	"encoding/hex"
 	"fmt"
-	"mjoy.io/utils/crypto/sha3"
 	"math/big"
+	"mjoy.io/utils/crypto/sha3"
 	"reflect"
 )
 

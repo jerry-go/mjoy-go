@@ -31,18 +31,18 @@ import (
 var (
 	bigIntType int8
 
-	bigT    = reflect.TypeOf((*BigInt)(nil))
+	bigT = reflect.TypeOf((*BigInt)(nil))
 )
 
-func bigToBytes(v big.Int) (interface{}) {
+func bigToBytes(v big.Int) interface{} {
 	neg := v.Sign()
-	b := make([]byte, 1 + len(v.Bytes()))
+	b := make([]byte, 1+len(v.Bytes()))
 	b[0] = byte(neg)
 	copy(b[1:], v.Bytes())
 	return b
 }
 
-func bigFromBytes(b interface{}) (big.Int) {
+func bigFromBytes(b interface{}) big.Int {
 	if b == nil {
 		return big.Int{}
 	}
@@ -56,12 +56,11 @@ func bigFromBytes(b interface{}) (big.Int) {
 	var v big.Int
 	v.SetBytes(buf[1:])
 
-	if neg==255 {
+	if neg == 255 {
 		v.Neg(&v)
 	}
 	return v
 }
-
 
 type BigInt struct {
 	IntVal big.Int `msg:"bigint"`
@@ -106,7 +105,7 @@ func (bigInt *BigInt) UnmarshalBinary(b []byte) error {
 	neg := b[0]
 	bigInt.IntVal.SetBytes(b[1:])
 
-	if neg==255 {
+	if neg == 255 {
 		bigInt.IntVal.Neg(&bigInt.IntVal)
 	}
 	return nil
