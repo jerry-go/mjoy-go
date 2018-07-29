@@ -56,7 +56,7 @@ type cachingDB struct {
 	valuesSizeCache *lru.Cache
 }
 
-// NewDatabase creates a backing store for state. The returned database is safe for
+// NewDatabase creates a backing store for variable. The returned database is safe for
 // concurrent use and retains cached trie nodes in memory.
 func NewDatabase(db database.IDatabase) Database {
 	csc, _ := lru.New(valuesSizeCacheSize)
