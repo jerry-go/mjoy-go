@@ -25,6 +25,7 @@ import (
 	"testing"
 	"fmt"
 	"mjoy.io/common/types"
+	"math/big"
 )
 
 func TestGetExpK(t *testing.T) {
@@ -70,6 +71,14 @@ func TestGetBinomial(t *testing.T) {
 func TestGetSumBinomial(t *testing.T) {
 	for i := 0; i <= 10; i++ {
 		fmt.Println(getSumBinomial(10, 10, 100, int64(i)))
+	}
+}
+
+func TestGetSumBinomialBasedLastSum(t *testing.T) {
+	last := new(big.Float)
+	for i := 0; i <= 10; i++ {
+		last = getSumBinomialBasedLastSum(10, 10, 100, int64(i), last)
+		fmt.Println(last)
 	}
 }
 
