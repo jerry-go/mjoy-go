@@ -25,6 +25,7 @@ import (
 	"testing"
 	"fmt"
 	"mjoy.io/common/types"
+	"math/big"
 )
 
 func TestGetExpK(t *testing.T) {
@@ -73,6 +74,14 @@ func TestGetSumBinomial(t *testing.T) {
 	}
 }
 
+func TestGetSumBinomialBasedLastSum(t *testing.T) {
+	last := new(big.Float)
+	for i := 0; i <= 10; i++ {
+		last = getSumBinomialBasedLastSum(10, 10, 100, int64(i), last)
+		fmt.Println(last)
+	}
+}
+
 /**
 0
 1
@@ -95,4 +104,34 @@ func TestGetSortitionPriorityByHash(t *testing.T) {
 
 	ret = getSortitionPriorityByHash(TimeOut, 10, 10, 100)
 	fmt.Println(ret)
+}
+
+func TestPerformance(t *testing.T) {
+	last := new(big.Float)
+	logger.Info("no optimazation, start.time")
+	w := 500
+	for i := 0; i <= w; i++ {
+		last = getSumBinomial(int64(w), 1000, 10000, int64(i))
+		//fmt.Println(last)
+	}
+	logger.Info("no, optimazation end.time")
+
+	logger.Info(" start.time")
+	for i := 0; i <= w; i++ {
+		last = getSumBinomialBasedLastSum(int64(w), 1000, 10000, int64(i), last)
+		//fmt.Println(last)
+	}
+	logger.Info(" end.time")
+}
+
+func TestPerformance1(t *testing.T) {
+	last := new(big.Float)
+	w := 1000
+
+	logger.Info(" start.time")
+	for i := 0; i <= w; i++ {
+		last = getSumBinomialBasedLastSum(int64(w), 2000, 10000, int64(i), last)
+		//fmt.Println(last)
+	}
+	logger.Info(" end.time")
 }

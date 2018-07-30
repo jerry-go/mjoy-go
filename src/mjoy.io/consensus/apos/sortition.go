@@ -34,12 +34,21 @@ func getSortitionPriorityByHash(hash types.Hash, w, tao, W int64) (j int64) {
 	hashBig := new(big.Int).SetBytes(hash.Bytes())
 	hashP := new(big.Float).Quo(new(big.Float).SetInt(hashBig), new(big.Float).SetInt(maxUint256))
 
+	last := new(big.Float)
+
 	for j = 0; j < w; j++{
-		if hashP.Cmp(getSumBinomial(w, tao, W, j)) < 0 {
+		last = getSumBinomialBasedLastSum(w, tao, W, j, last)
+		if hashP.Cmp(last) < 0 {
 			break
 		}
 	}
 	return j
+}
+
+func getSumBinomialBasedLastSum(w, tao, W, j int64, last *big.Float)  *big.Float {
+	ret := new(big.Float)
+	ret.Add(last, getBinomial(j, w, tao, W))
+	return ret
 }
 
 func getSumBinomial(w, tao, W, j int64)  *big.Float {
