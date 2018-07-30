@@ -94,6 +94,11 @@ func (cs *CredentialSign) validate() (types.Address, error) {
 		return types.Address{}, errors.New(fmt.Sprintf("verify CredentialSig fail: Round %s is not equal block number", cs.Round))
 
 	}
+
+	sender, err := cs.sender()
+	if err != nil {
+		return types.Address{}, errors.New(fmt.Sprintf("verify CredentialSig fail: %s", err))
+	}
 	//todo 2. validate right
 	sigHash := cs.Signature.Hash()
 	//cs.votes = 1  //todo here just for compile
@@ -103,9 +108,8 @@ func (cs *CredentialSign) validate() (types.Address, error) {
 		Config().tStep = 10
 	}
 	cs.votes = uint(getSortitionPriorityByHash(sigHash , 50, Config().tStep,100))
-	sender, err := cs.sender()
-	if err != nil {
-		return types.Address{}, errors.New(fmt.Sprintf("verify CredentialSig fail: %s", err))
+	if cs.votes == 0 {
+		return types.Address{}, errors.New(fmt.Sprintf("verify votes fail: Round %d peer %s no ritht to verify", cs.Round, sender.Hash()))
 	}
 
 	return sender, nil
