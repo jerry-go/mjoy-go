@@ -241,6 +241,7 @@ func (this *Round) setBbaResult(hash types.Hash) {
 			logger.Info("Tentative consensus!!!")
 		}
 		consensusBlock := this.bpObj.getExistBlock(hash)
+		//not get the exist block
 		if consensusBlock == nil {
 			logger.Error(COLOR_PREFIX+COLOR_FRONT_RED+COLOR_SUFFIX , "SetFianl getExistBlock == nil , hash=" , this.mainStepRlt.bba.Hex(), COLOR_SHORT_RESET)
 		}

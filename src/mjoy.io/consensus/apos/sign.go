@@ -53,6 +53,47 @@ type signer interface {
 	hash() types.Hash
 }
 
+/*
+ReadMe:
+what the relationship between SeedDataSigForHash and SeedData?
+if I say hash-SeedData is  Qr-1 and hash-SeedDataSigForHash is  Qr , it's not wrong.
+although hash-SeedDataSigForHash just a hash not equal Qr and Qr-1,but it's used for producing Qr.
+like this below:
+h := hash-SeedDataSigForHash
+SeedData.sign(h , privateKey),the sign will fill the R,S,V in SeedData
+and the consensusData.para = SeedData.toBytes(),the function toBytes() equal SeedData.Signature.toBytes(),it's
+meaning that the bytes equal R,S,V. But the consensusData not equal the Qr-1/r ,it's just a part of Qr-1/r
+
+but now,how to get hash-SeedDataSigForHash? The defination of SeedDataSigForHash like below:
+type SeedDataSigForHash struct {
+	Round    uint64 // round
+	Seed     []byte // quantity(seed, Qr-1)
+}
+
+here we know Round,but,what is Seed?
+1.Seed-Round(Qr) is depend on Qr-1
+2.Qr = H(Qr-1 , r)
+
+so we know Seed is Qr-1(hash -> bytes)
+sigBytes(r-1) = block(r-1).consensusData.Para
+Signature(r-1) = Signature.get(sigBytes(r-1))
+SeedData(Signature(r-1) , r-1).Hash()-->Qr-1
+
+so ,here we know how to get Qr-1,now ,how to get Qr?
+First,it's a bad question,the result we get is not Qr,just a part of Qr--we called Signature's bytes.
+SeedDataSigForHash{Round:r , Seed:bytes(Qr-1)}-->hash,this hash just for sign,because we want get signature's bytes
+
+h := hash-SeedDataSigForHash{Round:r , Seed:bytes(Qr-1)}
+SeedData{Signature:init() , r}.sign(h , privateKey),the r is useless in sign,but we fill Signature in this fucntion.
+so A PART OF Qr = SeedData{Signature:signed and filled , r}.toBytes().
+
+Another tips:
+Seed is continuous , but Credential is not
+like:
+Seed0->Seed1->Seed2->Seed3->Seed4
+C1(Seed0)->C2(Seed0)->C3(Seed0)->C4(Seed1)->C5(Seed1)->C6(Seed1)......
+
+*/
 type SeedDataSigForHash struct {
 	Round    uint64 // round
 	Seed     []byte // quantity(seed, Qr-1)
@@ -63,6 +104,7 @@ type SeedData struct {
 	Round     uint64
 }
 
+//use this , we get Qr-1
 func (this *SeedData) Hash() types.Hash {
 	h, err := common.MsgpHash(this)
 	if err != nil {
@@ -71,8 +113,11 @@ func (this *SeedData) Hash() types.Hash {
 	return h
 }
 
-func (sd *SeedData) hash() types.Hash {
-	seed_R_1, _, err := generateSeed(sd.Round - 1)
+//use this,we get a hash for signature,what will be a part of Qr--ConsensusData.Para
+//the different between Hash and hashForSig is that Hash get a Qr-1,but hashForSig get a param for signing
+func (sd *SeedData) hashForSig() types.Hash {
+	//get Qr-1:types.Hash{}
+	seed_R_1, _, err := restoreSeed(sd.Round - 1)
 	if err != nil {
 		logger.Error("get Quantity fail")
 		return types.Hash{}
@@ -97,8 +142,8 @@ func (sd *SeedData) sign(prv *ecdsa.PrivateKey) (R *types.BigInt, S *types.BigIn
 		err := errors.New(fmt.Sprintf("private key is empty"))
 		return nil, nil, nil, err
 	}
-
-	hash := sd.hash()
+	//Qr hash,{Qr-1 , r}-->Hash
+	hash := sd.hashForSig()
 	if (hash == types.Hash{}) {
 		err := errors.New(fmt.Sprintf("the hash of QuantityData is empty"))
 		return nil, nil, nil, err
@@ -390,7 +435,7 @@ func (cret *CredentialSign) hash() types.Hash {
 	} else {
 		seedRound = currentRound - 1 - (currentRound % R)
 	}
-	seed_r,_, err := generateSeed(seedRound)
+	seed_r,_, err := restoreSeed(seedRound)
 	if err != nil {
 		logger.Error("get Quantity fail")
 		return types.Hash{}
