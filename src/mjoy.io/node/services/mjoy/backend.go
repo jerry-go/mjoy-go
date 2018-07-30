@@ -92,8 +92,6 @@ type Mjoy struct {
 
 	blockproducer     *blockproducer.Blockproducer  //create newBlock
 	aposConsensus     *apos.Apos                    //judge the last Block
-	toolsForApos      *aposTools                    //tools for aposConsensus
-
 	interVm             *interpreter.Vms
 	coinbase types.Address
 
@@ -194,9 +192,8 @@ func New(ctx *node.ServiceContext) (*Mjoy, error) {
 	//run block producer first
 	//Init apos tools
 
-	mjoy.toolsForApos = newAposTools(mjoy.blockchain.Config().ChainId  ,mjoy.blockchain , mjoy.blockproducer)
 	//Init Consensus
-	mjoy.aposConsensus = apos.NewApos(apos.MsgTransfer() , mjoy.toolsForApos)
+	mjoy.aposConsensus = apos.NewApos(apos.MsgTransfer()  ,mjoy.blockchain , mjoy.blockproducer)
 	//start consensus
 	mjoy.ApiBackend = &MjoyApiBackend{mjoy}
 
@@ -228,9 +225,6 @@ func CreateConsensusEngine(mjoy *Mjoy) consensus.Engine {
 	return engine
 }
 
-func (s *Mjoy)AposTools() apos.CommonTools{
-	return s.toolsForApos
-}
 
 func (s *Mjoy) SetEngineKey(pri *ecdsa.PrivateKey) {
 	switch v := s.engine.(type) {

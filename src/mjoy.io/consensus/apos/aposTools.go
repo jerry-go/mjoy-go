@@ -1,9 +1,8 @@
-package mjoy
+package apos
 
 import (
 	"math/big"
 	"crypto/ecdsa"
-	"mjoy.io/consensus/apos"
 	"bytes"
 	"crypto/rand"
 	"mjoy.io/utils/crypto"
@@ -96,7 +95,7 @@ func (this *aposTools)SetPriKey(priKey *ecdsa.PrivateKey){
 	this.basePriKey = priKey
 }
 
-func (this *aposTools)Sig(pCs *apos.CredentialSign)error{
+func (this *aposTools)Sig(pCs *CredentialSign)error{
 	this.lock.RLock()
 	defer this.lock.RUnlock()
 
@@ -104,7 +103,7 @@ func (this *aposTools)Sig(pCs *apos.CredentialSign)error{
 	return err
 }
 
-func (this *aposTools) SeedSig(pSd *apos.SeedData) error {
+func (this *aposTools) SeedSig(pSd *SeedData) error {
 	this.lock.RLock()
 	defer this.lock.RUnlock()
 
@@ -112,7 +111,7 @@ func (this *aposTools) SeedSig(pSd *apos.SeedData) error {
 	return err
 }
 
-func (this *aposTools)Esig(pEphemeralSign *apos.EphemeralSign)error{
+func (this *aposTools)Esig(pEphemeralSign *EphemeralSign)error{
 	this.lock.Lock()
 	defer this.lock.Unlock()
 
@@ -164,17 +163,17 @@ func (this *aposTools)SigHash(hash types.Hash)[]byte{
 	return sig
 }
 
-func (this *aposTools)SigVerify(h types.Hash , sig *apos.SignatureVal)error{
+func (this *aposTools)SigVerify(h types.Hash , sig *SignatureVal)error{
 	return nil
 }
 
 
-func (this *aposTools)Sender(h types.Hash , sig *apos.SignatureVal)(types.Address , error){
+func (this *aposTools)Sender(h types.Hash , sig *SignatureVal)(types.Address , error){
 	V := &big.Int{}
 	V = V.Sub(&sig.V.IntVal, big.NewInt(2))
 	V.Sub(V, common.Big35)
 
-	address , err := apos.RecoverPlain(h , &sig.R.IntVal , &sig.S.IntVal , V,true)
+	address , err := RecoverPlain(h , &sig.R.IntVal , &sig.S.IntVal , V,true)
 	return address , err
 }
 
@@ -227,7 +226,7 @@ func (this *aposTools)MakeEmptyBlock(data *block.ConsensusData)*block.Block{
 
 	b := block.NewBlock(header , nil , nil)
 	//use system private key to sign the block
-	err := block.SignHeaderInner(b.B_header, block.NewBlockSigner(apos.Config().GetChainId()), params.RewordPrikey)
+	err := block.SignHeaderInner(b.B_header, block.NewBlockSigner(Config().GetChainId()), params.RewordPrikey)
 	if err != nil {
 		logger.Error("makeEmptyBlock error:", err)
 		return nil

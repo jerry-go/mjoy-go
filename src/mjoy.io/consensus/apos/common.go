@@ -97,7 +97,7 @@ func (pq *priorityQueue) Pop() interface{} {
 }
 
 //todo future need use VRF function
-func generateSeed(round uint64) (types.Hash, []byte, error) {
+func  generateSeed(round uint64) (types.Hash, []byte, error) {
 	sigByte := gCommonTools.GetQrSignature(round)
 	sd := SeedData{}
 	sd.Signature.init()

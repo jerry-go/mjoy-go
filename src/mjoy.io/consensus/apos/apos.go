@@ -43,10 +43,6 @@ type peerMsgs struct {
 	honesty uint
 }
 
-type pqCredential struct {
-	pq          priorityQueue
-	credentials map[string]*CredentialSign
-}
 
 type mainStepOutput struct {
 	bp        types.Hash
@@ -92,32 +88,18 @@ func (this *mainStepOutput) setFinalResult(final types.Hash) bool {
 //round context
 type Round struct {
 	round uint64
-	//condition 0 and condition 1 end number tH = 2n/3 + 1
-	targetNum int
-
 	apos *Apos
-
 	credentials map[int]*CredentialSign
-
-	smallestLBr *BlockProposal
 	lock        sync.RWMutex
-
 	emptyBlock    *block.Block
-	maxLeaderNum  int
-	curLeaderNum  int
-	curLeaderDiff *big.Int
-	curLeader     types.Hash
-
 
 	msgs map[types.Address]*peerMsgs
-	csPq map[int]*pqCredential
 
 	quitCh      chan *block.Block
 	roundOverCh chan interface{}
 
 	bpObj   *BpObj
 	voteObj  *VoteObj
-
 
 	//version 1.1
 	mainStepRlt   mainStepOutput
@@ -232,7 +214,6 @@ func (this *Round) init(round int, apos *Apos, roundOverCh chan interface{}) {
 	this.quitCh = make(chan *block.Block, 1)
 
 	this.msgs = make(map[types.Address]*peerMsgs)
-	this.csPq = make(map[int]*pqCredential)
 
 
 	//step ctx init
@@ -585,10 +566,11 @@ type Apos struct {
 }
 
 //Create Apos
-func NewApos(msger OutMsger, cmTools CommonTools) *Apos {
+func NewApos(msger OutMsger , bcHandler BlockChainHandler , producerHandler BlockProducerHandler) *Apos {
 	logger.Debug("NewApos....................")
 	a := new(Apos)
 	//a.outMsger = msger
+	cmTools := newAposTools(Config().chainId , bcHandler , producerHandler)
 	a.commonTools = cmTools
 	gCommonTools = cmTools
 	a.allMsgBridge = make(chan dataPack, 10000)

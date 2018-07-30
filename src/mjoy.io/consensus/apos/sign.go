@@ -328,9 +328,12 @@ func (this *CredentialSign) ToCredentialSigKey() *CredentialSigForKey {
 	r.V = this.V.IntVal.Uint64()
 	return r
 }
+//CredentialSign.Sign do everything except holding the privateKey
+//called by commonTools,because commonTools hold the privateKey for signing
 func (cret *CredentialSign) Sign(prv *ecdsa.PrivateKey) (R *types.BigInt, S *types.BigInt, V *types.BigInt, err error) {
 	return cret.sign(prv)
 }
+//the commontools has give us the privateKey
 func (cret *CredentialSign) sign(prv *ecdsa.PrivateKey) (R *types.BigInt, S *types.BigInt, V *types.BigInt, err error) {
 	if prv == nil {
 		err := errors.New(fmt.Sprintf("private key is empty"))
