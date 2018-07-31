@@ -127,12 +127,18 @@ func TestGetSumGaussian(t *testing.T) {
 	p := 10.0/100.0
 	e := float64(w) * p
 	sigma := e * (1 - p)
+	sigma = math.Sqrt(sigma)
 
 	fmt.Println(p,e,sigma)
 
 	for i := 0; i <= w; i++ {
-		fmt.Println(normalCdf(e, math.Sqrt(sigma),float64(i)))
+		fmt.Println(i, normalCdf(e, sigma, float64(i)))
 	}
+
+	fmt.Println(normalInverseCdf(e, sigma, 0.8540797274281058))
+	fmt.Println(normalInverseCdf(e, sigma, 0.9999999999999201))
+	fmt.Println(normalInverseCdf(e, sigma, 0.14592027257189427))
+	fmt.Println(normalInverseCdf(e, sigma, 0))
 }
 
 /*
@@ -146,18 +152,22 @@ func TestGetGaussianSortitionPriorityByHash(t *testing.T) {
 	hash := types.Hash{}
 	hash[0] = 20
 	ret := gd.getSortitionPriorityByHash(hash, 10, 10, 100)
-	fmt.Println(ret)
+	ret1 := gd.getSortitionPriorityByHashFloat(hash, 10, 10, 100)
+	fmt.Println(ret,ret1)
 
 	hash[0] = 127
 	ret = gd.getSortitionPriorityByHash(hash, 10, 10, 100)
-	fmt.Println(ret)
+	ret1 = gd.getSortitionPriorityByHashFloat(hash, 10, 10, 100)
+	fmt.Println(ret,ret1)
 
 	hash[0] = 200
 	ret = gd.getSortitionPriorityByHash(hash, 10, 10, 100)
-	fmt.Println(ret)
+	ret1 = gd.getSortitionPriorityByHashFloat(hash, 10, 10, 100)
+	fmt.Println(ret,ret1)
 
 	ret = gd.getSortitionPriorityByHash(TimeOut, 10, 10, 100)
-	fmt.Println(ret)
+	ret1 = gd.getSortitionPriorityByHashFloat(TimeOut, 10, 10, 100)
+	fmt.Println(ret,ret1)
 }
 
 func TestPerformance(t *testing.T) {

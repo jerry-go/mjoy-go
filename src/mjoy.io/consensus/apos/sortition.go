@@ -25,6 +25,7 @@ import (
 	"mjoy.io/common/types"
 	"math/big"
 	"math"
+	"github.com/ematvey/gostat"
 )
 
 type SortitionPriority interface {
@@ -39,8 +40,12 @@ type gaussianDistribution struct {
 
 }
 
-func normalCdf(μ, σ , x float64)  float64 {
+func normalCdf(μ, σ , x float64) float64 {
 	return (1.0 / 2.0) * (1 + math.Erf((x-μ)/(σ*math.Sqrt2)))
+}
+
+func normalInverseCdf(μ, σ , p float64) float64 {
+	return σ * (stat.Z_InvCDF_For(p))  + μ
 }
 
 func (gs *gaussianDistribution) getSortitionPriorityByHash(hash types.Hash, w, tao, W int64) (j int64)  {
@@ -55,6 +60,22 @@ func (gs *gaussianDistribution) getSortitionPriorityByHash(hash types.Hash, w, t
 		if hashP.Cmp(big.NewFloat(normalCdf(e, sigma, float64(j)))) < 0 {
 			break
 		}
+	}
+	return j
+}
+
+func (gs *gaussianDistribution) getSortitionPriorityByHashFloat(hash types.Hash, w, tao, W int64) (j float64)  {
+	p := float64(tao)/float64(W)
+	e := float64(w) * p
+	sigma := math.Sqrt(e * (1 - p))
+
+	hashBig := new(big.Int).SetBytes(hash.Bytes())
+	hashP := new(big.Float).Quo(new(big.Float).SetInt(hashBig), new(big.Float).SetInt(maxUint256))
+	hashPf,_ := hashP.Float64()
+
+	j = normalInverseCdf(e, sigma, hashPf)
+	if j > float64(w) {
+		j = float64(w)
 	}
 	return j
 }
