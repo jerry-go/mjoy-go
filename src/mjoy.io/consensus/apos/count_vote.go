@@ -193,7 +193,7 @@ func (cv *countVote) countSuccess(step int, hash types.Hash) {
 		if bbaIdex == 1 && hash != cv.emptyBlock {
 			//bba complete: block hash
 			cv.bbaFinish = true
-			if cv.timerStep < (Config().maxStep) {
+			if cv.timerStep < (Config().maxStep) || cv.timerStep == STEP_IDLE {
 				nextTimoutStep = STEP_FINAL
 				cv.timerStep = STEP_FINAL
 				resetTimer = true
@@ -201,7 +201,7 @@ func (cv *countVote) countSuccess(step int, hash types.Hash) {
 		} else if bbaIdex == 2 && hash == cv.emptyBlock {
 			//bba complete: empty block hash
 			cv.bbaFinish = true
-			if cv.timerStep < (Config().maxStep) {
+			if cv.timerStep < (Config().maxStep) || cv.timerStep == STEP_IDLE {
 				nextTimoutStep = STEP_FINAL
 				cv.timerStep = STEP_FINAL
 				resetTimer = true
