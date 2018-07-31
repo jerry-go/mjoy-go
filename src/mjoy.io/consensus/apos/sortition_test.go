@@ -26,6 +26,7 @@ import (
 	"fmt"
 	"mjoy.io/common/types"
 	"math/big"
+	"github.com/go-gaussian"
 )
 
 func TestGetExpK(t *testing.T) {
@@ -86,23 +87,77 @@ func TestGetSumBinomialBasedLastSum(t *testing.T) {
 0
 1
 2
-10/
+10
  */
-func TestGetSortitionPriorityByHash(t *testing.T) {
+func TestGetBinomialSortitionPriorityByHash(t *testing.T) {
+	bd := new(binomialDistribution)
 	hash := types.Hash{}
 	hash[0] = 70
-	ret := getSortitionPriorityByHash(hash, 10, 10, 100)
+	ret := bd.getSortitionPriorityByHash(hash, 10, 10, 100)
 	fmt.Println(ret)
 
 	hash[0] = 128
-	ret = getSortitionPriorityByHash(hash, 10, 10, 100)
+	ret = bd.getSortitionPriorityByHash(hash, 10, 10, 100)
 	fmt.Println(ret)
 
 	hash[0] = 200
-	ret = getSortitionPriorityByHash(hash, 10, 10, 100)
+	ret = bd.getSortitionPriorityByHash(hash, 10, 10, 100)
 	fmt.Println(ret)
 
-	ret = getSortitionPriorityByHash(TimeOut, 10, 10, 100)
+	ret = bd.getSortitionPriorityByHash(TimeOut, 10, 10, 100)
+	fmt.Println(ret)
+}
+
+
+/*
+0.14592028116173136
+0.5000000150000002
+0.8540797188382686
+0.9824925111316661
+0.999217298828766
+0.9999875866960048
+0.999999931959888
+0.9999999998730186
+0.9999999999999201
+1
+1
+*/
+func TestGetSumGaussian(t *testing.T) {
+	w := 10
+	p := 10.0/100.0
+	e := float64(w) * p
+	sigma := e * (1 - p)
+
+	fmt.Println(p,e,sigma)
+
+	g := gaussian.NewGaussian(e, sigma)
+	for i := 0; i <= w; i++ {
+		fmt.Println(g.Cdf(float64(i)))
+	}
+}
+
+/*
+0
+1
+2
+9
+*/
+func TestGetGaussianSortitionPriorityByHash(t *testing.T) {
+	bd := new(gaussianDistribution)
+	hash := types.Hash{}
+	hash[0] = 20
+	ret := bd.getSortitionPriorityByHash(hash, 10, 10, 100)
+	fmt.Println(ret)
+
+	hash[0] = 128
+	ret = bd.getSortitionPriorityByHash(hash, 10, 10, 100)
+	fmt.Println(ret)
+
+	hash[0] = 200
+	ret = bd.getSortitionPriorityByHash(hash, 10, 10, 100)
+	fmt.Println(ret)
+
+	ret = bd.getSortitionPriorityByHash(TimeOut, 10, 10, 100)
 	fmt.Println(ret)
 }
 
@@ -134,4 +189,24 @@ func TestPerformance1(t *testing.T) {
 		//fmt.Println(last)
 	}
 	logger.Info(" end.time")
+}
+
+
+
+func TestGetBinomiaGaussianDiff(t *testing.T) {
+	last := new(big.Float)
+	w := 1000
+	p := 2000.0/5000.0
+	e := float64(w) * p
+	sigma := e * (1 - p)
+
+	fmt.Println(p,e,sigma)
+
+
+	g := gaussian.NewGaussian(e, sigma)
+	for i := 0; i <= w; i++ {
+		last = getSumBinomialBasedLastSum(int64(w), 2000, 5000, int64(i), last)
+		fmt.Println(last, g.Cdf(float64(i)))
+	}
+
 }

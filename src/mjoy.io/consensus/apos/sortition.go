@@ -24,13 +24,60 @@ package apos
 import (
 	"mjoy.io/common/types"
 	"math/big"
+	"github.com/go-gaussian"
 )
+
+type SortitionPriority interface {
+	getSortitionPriorityByHash(hash types.Hash, w, tao, W int64) (j int64)
+}
 
 func sortition(tools CommonTools, tao, round, step ,w ,W uint64) (types.Hash, []byte, int) {
 	return types.Hash{}, nil, 0
 }
 
-func getSortitionPriorityByHash(hash types.Hash, w, tao, W int64) (j int64) {
+type gaussianDistribution struct {
+
+}
+
+func (bs *gaussianDistribution) getSortitionPriorityByHash(hash types.Hash, w, tao, W int64) (j int64)  {
+	p := float64(tao)/float64(W)
+	e := float64(w) * p
+	sigma := e * (1 - p)
+
+	hashBig := new(big.Int).SetBytes(hash.Bytes())
+	hashP := new(big.Float).Quo(new(big.Float).SetInt(hashBig), new(big.Float).SetInt(maxUint256))
+
+	g := gaussian.NewGaussian(e, sigma)
+
+	for j = 0; j < w; j++{
+		if hashP.Cmp(big.NewFloat(g.Cdf(float64(j)))) < 0 {
+			break
+		}
+	}
+	return j
+}
+
+type binomialDistribution struct {
+
+}
+
+func (bs *binomialDistribution) getSortitionPriorityByHash(hash types.Hash, w, tao, W int64) (j int64)  {
+	hashBig := new(big.Int).SetBytes(hash.Bytes())
+	hashP := new(big.Float).Quo(new(big.Float).SetInt(hashBig), new(big.Float).SetInt(maxUint256))
+
+	last := new(big.Float)
+
+	for j = 0; j < w; j++{
+		last = getSumBinomialBasedLastSum(w, tao, W, j, last)
+		if hashP.Cmp(last) < 0 {
+			break
+		}
+	}
+	return j
+}
+
+
+func getBinomialSortitionPriorityByHash(hash types.Hash, w, tao, W int64) (j int64) {
 	hashBig := new(big.Int).SetBytes(hash.Bytes())
 	hashP := new(big.Float).Quo(new(big.Float).SetInt(hashBig), new(big.Float).SetInt(maxUint256))
 
