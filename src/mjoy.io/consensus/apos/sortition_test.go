@@ -181,11 +181,27 @@ func TestPerformance(t *testing.T) {
 
 func TestPerformance1(t *testing.T) {
 	last := new(big.Float)
-	w := 1000
+	w := 5000
 
 	logger.Info(" start.time")
 	for i := 0; i <= w; i++ {
 		last = getSumBinomialBasedLastSum(int64(w), 2000, 10000, int64(i), last)
+		//fmt.Println(last)
+	}
+	logger.Info(" end.time")
+}
+
+func TestPerformance1Gaussian(t *testing.T) {
+	w := 5000
+	p := 2000.0/10000.0
+	e := float64(w) * p
+	sigma := e * (1 - p)
+
+	g := gaussian.NewGaussian(e, sigma)
+
+	logger.Info(" start.time")
+	for i := 0; i <= w; i++ {
+		g.Cdf(float64(i))
 		//fmt.Println(last)
 	}
 	logger.Info(" end.time")
