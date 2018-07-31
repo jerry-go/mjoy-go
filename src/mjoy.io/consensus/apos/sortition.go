@@ -24,7 +24,7 @@ package apos
 import (
 	"mjoy.io/common/types"
 	"math/big"
-	"github.com/go-gaussian"
+	"math"
 )
 
 type SortitionPriority interface {
@@ -39,18 +39,20 @@ type gaussianDistribution struct {
 
 }
 
+func normalCdf(μ, σ , x float64)  float64 {
+	return (1.0 / 2.0) * (1 + math.Erf((x-μ)/(σ*math.Sqrt2)))
+}
+
 func (gs *gaussianDistribution) getSortitionPriorityByHash(hash types.Hash, w, tao, W int64) (j int64)  {
 	p := float64(tao)/float64(W)
 	e := float64(w) * p
-	sigma := e * (1 - p)
+	sigma := math.Sqrt(e * (1 - p))
 
 	hashBig := new(big.Int).SetBytes(hash.Bytes())
 	hashP := new(big.Float).Quo(new(big.Float).SetInt(hashBig), new(big.Float).SetInt(maxUint256))
 
-	g := gaussian.NewGaussian(e, sigma)
-
 	for j = 0; j < w; j++{
-		if hashP.Cmp(big.NewFloat(g.Cdf(float64(j)))) < 0 {
+		if hashP.Cmp(big.NewFloat(normalCdf(e, sigma, float64(j)))) < 0 {
 			break
 		}
 	}

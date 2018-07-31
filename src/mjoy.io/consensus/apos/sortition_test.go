@@ -26,7 +26,7 @@ import (
 	"fmt"
 	"mjoy.io/common/types"
 	"math/big"
-	"github.com/go-gaussian"
+	"math"
 )
 
 func TestGetExpK(t *testing.T) {
@@ -110,13 +110,13 @@ func TestGetBinomialSortitionPriorityByHash(t *testing.T) {
 
 
 /*
-0.14592028116173136
-0.5000000150000002
-0.8540797188382686
-0.9824925111316661
-0.999217298828766
-0.9999875866960048
-0.999999931959888
+0.14592027257189427
+0.5
+0.8540797274281058
+0.9824925094901688
+0.9992172988709987
+0.9999875866968306
+0.9999999319598855
 0.9999999998730186
 0.9999999999999201
 1
@@ -130,9 +130,8 @@ func TestGetSumGaussian(t *testing.T) {
 
 	fmt.Println(p,e,sigma)
 
-	g := gaussian.NewGaussian(e, sigma)
 	for i := 0; i <= w; i++ {
-		fmt.Println(g.Cdf(float64(i)))
+		fmt.Println(normalCdf(e, math.Sqrt(sigma),float64(i)))
 	}
 }
 
@@ -143,21 +142,21 @@ func TestGetSumGaussian(t *testing.T) {
 9
 */
 func TestGetGaussianSortitionPriorityByHash(t *testing.T) {
-	bd := new(gaussianDistribution)
+	gd := new(gaussianDistribution)
 	hash := types.Hash{}
 	hash[0] = 20
-	ret := bd.getSortitionPriorityByHash(hash, 10, 10, 100)
+	ret := gd.getSortitionPriorityByHash(hash, 10, 10, 100)
 	fmt.Println(ret)
 
-	hash[0] = 128
-	ret = bd.getSortitionPriorityByHash(hash, 10, 10, 100)
+	hash[0] = 127
+	ret = gd.getSortitionPriorityByHash(hash, 10, 10, 100)
 	fmt.Println(ret)
 
 	hash[0] = 200
-	ret = bd.getSortitionPriorityByHash(hash, 10, 10, 100)
+	ret = gd.getSortitionPriorityByHash(hash, 10, 10, 100)
 	fmt.Println(ret)
 
-	ret = bd.getSortitionPriorityByHash(TimeOut, 10, 10, 100)
+	ret = gd.getSortitionPriorityByHash(TimeOut, 10, 10, 100)
 	fmt.Println(ret)
 }
 
@@ -195,13 +194,11 @@ func TestPerformance1Gaussian(t *testing.T) {
 	w := 5000
 	p := 2000.0/10000.0
 	e := float64(w) * p
-	sigma := e * (1 - p)
-
-	g := gaussian.NewGaussian(e, sigma)
+	sigma := math.Sqrt(e * (1 - p))
 
 	logger.Info(" start.time")
 	for i := 0; i <= w; i++ {
-		g.Cdf(float64(i))
+		normalCdf(e, sigma, float64(i))
 		//fmt.Println(last)
 	}
 	logger.Info(" end.time")
@@ -218,11 +215,9 @@ func TestGetBinomiaGaussianDiff(t *testing.T) {
 
 	fmt.Println(p,e,sigma)
 
-
-	g := gaussian.NewGaussian(e, sigma)
 	for i := 0; i <= w; i++ {
 		last = getSumBinomialBasedLastSum(int64(w), 2000, 5000, int64(i), last)
-		fmt.Println(last, g.Cdf(float64(i)))
+		fmt.Println(last, normalCdf(e, math.Sqrt(sigma), float64(i)))
 	}
 
 }
