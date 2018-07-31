@@ -40,7 +40,7 @@ type peerMsgs struct {
 	msgBas  map[int]*ByzantineAgreementStar
 
 	//0 :default honesty peer. 1: malicious peer
-	honesty uint
+	honesty uint	//judge by baMsg filter , if one node send different hash at same step
 }
 
 
@@ -95,7 +95,7 @@ type Round struct {
 
 	msgs map[types.Address]*peerMsgs
 
-	quitCh      chan *block.Block
+	quitCh      chan *block.Block	//the result of Round,a block was made,should insert into blockchain
 	roundOverCh chan interface{}
 
 	bpObj   *BpObj
@@ -382,7 +382,7 @@ func (this *Round) startStepObjs(wg *sync.WaitGroup) {
 
 }
 
-
+//duplicate message check
 func (this *Round) filterMsgCs(msg *CredentialSign) error {
 
 	address, err := msg.sender()
@@ -445,6 +445,7 @@ func (this *Round) receiveMsgBp(msg *BlockProposal) {
 
 }
 
+//filter duplicate msg and same step with different hash
 func (this *Round) filterMsgBa(msg *ByzantineAgreementStar) error {
 	address, err := msg.Credential.sender()
 	if err != nil {
@@ -517,6 +518,7 @@ func (this *Round) commonProcess() {
 			default:
 				logger.Warn("invalid message type ", reflect.TypeOf(v))
 			}
+		//Round complete , insert the block into blockchain
 		case consensusBlock := <-this.quitCh:
 			fmt.Println("CommonProcess end block:", consensusBlock)
 			bs := block.Blocks{}
@@ -549,14 +551,8 @@ func (this *Round) run() {
 }
 
 type Apos struct {
-	systemParam interface{} //the difference of algoParam and systemParam is that algoParam show the Apos
-	//running status,but the systemParam show the Mjoy runing
-	mainStep    int
 	commonTools CommonTools
 	outMsger    OutMsger
-
-	//all goroutine send msg to Apos by this Chan
-	allMsgBridge chan dataPack
 
 	roundCtx *Round
 
@@ -574,7 +570,6 @@ func NewApos(msger OutMsger , bcHandler BlockChainHandler , producerHandler Bloc
 	cmTools := newAposTools(Config().chainId , bcHandler , producerHandler)
 	a.commonTools = cmTools
 	gCommonTools = cmTools
-	a.allMsgBridge = make(chan dataPack, 10000)
 	a.roundOverCh = make(chan interface{}, 1)
 	a.aposStopCh = make(chan interface{}, 1)
 	a.outMsger = MsgTransfer()
@@ -622,9 +617,6 @@ func (this *Apos) makeEmptyBlockForTest(cs *CredentialSign) *block.Block {
 	return b
 }
 
-func (this *Apos) SetOutMsger(outMsger OutMsger) {
-	this.outMsger = outMsger
-}
 
 func SetTestConfig() {
 	//set config
@@ -655,9 +647,6 @@ func (this *Apos) Run() {
 	for {
 		select {
 		case <-this.roundOverCh:
-			//logger.Info("round overs ", this.roundCtx.round)
-			//this.aposStopCh<-1
-			//return //if apos deal once ,stop it
 			logger.Debug("Apos New Round Running...............")
 			this.roundCtx = newRound(this.commonTools.GetNextRound(), this.commonTools.GetNowBlockHash(), this, this.roundOverCh)
 			go this.roundCtx.run()
@@ -670,7 +659,6 @@ func (this *Apos) reset() {
 	this.lock.Lock()
 	defer this.lock.Unlock()
 
-	this.mainStep = 0
 	this.stop = false
 }
 
@@ -706,12 +694,6 @@ func (this *Apos) StopCh() chan interface{} {
 
 func (this *Apos) judgeVerifier(cs *CredentialSign, setp int) bool {
 
-	//h := cs.Signature.Hash()
-	//leader := false
-	//if 1 == setp {
-	//	leader = true
-	//}
-	//return isPotVerifier(h.Bytes(), leader)
 	if cs.votes > 0 {
 		return true
 	} else {

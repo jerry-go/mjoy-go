@@ -43,13 +43,18 @@ const (
 )
 
 //go:generate msgp
-
+/*
+bufferMsg:the msg come from other peer with higher block number than currentNumber,
+the msg should not be dealed now or discarded , how to do that,so ,we should block the msg
+until the currentNum >= msg.Round - 1,the function bufferMsg will return ,and the msg will be dealed by
+main task.
+*/
 func bufferMsg(peerNumber uint64, chainSub event.Subscription, chainChan chan core.ChainEvent)  {
-	currentBumber := gCommonTools.GetNowBlockNum()
+	currentNumber := gCommonTools.GetNowBlockNum()
 	timer := time.NewTimer(60 * time.Second)
 	defer timer.Stop()
-	if peerNumber > currentBumber {
-		logger.Debug("need buffer msg", peerNumber, currentBumber)
+	if peerNumber > currentNumber {
+		logger.Debug("need buffer msg", peerNumber, currentNumber)
 		//future msg, need buffer
 		chainSub = gCommonTools.SubscribeChainEvent(chainChan)
 		defer chainSub.Unsubscribe()
@@ -63,7 +68,7 @@ func bufferMsg(peerNumber uint64, chainSub event.Subscription, chainChan chan co
 			case <-chainSub.Err():
 				return
 			case <-timer.C:
-				logger.Debug("msg wait too long, ignore", peerNumber, currentBumber)
+				logger.Debug("msg wait too long, ignore", peerNumber, currentNumber)
 				return
 			}
 		}
@@ -71,38 +76,29 @@ func bufferMsg(peerNumber uint64, chainSub event.Subscription, chainChan chan co
 }
 
 func (cs *CredentialSign) validate() (types.Address, error) {
-	//leader := false
-	//if 1 == cs.Step{
-	//	leader = true
-	//}
-	//hash := cs.Signature.hash()
 
-	//verify right
-	//if isPotVerifier(hash.Bytes(), leader) == false {
-	//	return types.Address{}, errors.New("credential has no right to verify")
-	//}
-
-	//verify signature
 	//1. validate parentHash
 	parentBlock := gCommonTools.GetBlockByHash(cs.ParentHash)
 	if parentBlock == nil {
 		return types.Address{}, errors.New(fmt.Sprintf("verify CredentialSig fail: Round %d can't get block form hash %s",cs.Round ,  cs.ParentHash.Hex()))
 	}
 
-
+	//2. round check
 	if parentBlock.B_header.Number.IntVal.Uint64() + 1 != cs.Round {
 		return types.Address{}, errors.New(fmt.Sprintf("verify CredentialSig fail: Round %s is not equal block number", cs.Round))
 
 	}
 
+	//3.signature check and sender check
 	sender, err := cs.sender()
 	if err != nil {
 		return types.Address{}, errors.New(fmt.Sprintf("verify CredentialSig fail: %s", err))
 	}
+
+	//4.sortition check
 	//todo 2. validate right
 	sigHash := cs.Signature.Hash()
-	//cs.votes = 1  //todo here just for compile
-	//cs.votes = uint(CalculatePriority(sigHash , 0,0,0))
+
 	//todo just for test
 	if Config().tStep > 50 {
 		Config().tStep = 10
@@ -174,7 +170,7 @@ func (bp *BlockProposal) validate() error {
 		return err
 	}
 
-	//verify ephemeral signature
+	//verify ephemeral signature,check  sender is equal CretSender or not
 	bp.Esig.round = bp.Credential.Round
 	bp.Esig.step = bp.Credential.Step
 	bp.Esig.val = bp.Block.Hash().Bytes()
@@ -310,8 +306,6 @@ func (bba *msgByzantineAgreementStar) StopHandle() {
 
 //message transfer between msg and Apos
 type msgTransfer struct {
-	receiveSubChan     chan dataPack
-	somebodyGetSubChan bool
 	receiveChan        chan dataPack //receive message from BBa, Gc, Bp and etc.
 	sendChan           chan dataPack
 
@@ -332,9 +326,7 @@ func MsgTransfer() *msgTransfer {
 	msgTransferOnce.Do(func() {
 		msgTransferInstance = &msgTransfer{
 			receiveChan:        make(chan dataPack, 10),
-			receiveSubChan:     make(chan dataPack, 10),
 			sendChan:           make(chan dataPack, 10),
-			somebodyGetSubChan: false,
 		}
 	})
 	return msgTransferInstance
@@ -344,19 +336,9 @@ func (mt *msgTransfer) GetDataMsg() <-chan dataPack {
 	return mt.receiveChan
 }
 
-//return the chan sub chan,just for test
-func (mt *msgTransfer) GetSubDataMsg() <-chan dataPack {
-	mt.somebodyGetSubChan = true
-	return mt.receiveSubChan
-}
 
 func (mt *msgTransfer) sendInner(data dataPack) {
 	mt.receiveChan <- data
-
-	//send the data to receiveSubCh
-	if mt.somebodyGetSubChan {
-		mt.receiveSubChan <- data
-	}
 }
 
 func (mt *msgTransfer) SendInner(data dataPack) error {
@@ -385,7 +367,7 @@ func (mt *msgTransfer) PropagateMsg(data dataPack) error {
 func (mt *msgTransfer) Send2Apos(data dataPack) {
 	mt.receiveChan <- data
 }
-
+//called by protocol manager,when we want send data to other peer,should call it before send(PropagateMsg)
 func (mt *msgTransfer) SubscribeCsEvent(ch chan<- CsEvent) event.Subscription {
 	return mt.scope.Track(mt.csFeed.Subscribe(ch))
 }

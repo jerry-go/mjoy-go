@@ -37,15 +37,14 @@ type dataPack interface {
 
 type OutMsger interface {
 	GetDataMsg() <-chan dataPack
-	GetSubDataMsg() <-chan dataPack //for test
 	SendInner(dataPack) error
 	Send2Apos(dataPack)
-	PropagateMsg(dataPack) error
+	PropagateMsg(dataPack) error	//just send propagate msg to other nodes
 }
 
 //some out tools offered by Mjoy,such as signer and blockInfo getter
 type CommonTools interface {
-	//
+	//Note: apos no right to hold a privateKey , so the Sig in commontools just though a privateKey to apos
 	Sig(pCs *CredentialSign) error
 	Esig(pEphemeralSign *EphemeralSign) error
 	SigHash(hash types.Hash) []byte
