@@ -64,6 +64,7 @@ func (cv *countVote) init() {
 	cv.msgCh = make(chan *ByzantineAgreementStar, 1)
 	cv.stopCh = make(chan interface{}, 1)
 	cv.timerStep = STEP_IDLE
+	cv.timer = time.NewTimer(0)
 }
 
 //this function should be called by BP handle
@@ -74,17 +75,6 @@ func (cv *countVote) startTimer(delay int) {
 }
 
 func (cv *countVote) run() {
-	if cv == nil {
-		logger.Error("cv == nil")
-	}
-	if cv.timer == nil {
-		logger.Debug("time just a nil variable....")
-	}
-
-	t := time.NewTimer(0)
-	cv.timer = t
-	//cv.timer = time.NewTimer(0)
-	cv.timer.Stop()
 	for {
 		select {
 		// receive message
@@ -102,6 +92,7 @@ func (cv *countVote) run() {
 			cv.timeoutHandle()
 		case <-cv.stopCh:
 			logger.Debug(COLOR_PREFIX+COLOR_FRONT_RED+COLOR_SUFFIX , "countVote run exit", cv.timerStep, COLOR_SHORT_RESET)
+			cv.timer.Stop()
 			return
 		}
 	}
@@ -193,7 +184,7 @@ func (cv *countVote) countSuccess(step int, hash types.Hash) {
 		if bbaIdex == 1 && hash != cv.emptyBlock {
 			//bba complete: block hash
 			cv.bbaFinish = true
-			if cv.timerStep < (Config().maxStep) {
+			if cv.timerStep < (Config().maxStep) || cv.timerStep == STEP_IDLE {
 				nextTimoutStep = STEP_FINAL
 				cv.timerStep = STEP_FINAL
 				resetTimer = true
@@ -201,7 +192,7 @@ func (cv *countVote) countSuccess(step int, hash types.Hash) {
 		} else if bbaIdex == 2 && hash == cv.emptyBlock {
 			//bba complete: empty block hash
 			cv.bbaFinish = true
-			if cv.timerStep < (Config().maxStep) {
+			if cv.timerStep < (Config().maxStep) || cv.timerStep == STEP_IDLE {
 				nextTimoutStep = STEP_FINAL
 				cv.timerStep = STEP_FINAL
 				resetTimer = true

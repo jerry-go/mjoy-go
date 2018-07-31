@@ -24,13 +24,46 @@ package apos
 import (
 	"mjoy.io/common/types"
 	"math/big"
+	"math"
 )
+
+type SortitionPriority interface {
+	getSortitionPriorityByHash(hash types.Hash, w, tao, W int64) (j int64)
+}
 
 func sortition(tools CommonTools, tao, round, step ,w ,W uint64) (types.Hash, []byte, int) {
 	return types.Hash{}, nil, 0
 }
 
-func getSortitionPriorityByHash(hash types.Hash, w, tao, W int64) (j int64) {
+type gaussianDistribution struct {
+
+}
+
+func normalCdf(μ, σ , x float64)  float64 {
+	return (1.0 / 2.0) * (1 + math.Erf((x-μ)/(σ*math.Sqrt2)))
+}
+
+func (gs *gaussianDistribution) getSortitionPriorityByHash(hash types.Hash, w, tao, W int64) (j int64)  {
+	p := float64(tao)/float64(W)
+	e := float64(w) * p
+	sigma := math.Sqrt(e * (1 - p))
+
+	hashBig := new(big.Int).SetBytes(hash.Bytes())
+	hashP := new(big.Float).Quo(new(big.Float).SetInt(hashBig), new(big.Float).SetInt(maxUint256))
+
+	for j = 0; j < w; j++{
+		if hashP.Cmp(big.NewFloat(normalCdf(e, sigma, float64(j)))) < 0 {
+			break
+		}
+	}
+	return j
+}
+
+type binomialDistribution struct {
+
+}
+
+func (bs *binomialDistribution) getSortitionPriorityByHash(hash types.Hash, w, tao, W int64) (j int64)  {
 	hashBig := new(big.Int).SetBytes(hash.Bytes())
 	hashP := new(big.Float).Quo(new(big.Float).SetInt(hashBig), new(big.Float).SetInt(maxUint256))
 

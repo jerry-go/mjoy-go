@@ -297,8 +297,9 @@ func (this *Round) broadCastStop() {
 
 // Generate valid Credentials in current round
 func (this *Round) generateCredentials() {
+	sp := Config().sp
 	for i := 1; i < int(Config().maxStep); i++ {
-		credential := this.apos.makeCredential(i)
+		credential := this.apos.makeCredential(i, sp)
 		isVerfier := this.apos.judgeVerifier(credential, i)
 		//logger.Info("GenerateCredential step:",i,"  isVerifier:",isVerfier)
 		if isVerfier {
@@ -309,7 +310,7 @@ func (this *Round) generateCredentials() {
 	}
 
 	for i := STEP_BP; i < STEP_IDLE; i++ {
-		credential := this.apos.makeCredential(i)
+		credential := this.apos.makeCredential(i, sp)
 		isVerfier := this.apos.judgeVerifier(credential, i)
 		//logger.Info("GenerateCredential step:",i,"  isVerifier:",isVerfier)
 		if isVerfier {
@@ -663,7 +664,7 @@ func (this *Apos) reset() {
 }
 
 //Create The Credential
-func (this *Apos) makeCredential(s int) *CredentialSign {
+func (this *Apos) makeCredential(s int, sp SortitionPriority) *CredentialSign {
 	r := this.commonTools.GetNextRound()
 	c := new(CredentialSign)
 	c.Signature.init()
@@ -682,7 +683,7 @@ func (this *Apos) makeCredential(s int) *CredentialSign {
 	if Config().tStep > 50 {
 		Config().tStep = 10
 	}
-	c.votes = uint(getSortitionPriorityByHash(c.Signature.Hash(), 50, Config().tStep, 100))
+	c.votes = uint(sp.getSortitionPriorityByHash(c.Signature.Hash(), 50, Config().tStep, 100))
 	logger.Debug(COLOR_PREFIX+COLOR_FRONT_GREEN+COLOR_SUFFIX , "***Credential Votes Show:  Round:",c.Round , " Step:" , c.Step , "  Votes:" , c.votes , COLOR_SHORT_RESET)
 
 	return c

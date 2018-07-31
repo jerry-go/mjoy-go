@@ -68,6 +68,8 @@ type config struct {
 	delayStep        uint     `json:"delayStep"`        // timeout for receiving a block
 	delayBlock       uint     `json:"delayBlock"`       // timeout for BA⋆ step
 	delayStepVar     uint     `json:"delayStepVar"`     // estimate of BA⋆ completion time variance
+
+	sp               SortitionPriority
 }
 
 func (c *config) setDefault() {
@@ -97,6 +99,8 @@ func (c *config) setDefault() {
 	c.delayStep = 5
 	c.delayBlock = 60
 	c.delayStepVar = 5
+
+	c.sp = new(gaussianDistribution)
 }
 
 // about msgcore singleton

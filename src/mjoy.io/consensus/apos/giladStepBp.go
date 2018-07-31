@@ -127,6 +127,11 @@ func (this *BpObj)makeBlock(){
 
 	bp.Block = this.ctx.getProducerNewBlock(bcd)
 
+	if bp.Block == nil {
+		logger.Error("makeBlock getProducerNewBlock return nil")
+		return
+	}
+
 	bp.Esig.round = bp.Credential.Round
 	bp.Esig.step = StepBp
 	bp.Esig.val = make([]byte , 0)
