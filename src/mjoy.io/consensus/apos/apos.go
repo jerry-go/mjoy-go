@@ -622,11 +622,11 @@ func (this *Apos) makeEmptyBlockForTest(cs *CredentialSign) *block.Block {
 func SetTestConfig() {
 	//set config
 	Config().R = 1000
-	Config().tProposer = 1
+	Config().tProposer = 2
 	Config().tStep = 3
-	Config().tStepThreshold = 1
+	Config().tStepThreshold = 2
 	Config().tFinal = 10000
-	Config().tFinalThreshold = 1
+	Config().tFinalThreshold = 2
 	Config().maxStep = 15
 	Config().delayPriority = 5
 	Config().delayStep = 5
