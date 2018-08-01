@@ -26,7 +26,7 @@ import (
 )
 
 type stepVotes struct {
-	counts      map[types.Hash]uint
+	counts      map[types.Hash]float64
 	//flag for vote result
 	isFinish    bool
 	value       types.Hash
@@ -34,7 +34,7 @@ type stepVotes struct {
 
 func newStepVotes() *stepVotes {
 	sv := new(stepVotes)
-	sv.counts = make(map[types.Hash]uint)
+	sv.counts = make(map[types.Hash]float64)
 	return sv
 }
 
@@ -210,7 +210,7 @@ func (cv *countVote) countSuccess(step int, hash types.Hash) {
 	}
 }
 
-func (cv *countVote) addVotes(ba *ByzantineAgreementStar) (types.Hash, uint) {
+func (cv *countVote) addVotes(ba *ByzantineAgreementStar) (types.Hash, float64) {
 	hash := ba.Hash
 	step := int(ba.Credential.Step)
 	votes := ba.Credential.votes
@@ -251,7 +251,7 @@ func (cv *countVote) processMsg(ba *ByzantineAgreementStar) (int, types.Hash, bo
 
 	sv = cv.voteRecord[step]
 	logger.Debug(COLOR_PREFIX+COLOR_FRONT_PINK+COLOR_SUFFIX ,"ProcessMsg getThreshold:" , getThreshold(step) , "  Now Votes:",votes)
-	if int64(votes) > getThreshold(step) {
+	if votes > float64(getThreshold(step)) {
 		sv.isFinish = true
 		return step, hash, true
 	}

@@ -340,7 +340,7 @@ type CredentialSign struct {
 	Round      uint64 // round
 	Step       uint64 // step
 	ParentHash types.Hash
-	votes      uint
+	votes      float64
 }
 
 type CredentialSigForHash struct {

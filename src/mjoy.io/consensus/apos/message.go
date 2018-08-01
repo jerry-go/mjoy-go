@@ -103,9 +103,9 @@ func (cs *CredentialSign) validate() (types.Address, error) {
 	if Config().tStep > 50 {
 		Config().tStep = 10
 	}
-	cs.votes = uint(Config().sp.getSortitionPriorityByHash(sigHash , 50, Config().tStep,100))
-	if cs.votes == 0 {
-		return types.Address{}, errors.New(fmt.Sprintf("verify votes fail: Round %d peer %s no ritht to verify", cs.Round, sender.Hash()))
+	cs.votes = Config().sp.getSortitionPriorityByHash(sigHash , 50, Config().tStep,100)
+	if cs.votes <= 0 {
+		return types.Address{}, errors.New(fmt.Sprintf("verify votes fail: Round %d peer %s no ritht %f to verify", cs.Round, sender.Hash(), cs.votes))
 	}
 
 	return sender, nil

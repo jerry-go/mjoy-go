@@ -683,7 +683,7 @@ func (this *Apos) makeCredential(s int, sp SortitionPriority) *CredentialSign {
 	if Config().tStep > 50 {
 		Config().tStep = 10
 	}
-	c.votes = uint(sp.getSortitionPriorityByHash(c.Signature.Hash(), 50, Config().tStep, 100))
+	c.votes = sp.getSortitionPriorityByHash(c.Signature.Hash(), 50, Config().tStep, 100)
 	logger.Debug(COLOR_PREFIX+COLOR_FRONT_GREEN+COLOR_SUFFIX , "***Credential Votes Show:  Round:",c.Round , " Step:" , c.Step , "  Votes:" , c.votes , COLOR_SHORT_RESET)
 
 	return c

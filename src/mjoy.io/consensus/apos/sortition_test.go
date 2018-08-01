@@ -142,32 +142,28 @@ func TestGetSumGaussian(t *testing.T) {
 }
 
 /*
-0
-1
-2
-9
+-0.34504046484087825
+0.9907108032118622
+1.7365783570440043
+10
 */
 func TestGetGaussianSortitionPriorityByHash(t *testing.T) {
 	gd := new(gaussianDistribution)
 	hash := types.Hash{}
 	hash[0] = 20
 	ret := gd.getSortitionPriorityByHash(hash, 10, 10, 100)
-	ret1 := gd.getSortitionPriorityByHashFloat(hash, 10, 10, 100)
-	fmt.Println(ret,ret1)
+	fmt.Println(ret)
 
 	hash[0] = 127
 	ret = gd.getSortitionPriorityByHash(hash, 10, 10, 100)
-	ret1 = gd.getSortitionPriorityByHashFloat(hash, 10, 10, 100)
-	fmt.Println(ret,ret1)
+	fmt.Println(ret)
 
 	hash[0] = 200
 	ret = gd.getSortitionPriorityByHash(hash, 10, 10, 100)
-	ret1 = gd.getSortitionPriorityByHashFloat(hash, 10, 10, 100)
-	fmt.Println(ret,ret1)
+	fmt.Println(ret)
 
 	ret = gd.getSortitionPriorityByHash(TimeOut, 10, 10, 100)
-	ret1 = gd.getSortitionPriorityByHashFloat(TimeOut, 10, 10, 100)
-	fmt.Println(ret,ret1)
+	fmt.Println(ret)
 }
 
 func TestPerformance(t *testing.T) {

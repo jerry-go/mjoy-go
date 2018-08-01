@@ -9,7 +9,7 @@ import (
 )
 
 type BpWithPriority struct {
-	j int   //the priofity
+	j  float64   //the priofity
 	bp *BlockProposal
 }
 
@@ -210,7 +210,7 @@ func (this *BpObj) run() {
 				pri := bp.Credential.votes
 
 				bpp := new(BpWithPriority)
-				bpp.j = int(pri)
+				bpp.j = pri
 				bpp.bp = bp
 
 				this.BpHeap.Push(bpp)
