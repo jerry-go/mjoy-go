@@ -51,10 +51,10 @@ main task.
 */
 func bufferMsg(peerNumber uint64, chainSub event.Subscription, chainChan chan core.ChainEvent)  {
 	currentNumber := gCommonTools.GetNowBlockNum()
-	timer := time.NewTimer(60 * time.Second)
-	defer timer.Stop()
 	if peerNumber > currentNumber {
 		logger.Debug("need buffer msg", peerNumber, currentNumber)
+		timer := time.NewTimer(60 * time.Second)
+		defer timer.Stop()
 		//future msg, need buffer
 		chainSub = gCommonTools.SubscribeChainEvent(chainChan)
 		defer chainSub.Unsubscribe()

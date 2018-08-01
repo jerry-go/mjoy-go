@@ -71,7 +71,7 @@ func (cv *countVote) init() {
 func (cv *countVote) startTimer(delay int) {
 	delayDuration := time.Second * time.Duration(delay)
 	cv.timer.Reset(delayDuration)
-	cv.timerStep = STEP_REDUCTION_1
+	cv.timerStep = uint(cv.getNextTimerStep(STEP_BP))
 }
 
 func (cv *countVote) run() {
@@ -102,6 +102,8 @@ func (cv *countVote) getNextTimerStep(step int) int {
 	timeoutStep := step
 	for {
 		switch {
+		case timeoutStep == STEP_BP:
+			timeoutStep = STEP_REDUCTION_1
 		case timeoutStep == STEP_REDUCTION_1:
 			timeoutStep = STEP_REDUCTION_2
 		case timeoutStep == STEP_REDUCTION_2:
