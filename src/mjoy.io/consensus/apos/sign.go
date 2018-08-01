@@ -364,15 +364,7 @@ func (a *CredentialSign) Cmp(b *CredentialSign) int {
 	return aInt.Cmp(bInt)
 }
 
-func (this *CredentialSign) ToCredentialSigKey() *CredentialSigForKey {
-	r := new(CredentialSigForKey)
-	r.Round = this.Round
-	r.Step = this.Step
-	r.R = this.R.IntVal.Uint64()
-	r.S = this.S.IntVal.Uint64()
-	r.V = this.V.IntVal.Uint64()
-	return r
-}
+
 //CredentialSign.Sign do everything except holding the privateKey
 //called by commonTools,because commonTools hold the privateKey for signing
 func (cret *CredentialSign) Sign(prv *ecdsa.PrivateKey) (R *types.BigInt, S *types.BigInt, V *types.BigInt, err error) {

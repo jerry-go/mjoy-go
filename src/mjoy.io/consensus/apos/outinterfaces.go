@@ -50,8 +50,8 @@ type CommonTools interface {
 	SigHash(hash types.Hash) []byte
 	SeedSig(psd *SeedData) error
 
-	SigVerify(hash types.Hash, sig *SignatureVal) error
-	Sender(hash types.Hash, sig *SignatureVal) (types.Address, error)
+	//SigVerify(hash types.Hash, sig *SignatureVal) error
+	//Sender(hash types.Hash, sig *SignatureVal) (types.Address, error)
 
 	ESigVerify(hash types.Hash, sig []byte) error
 	ESender(hash types.Hash, sig []byte) (types.Address, error)

@@ -35,6 +35,10 @@ import (
 
 )
 
+var (
+	ConsensusDataId = "apos"
+)
+
 type peerMsgs struct {
 	msgCs   map[int]*CredentialSign
 	msgBas  map[int]*ByzantineAgreementStar

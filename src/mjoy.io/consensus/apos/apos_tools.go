@@ -10,7 +10,6 @@ import (
 	"errors"
 	"fmt"
 	"mjoy.io/common/types"
-	"mjoy.io/common"
 	"mjoy.io/core/blockchain/block"
 	"reflect"
 	"mjoy.io/params"
@@ -163,19 +162,9 @@ func (this *aposTools)SigHash(hash types.Hash)[]byte{
 	return sig
 }
 
-func (this *aposTools)SigVerify(h types.Hash , sig *SignatureVal)error{
-	return nil
-}
 
 
-func (this *aposTools)Sender(h types.Hash , sig *SignatureVal)(types.Address , error){
-	V := &big.Int{}
-	V = V.Sub(&sig.V.IntVal, big.NewInt(2))
-	V.Sub(V, common.Big35)
 
-	address , err := RecoverPlain(h , &sig.R.IntVal , &sig.S.IntVal , V,true)
-	return address , err
-}
 
 func (this *aposTools)ESigVerify(h types.Hash , sig []byte)error{
 	return nil

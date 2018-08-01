@@ -39,7 +39,7 @@ func newStepVotes() *stepVotes {
 }
 
 type countVote struct {
-	voteRecord  map[int]*stepVotes
+	voteRecord  map[int]*stepVotes	//map[step]*stepVotes
 	msgCh       chan *ByzantineAgreementStar
 	stopCh      chan interface{}
 	timer       *time.Timer
@@ -79,6 +79,7 @@ func (cv *countVote) run() {
 		select {
 		// receive message
 		case voteMsg := <-cv.msgCh:
+			//add votes and check the votes whether complete
 			step, hash, complete := cv.processMsg(voteMsg)
 			logger.Debug(COLOR_PREFIX+COLOR_FRONT_RED+COLOR_SUFFIX  , "CountVote Get Msg:" , "step:" , step , "  hash:" , hash.Hex() , COLOR_SHORT_RESET)
 			if complete {
@@ -97,7 +98,22 @@ func (cv *countVote) run() {
 		}
 	}
 }
+/*
+normal scene:
+timeoutStep = nowStep skip to next logic step
 
+
+special scene:
+nowStep = stepFinal
+timeouStep = StepIdle
+
+when countVote.bbaFinish == true,
+skip to stepFinal
+
+when next logic Step finish,
+continue step searching
+
+*/
 func (cv *countVote) getNextTimerStep(step int) int {
 	timeoutStep := step
 	for {
@@ -117,9 +133,11 @@ func (cv *countVote) getNextTimerStep(step int) int {
 			//ignore
 			timeoutStep = STEP_IDLE
 		}
+		//if the bba is finished , turn to STEP_FINAL
 		if timeoutStep < int(Config().maxStep) && cv.bbaFinish{
 			timeoutStep = STEP_FINAL
 		}
+		//if future step is finished before current step , continue find a timeoutStep
 		if sv, ok:= cv.voteRecord[timeoutStep]; ok {
 			if sv.isFinish == true {
 				continue
@@ -174,7 +192,7 @@ func (cv *countVote) countSuccess(step int, hash types.Hash) {
 	resetTimer := false
 	nextTimoutStep := STEP_IDLE
 	if int(cv.timerStep) == step {
-		//reset timer
+		//reset timer,this step has been completed
 		resetTimer = true
 		nextTimoutStep = cv.getNextTimerStep(step)
 	}
@@ -234,10 +252,12 @@ func (cv *countVote) addVotes(ba *ByzantineAgreementStar) (types.Hash, uint) {
 func (cv *countVote) processMsg(ba *ByzantineAgreementStar) (int, types.Hash, bool) {
 	logger.Debug("processMsg", ba.Credential.Step, ba.Hash.String())
 	step := int(ba.Credential.Step)
+	//check bba is finished or not
 	if step < int(Config().maxStep) && cv.bbaFinish {
 		logger.Info("all bba finished. step ", step, "will ignore")
 		return step, types.Hash{}, false
 	}
+	//check stepVotes is finished or not
 	sv, ok := cv.voteRecord[step]
 	if ok {
 		//check this step whether is finish
@@ -248,9 +268,10 @@ func (cv *countVote) processMsg(ba *ByzantineAgreementStar) (int, types.Hash, bo
 	}
 
 	hash, votes := cv.addVotes(ba)
-
+	//checked again after addVotes
 	sv = cv.voteRecord[step]
 	logger.Debug(COLOR_PREFIX+COLOR_FRONT_PINK+COLOR_SUFFIX ,"ProcessMsg getThreshold:" , getThreshold(step) , "  Now Votes:",votes)
+	//check this step whether complete mission
 	if int64(votes) > getThreshold(step) {
 		sv.isFinish = true
 		return step, hash, true

@@ -81,12 +81,14 @@ func (this *BpObj)getExistBlock(blockHash types.Hash) *block.Block {
 	return nil
 }
 func (this *BpObj)CommitteeVote(data *VoteData){
-
+	//get credential from Round
 	cret := this.ctx.getCredentialByStep(uint64(data.Step))
 	if cret == nil {
 		return
 	}
-
+	if cret.votes <= 0{
+		return
+	}
 	//todo :need pack ba msg
 
 	msgBa := newByzantineAgreementStar()
@@ -107,10 +109,8 @@ func (this *BpObj)CommitteeVote(data *VoteData){
 		return
 	}
 
+	this.ctx.sendInner(msgBa)
 
-	if cret.votes > 0{
-		this.ctx.sendInner(msgBa)
-	}
 }
 
 func (this *BpObj)makeBlock(){
@@ -120,9 +120,7 @@ func (this *BpObj)makeBlock(){
 		logger.Warn("makeBlock getCredentialByStep--->nil")
 		return
 	}
-	//bcd := &block.ConsensusData{}
-	//bcd.Id = ConsensusDataId
-	//bcd.Para = bp.Credential.Signature.toBytes()
+
 	bcd := this.ctx.makeBlockConsensusData(bp)
 
 	bp.Block = this.ctx.getProducerNewBlock(bcd)
