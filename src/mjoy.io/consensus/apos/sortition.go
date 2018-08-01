@@ -25,10 +25,11 @@ import (
 	"mjoy.io/common/types"
 	"math/big"
 	"math"
+	"github.com/ematvey/gostat"
 )
 
 type SortitionPriority interface {
-	getSortitionPriorityByHash(hash types.Hash, w, tao, W int64) (j int64)
+	getSortitionPriorityByHash(hash types.Hash, w, tao, W int64) (j float64)
 }
 
 func sortition(tools CommonTools, tao, round, step ,w ,W uint64) (types.Hash, []byte, int) {
@@ -39,22 +40,42 @@ type gaussianDistribution struct {
 
 }
 
-func normalCdf(μ, σ , x float64)  float64 {
+func normalCdf(μ, σ , x float64) float64 {
 	return (1.0 / 2.0) * (1 + math.Erf((x-μ)/(σ*math.Sqrt2)))
 }
 
-func (gs *gaussianDistribution) getSortitionPriorityByHash(hash types.Hash, w, tao, W int64) (j int64)  {
+func normalInverseCdf(μ, σ , p float64) float64 {
+	return σ * (stat.Z_InvCDF_For(p))  + μ
+}
+
+//func (gs *gaussianDistribution) getSortitionPriorityByHash(hash types.Hash, w, tao, W int64) (j int64)  {
+//	p := float64(tao)/float64(W)
+//	e := float64(w) * p
+//	sigma := math.Sqrt(e * (1 - p))
+//
+//	hashBig := new(big.Int).SetBytes(hash.Bytes())
+//	hashP := new(big.Float).Quo(new(big.Float).SetInt(hashBig), new(big.Float).SetInt(maxUint256))
+//
+//	for j = 0; j < w; j++{
+//		if hashP.Cmp(big.NewFloat(normalCdf(e, sigma, float64(j)))) < 0 {
+//			break
+//		}
+//	}
+//	return j
+//}
+
+func (gs *gaussianDistribution) getSortitionPriorityByHash(hash types.Hash, w, tao, W int64) (j float64)  {
 	p := float64(tao)/float64(W)
 	e := float64(w) * p
 	sigma := math.Sqrt(e * (1 - p))
 
 	hashBig := new(big.Int).SetBytes(hash.Bytes())
 	hashP := new(big.Float).Quo(new(big.Float).SetInt(hashBig), new(big.Float).SetInt(maxUint256))
+	hashPf,_ := hashP.Float64()
 
-	for j = 0; j < w; j++{
-		if hashP.Cmp(big.NewFloat(normalCdf(e, sigma, float64(j)))) < 0 {
-			break
-		}
+	j = normalInverseCdf(e, sigma, hashPf)
+	if j > float64(w) {
+		j = float64(w)
 	}
 	return j
 }
@@ -63,18 +84,20 @@ type binomialDistribution struct {
 
 }
 
-func (bs *binomialDistribution) getSortitionPriorityByHash(hash types.Hash, w, tao, W int64) (j int64)  {
+func (bs *binomialDistribution) getSortitionPriorityByHash(hash types.Hash, w, tao, W int64) (j float64)  {
 	hashBig := new(big.Int).SetBytes(hash.Bytes())
 	hashP := new(big.Float).Quo(new(big.Float).SetInt(hashBig), new(big.Float).SetInt(maxUint256))
 
 	last := new(big.Float)
 
-	for j = 0; j < w; j++{
-		last = getSumBinomialBasedLastSum(w, tao, W, j, last)
+	var i int64
+	for i = 0; i < w; i++{
+		last = getSumBinomialBasedLastSum(w, tao, W, i, last)
 		if hashP.Cmp(last) < 0 {
 			break
 		}
 	}
+	j = float64(i)
 	return j
 }
 

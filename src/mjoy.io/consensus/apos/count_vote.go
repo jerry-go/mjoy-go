@@ -26,7 +26,7 @@ import (
 )
 
 type stepVotes struct {
-	counts      map[types.Hash]uint
+	counts      map[types.Hash]float64
 	//flag for vote result
 	isFinish    bool
 	value       types.Hash
@@ -34,7 +34,7 @@ type stepVotes struct {
 
 func newStepVotes() *stepVotes {
 	sv := new(stepVotes)
-	sv.counts = make(map[types.Hash]uint)
+	sv.counts = make(map[types.Hash]float64)
 	return sv
 }
 
@@ -71,7 +71,7 @@ func (cv *countVote) init() {
 func (cv *countVote) startTimer(delay int) {
 	delayDuration := time.Second * time.Duration(delay)
 	cv.timer.Reset(delayDuration)
-	cv.timerStep = STEP_REDUCTION_1
+	cv.timerStep = uint(cv.getNextTimerStep(STEP_BP))
 }
 
 func (cv *countVote) run() {
@@ -118,6 +118,8 @@ func (cv *countVote) getNextTimerStep(step int) int {
 	timeoutStep := step
 	for {
 		switch {
+		case timeoutStep == STEP_BP:
+			timeoutStep = STEP_REDUCTION_1
 		case timeoutStep == STEP_REDUCTION_1:
 			timeoutStep = STEP_REDUCTION_2
 		case timeoutStep == STEP_REDUCTION_2:
@@ -228,7 +230,7 @@ func (cv *countVote) countSuccess(step int, hash types.Hash) {
 	}
 }
 
-func (cv *countVote) addVotes(ba *ByzantineAgreementStar) (types.Hash, uint) {
+func (cv *countVote) addVotes(ba *ByzantineAgreementStar) (types.Hash, float64) {
 	hash := ba.Hash
 	step := int(ba.Credential.Step)
 	votes := ba.Credential.votes
@@ -271,8 +273,8 @@ func (cv *countVote) processMsg(ba *ByzantineAgreementStar) (int, types.Hash, bo
 	//checked again after addVotes
 	sv = cv.voteRecord[step]
 	logger.Debug(COLOR_PREFIX+COLOR_FRONT_PINK+COLOR_SUFFIX ,"ProcessMsg getThreshold:" , getThreshold(step) , "  Now Votes:",votes)
-	//check this step whether complete mission
-	if int64(votes) > getThreshold(step) {
+
+	if votes > float64(getThreshold(step)) {
 		sv.isFinish = true
 		return step, hash, true
 	}

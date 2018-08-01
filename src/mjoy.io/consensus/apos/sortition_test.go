@@ -127,19 +127,25 @@ func TestGetSumGaussian(t *testing.T) {
 	p := 10.0/100.0
 	e := float64(w) * p
 	sigma := e * (1 - p)
+	sigma = math.Sqrt(sigma)
 
 	fmt.Println(p,e,sigma)
 
 	for i := 0; i <= w; i++ {
-		fmt.Println(normalCdf(e, math.Sqrt(sigma),float64(i)))
+		fmt.Println(i, normalCdf(e, sigma, float64(i)))
 	}
+
+	fmt.Println(normalInverseCdf(e, sigma, 0.8540797274281058))
+	fmt.Println(normalInverseCdf(e, sigma, 0.9999999999999201))
+	fmt.Println(normalInverseCdf(e, sigma, 0.14592027257189427))
+	fmt.Println(normalInverseCdf(e, sigma, 0))
 }
 
 /*
-0
-1
-2
-9
+-0.34504046484087825
+0.9907108032118622
+1.7365783570440043
+10
 */
 func TestGetGaussianSortitionPriorityByHash(t *testing.T) {
 	gd := new(gaussianDistribution)

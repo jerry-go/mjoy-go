@@ -626,11 +626,11 @@ func (this *Apos) makeEmptyBlockForTest(cs *CredentialSign) *block.Block {
 func SetTestConfig() {
 	//set config
 	Config().R = 1000
-	Config().tProposer = 1
+	Config().tProposer = 2
 	Config().tStep = 3
-	Config().tStepThreshold = 1
+	Config().tStepThreshold = 2
 	Config().tFinal = 10000
-	Config().tFinalThreshold = 1
+	Config().tFinalThreshold = 2
 	Config().maxStep = 15
 	Config().delayPriority = 5
 	Config().delayStep = 5
@@ -687,7 +687,7 @@ func (this *Apos) makeCredential(s int, sp SortitionPriority) *CredentialSign {
 	if Config().tStep > 50 {
 		Config().tStep = 10
 	}
-	c.votes = uint(sp.getSortitionPriorityByHash(c.Signature.Hash(), 50, Config().tStep, 100))
+	c.votes = sp.getSortitionPriorityByHash(c.Signature.Hash(), 50, Config().tStep, 100)
 	logger.Debug(COLOR_PREFIX+COLOR_FRONT_GREEN+COLOR_SUFFIX , "***Credential Votes Show:  Round:",c.Round , " Step:" , c.Step , "  Votes:" , c.votes , COLOR_SHORT_RESET)
 
 	return c
